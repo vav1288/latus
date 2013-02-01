@@ -1,1 +1,1 @@
-latus_merge_cli.py -v -s test\simple\src -d test\simple\dest_temp
+merge_cli.py -v -s test\simple\src -d test\simple\dest_temp
