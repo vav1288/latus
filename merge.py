@@ -3,6 +3,7 @@
 
 import copy
 import os
+import sys
 import platform
 import pywintypes
 import win32api, win32con
@@ -12,20 +13,20 @@ import logger
 import hash
 
 EXISTS_EXACT, EXISTS_ELSEWHERE, EXISTS_CONFLICT, DOES_NOT_EXIST = tuple(range(4))
-COMMAND_COPY, COMMAND_MOVE = tuple(range(2))
+MODE_COPY, MODE_MOVE = tuple(range(2))
 
-def str_to_command(str):
-    command = COMMAND_MOVE
+def str_to_mode(str):
+    mode = MODE_MOVE
     c = str[0].lower()
     if c == 'c':
-        COMMAND_COPY
-    return command
+        MODE_COPY
+    return mode
 
-def command_to_str(command):
+def mode_to_str(mode):
     str = None
-    if command == COMMAND_MOVE:
+    if mode == MODE_MOVE:
         str = "move"
-    elif command == COMMAND_COPY:
+    elif mode == MODE_COPY:
         str = "copy"
     return str
 
@@ -44,16 +45,23 @@ def search_result_to_str(search_result):
     return str
 
 class merge:
-    def __init__(self, source_root, dest_root = None, verbose = False, metadata_root_override = None, command = COMMAND_MOVE):
+    def __init__(self, source_root, out_file_path, dest_root = None, verbose = False, metadata_root_override = None, mode = MODE_MOVE):
         self.log = logging.getLogger(__name__)
         self.log_handlers = logger.setup(self.log)
 
-        self.command = command
+        self.mode = mode
         self.verbose = verbose
         self.metadata_path = None
 
         self.dest_root = dest_root
         self.source_root = source_root
+        self.out_file_path = out_file_path
+
+        if self.out_file_path is not None:
+            try:
+                self.out_file = open(out_file_path, "w")
+            except:
+                sys.exit("error : could not open : " + self.out_file_path)
 
         self.log.info('"computer","%s"',platform.node())
         self.log.info('"source_root","%s"',self.source_root)
@@ -149,9 +157,9 @@ class merge:
             # if there is no dest_path, then we are merely indexing
             # todo: does it make sense to separate out the indexing capability from the merging?  It seems confusing for them to be 'one thing'.
             if search_result == DOES_NOT_EXIST:
-                print command_to_str(self.command), os.path.join(self.source_root, file_path), os.path.join(self.dest_root, file_path)
+                self.out_file.write(mode_to_str(self.mode) + " " + os.path.join(self.source_root, file_path) + " " + os.path.join(self.dest_root, file_path) + "\n")
             else:
-                print "REM" , search_result_to_str(search_result), os.path.join(self.source_root, file_path), os.path.join(self.dest_root, file_path)
+                self.out_file.write("REM " + search_result_to_str(search_result) + " " + os.path.join(self.source_root, file_path) + " " + os.path.join(self.dest_root, file_path) + "\n")
         return search_result, search_paths
 
     # Recursively scan a directory and write to the database
@@ -169,10 +177,10 @@ class merge:
 
     def run(self):
         if self.verbose:
-            print "REM", __name__
-            print "REM source", self.source_root
+            self.out_file.write("REM " + __name__ + "\n")
+            self.out_file.write("REM source " + self.source_root + "\n")
             if self.dest_root is not None:
-                print "REM dest", self.dest_root
+                self.out_file.write("REM dest " + self.dest_root + "\n")
         if not os.path.exists(self.source_root):
             print "Source does not exist :", self.source_root
             print "Exiting"
@@ -185,6 +193,11 @@ class merge:
             self.scan(self.dest_root)
             for path in self:
                 self.merge_file(path)
+
+    def close(self):
+        if self.out_file is not None:
+            self.out_file.close()
+            self.out_file = None
 
     def clean(self):
         hash_obj = hash.hash(self.metadata_path)

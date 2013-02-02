@@ -18,21 +18,25 @@ class merge_cli():
         parser.add_argument("-s", "--source", required=True, help="path to source directory/folder")
         parser.add_argument("-d", "--dest", default = None, help="path to destination directory/folder")
         parser.add_argument("-m", "--mode", nargs=1, default = 'm', choices='cm', help="copy or move")
-        #parser.add_argument("-e", help="execute (vs. only create script - e.g. .bat or .sh file)")
+        parser.add_argument("-o", "--outfile", required=True, help="output file path")
         parser.add_argument("-t", "--test", nargs=1, help="special test parameters (metadata path)", default = None)
         parser.add_argument("-v", "--verbose", help="print informational messages", action="store_true")
 
-        self.args = parser.parse_args()
-        if self.args.test is None:
+        args = parser.parse_args()
+        if args.test is None:
             self.metadata_path = None
         else:
-            self.metadata_path = self.args.test[0]
-        self.verbose = self.args.verbose
+            self.metadata_path = args.test[0]
+        self.verbose = args.verbose
+        self.mode = merge.str_to_mode(args.mode)
+        self.source = args.source
+        self.dest = args.dest
+        self.out_file_path = args.outfile
 
     def run(self):
-        lm = merge.merge(self.args.source, self.args.dest, verbose=self.verbose,
+        lm = merge.merge(self.source, self.out_file_path , self.dest, verbose=self.verbose,
                                      metadata_root_override = self.metadata_path,
-                                     command = merge.str_to_command(self.args.mode))
+                                     mode = self.mode)
         lm.run()
 
 if __name__ == "__main__":
