@@ -19,7 +19,7 @@ def str_to_mode(str):
     mode = MODE_MOVE
     c = str[0].lower()
     if c == 'c':
-        MODE_COPY
+        mode = MODE_COPY
     return mode
 
 def mode_to_str(mode):
@@ -98,8 +98,8 @@ class merge:
                         path = path[1:]
                     yield path # just the part to the right of the source 'root'
 
-    # Analyze a single file.
-    # Path is the partial path from the 'root' of the source (or dest).
+    # Analyze a single file.  This will update the metadata for this file for both source and dest.
+    # Path is the partial path from the 'root' of the source (or dest).  i.e. that part to the 'right' of the root.
     def analyze_file(self, path):
         result = None
         found_paths = None

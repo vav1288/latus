@@ -33,5 +33,4 @@ class test_merge_cli(unittest.TestCase):
         found_it = False
         if "copy" in data:
             found_it = True
-        # todo : fix the copy mode (doesn't work now)
-        #assert(found_it)
+        assert(found_it)
