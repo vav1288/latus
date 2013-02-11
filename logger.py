@@ -5,8 +5,6 @@ import logging.handlers
 
 """ General logging capability.
 
-All logging should use this class.
-
 Good rules of thumb on using logging levels:
 http://en.wikipedia.org/wiki/Log4j
 """
@@ -18,12 +16,15 @@ http://en.wikipedia.org/wiki/Log4j
 # behavior, users of these functions can set it 'back' to None so it'll use the default StreamHandler stream,
 # which is currently sys.stderr.
 #
-def setup(log, log_file_path = None, max_bytes = 1000000, stream_out = sys.stdout):
+
+# this is usually used as a default
+def get_log_file_path():
+    return "latus.log"
+
+def setup(log, get_log_file_path = get_log_file_path, max_bytes = 1000000, stream_out = sys.stdout):
     # note that (message) is not pre-quoted, in case there are multiple fields
     format_string = '"%(asctime)s","%(name)s","%(levelname)s","module","%(module)s","line","%(lineno)d",%(message)s'
     handlers = {}
-    if log_file_path is None:
-        log_file_path = "latus.log"
 
     # create console handler
     console_handler = logging.StreamHandler(stream_out)
@@ -33,7 +34,7 @@ def setup(log, log_file_path = None, max_bytes = 1000000, stream_out = sys.stdou
     handlers['console'] = console_handler
 
     # create file handler
-    file_handler = logging.handlers.RotatingFileHandler(log_file_path, maxBytes=max_bytes)
+    file_handler = logging.handlers.RotatingFileHandler(get_log_file_path(), maxBytes=max_bytes)
     file_formatter = logging.Formatter(format_string)
     file_handler.setFormatter(file_formatter)
     log.addHandler(file_handler)

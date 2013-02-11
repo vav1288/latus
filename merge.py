@@ -45,9 +45,10 @@ def search_result_to_str(search_result):
     return str
 
 class merge:
-    def __init__(self, source_root, out_file_path, dest_root = None, verbose = False, metadata_root_override = None, mode = MODE_MOVE):
+    def __init__(self, source_root, out_file_path, dest_root = None, verbose = False, metadata_root_override = None, mode = MODE_MOVE, get_log_file_path = logger.get_log_file_path):
         self.log = logging.getLogger(__name__)
-        self.log_handlers = logger.setup(self.log)
+        self.get_log_file_path = get_log_file_path
+        self.log_handlers = logger.setup(self.log, self.get_log_file_path)
 
         self.mode = mode
         self.verbose = verbose
@@ -73,7 +74,7 @@ class merge:
             if self.verbose:
                 print "metadata_path :", self.metadata_path
 
-        self.hash_obj = hash.hash(self.metadata_path)
+        self.hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
 
     def __iter__(self):
         return self.next()
@@ -104,8 +105,8 @@ class merge:
         result = None
         found_paths = None
         dest_path = os.path.join(self.dest_root, path)
-        src_hash_obj = hash.hash(self.metadata_path)
-        dest_hash_obj = hash.hash(self.metadata_path)
+        src_hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
+        dest_hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
         dest_dir_abs_path_no_drive = os.path.abspath(self.dest_root)[2:]
         attrib = 0
         try:
@@ -166,7 +167,7 @@ class merge:
     def scan(self, root_dir):
         if self.verbose:
             print "Scanning :", root_dir
-        hash_obj = hash.hash(self.metadata_path)
+        hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
         for dirpath, dirnames, filenames in os.walk(root_dir):
             for name in filenames:
                 path = os.path.join(dirpath, name)
@@ -200,7 +201,7 @@ class merge:
             self.out_file = None
 
     def clean(self):
-        hash_obj = hash.hash(self.metadata_path)
+        hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
         hash_obj.clean()
 
 if __name__ == "__main__":

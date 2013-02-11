@@ -1,14 +1,15 @@
 
 import os
 import unittest
+import test_latus
 import merge
 import merge_cli
 
 class test_merge_cli(unittest.TestCase):
     def setUp(self):
-        self.lm_cli = merge_cli.merge_cli()
+        self.lm_cli = merge_cli.merge_cli(test_latus.get_log_file_path)
         self.lm_cli.verbose = True
-        root = os.path.join("test", "simple")
+        root = os.path.join(test_latus.TEST_ROOT, "simple")
         self.lm_cli.metadata_path = root
         self.lm_cli.source = os.path.join(root, "src")
         self.lm_cli.dest = os.path.join(root, "dest_temp")

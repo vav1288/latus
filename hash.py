@@ -17,7 +17,7 @@ class hash():
     Also maintains a hash cache to avoid unnecessary recalculations/
     """
 
-    def __init__(self, metadata_root_override = None):
+    def __init__(self, metadata_root_override = None, get_log_file_path = logger.get_log_file_path):
         self.SUITE_NAME = "latus"
         self.METADATA_DIR_NAME = "." + self.SUITE_NAME
         self.DB_NAME = "lfs" # local file system
@@ -27,8 +27,9 @@ class hash():
         self.SIZE_STRING = "size"
         self.SHA512_STRING = "sha512"
         self.metadata_root_override = metadata_root_override
+        self.get_log_file_path = get_log_file_path
         self.log = logging.getLogger(__name__)
-        self.log_handlers = logger.setup(self.log)
+        self.log_handlers = logger.setup(self.log, self.get_log_file_path)
 
     def __del__(self):
         logger.remove_handlers(self.log, self.log_handlers)
@@ -96,7 +97,7 @@ class hash():
     def clean(self):
         metadata_db_fn = self.get_metadata_db_fn()
         #print metadata_db_fn
-        db = sqlite.sqlite(metadata_db_fn)
+        db = sqlite.sqlite(metadata_db_fn, self.get_log_file_path)
         db.clean()
         db.close()
 
@@ -129,7 +130,7 @@ class hash():
             os.mkdir(db_dir)
 
         #print db_path
-        self.db = sqlite.sqlite(db_path)
+        self.db = sqlite.sqlite(db_path, self.get_log_file_path)
         self.db.connect_to_table(self.HASH_TABLE_NAME)
         if not self.db.exists():
             self.db.add_col_text(self.ABS_PATH_STRING)

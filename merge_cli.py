@@ -7,13 +7,14 @@ import logger
 import merge
 
 class merge_cli():
-    def __init__(self):
+    def __init__(self, get_log_file_path = logger.get_log_file_path):
         self.NAME = "merge_cli"
+        self.get_log_file_path = get_log_file_path
         self.log = logging.getLogger(self.NAME)
-        logger.setup(self.log)
+        logger.setup(self.log, self.get_log_file_path)
 
     def parse_args(self):
-        usage_example = "example: " + os.path.split(sys.argv[0])[-1] + " -v -m m -s my_source -d my_dest"
+        usage_example = "example: " + os.path.split(sys.argv[0])[-1] + " -s my_source -d my_dest"
         parser = argparse.ArgumentParser(epilog=usage_example)
         parser.add_argument("-s", "--source", required=True, help="path to source directory/folder")
         parser.add_argument("-d", "--dest", default = None, help="path to destination directory/folder")
@@ -36,7 +37,7 @@ class merge_cli():
     def run(self):
         lm = merge.merge(self.source, self.out_file_path , self.dest, verbose=self.verbose,
                                      metadata_root_override = self.metadata_path,
-                                     mode = self.mode)
+                                     mode = self.mode, get_log_file_path = self.get_log_file_path)
         lm.run()
 
 if __name__ == "__main__":

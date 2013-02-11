@@ -3,12 +3,14 @@ import tempfile
 import unittest
 import logging
 import logger
+import os
 import sqlite
+import test_latus
 
 class TestSQLite(unittest.TestCase):
     def setUp(self):
         self.log = logging.getLogger(__name__)
-        self.handlers = logger.setup(self.log)
+        self.handlers = logger.setup(self.log, test_latus.get_log_file_path)
 
     def tearDown(self):
         logger.remove_handlers(self.log, self.handlers)
@@ -23,7 +25,7 @@ class TestSQLite(unittest.TestCase):
         self.last_name_key = 'last'
         self.last_name = 'abel'
 
-        self.db = sqlite.sqlite(db_name)
+        self.db = sqlite.sqlite(db_name, test_latus.get_log_file_path)
         self.db.add_col_text(self.key_string, True, True)
         self.db.add_col_text(self.value_string, True, True)
         self.db.add_col_auto_index()
