@@ -18,8 +18,8 @@ class merge_cli():
         parser = argparse.ArgumentParser(epilog=usage_example)
         parser.add_argument("-s", "--source", required=True, help="path to source directory/folder")
         parser.add_argument("-d", "--dest", default = None, help="path to destination directory/folder")
-        parser.add_argument("-m", "--mode", nargs=1, default = 'm', choices='cm', help="copy or move")
-        parser.add_argument("-o", "--outfile", required=True, help="output file path")
+        parser.add_argument("-m", "--mode", nargs=1, default = 'm', choices='acm', help="analyze, copy or move")
+        parser.add_argument("-o", "--outfile", help="output file path")
         parser.add_argument("-t", "--test", nargs=1, help="special test parameters (metadata path)", default = None)
         parser.add_argument("-v", "--verbose", help="print informational messages", action="store_true")
 

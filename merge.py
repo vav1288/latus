@@ -5,6 +5,7 @@ import copy
 import os
 import sys
 import platform
+import collections
 import pywintypes
 import win32api, win32con
 import msvcrt
@@ -13,13 +14,17 @@ import logger
 import hash
 
 EXISTS_EXACT, EXISTS_ELSEWHERE, EXISTS_CONFLICT, DOES_NOT_EXIST = tuple(range(4))
-MODE_COPY, MODE_MOVE = tuple(range(2))
+MODE_UNDEFINED, MODE_ANALYZE, MODE_COPY, MODE_MOVE = tuple(range(4))
 
 def str_to_mode(str):
-    mode = MODE_MOVE
+    mode = MODE_UNDEFINED
     c = str[0].lower()
     if c == 'c':
         mode = MODE_COPY
+    elif c == 'm':
+        mode = MODE_MOVE
+    elif c == 'a':
+        mode = MODE_ANALYZE
     return mode
 
 def mode_to_str(mode):
@@ -28,6 +33,8 @@ def mode_to_str(mode):
         str = "move"
     elif mode == MODE_COPY:
         str = "copy"
+    elif mode == MODE_ANALYZE:
+        str = "analyze"
     return str
 
 def search_result_to_str(search_result):
@@ -45,7 +52,7 @@ def search_result_to_str(search_result):
     return str
 
 class merge:
-    def __init__(self, source_root, out_file_path, dest_root = None, verbose = False, metadata_root_override = None, mode = MODE_MOVE, get_log_file_path = logger.get_log_file_path):
+    def __init__(self, source_root, out_file_path = None, dest_root = None, verbose = False, metadata_root_override = None, mode = MODE_MOVE, get_log_file_path = logger.get_log_file_path):
         self.log = logging.getLogger(__name__)
         self.get_log_file_path = get_log_file_path
         self.log_handlers = logger.setup(self.log, self.get_log_file_path)
@@ -56,6 +63,7 @@ class merge:
 
         self.dest_root = dest_root
         self.source_root = source_root
+        self.out_file = None
         self.out_file_path = out_file_path
 
         if self.out_file_path is not None:
@@ -71,10 +79,10 @@ class merge:
 
         if metadata_root_override is not None:
             self.metadata_path = metadata_root_override
-            if self.verbose:
-                print "metadata_path :", self.metadata_path
 
         self.hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
+        if self.verbose:
+            print "metadata_path :", self.hash_obj.get_metadata_db_fn()
 
     def __iter__(self):
         return self.next()
@@ -176,21 +184,45 @@ class merge:
         if self.verbose:
             print "Scanning complete"
 
+    def analyze(self, p):
+        # first, make sure the database is up to date
+        self.scan(p)
+        hash_counts = collections.defaultdict(int)
+        hash_obj = hash.hash()
+        # the iterator uses self.source_root (not sure if I like this or not, but not sure what else to do)
+        for p in self:
+            hash_val, cache_flag = hash_obj.get_hash(p)
+            hash_counts[hash_val] += 1
+        for h in collections.Counter(hash_counts):
+            paths = hash_obj.get_paths_from_hash(h)
+            if paths is not None:
+                # todo : figure out how paths can be None
+                if len(paths) > 1:
+                    print len(paths)
+                    for p in paths:
+                        print p
+
     def run(self):
         if self.verbose:
-            self.out_file.write("REM " + __name__ + "\n")
-            self.out_file.write("REM source " + self.source_root + "\n")
-            if self.dest_root is not None:
-                self.out_file.write("REM dest " + self.dest_root + "\n")
+            if self.out_file is not None:
+                self.out_file.write("REM " + __name__ + "\n")
+                self.out_file.write("REM source " + self.source_root + "\n")
+                if self.dest_root is not None:
+                    self.out_file.write("REM dest " + self.dest_root + "\n")
         if not os.path.exists(self.source_root):
             print "Source does not exist :", self.source_root
             print "Exiting"
             return False
-        if self.dest_root is None:
-            if self.verbose:
-                print "No dest given - doing a scan on source only"
-            self.scan(self.source_root)
+        if self.dest_root is not None:
+            if not os.path.exists(self.source_root):
+                print "Source does not exist :", self.source_root
+                print "Exiting"
+                return False
+
+        if self.mode is MODE_ANALYZE:
+            self.analyze(self.source_root)
         else:
+            # move or copy
             self.scan(self.dest_root)
             for path in self:
                 self.merge_file(path)
@@ -205,5 +237,7 @@ class merge:
         hash_obj.clean()
 
 if __name__ == "__main__":
+    #m = merge(".", verbose=True, mode=MODE_ANALYZE)
+    #m.run()
     print "Do not use this program directly."
     print "Use merge_cli."
