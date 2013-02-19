@@ -22,5 +22,7 @@ def test_logger():
     log_handlers['file'].setLevel(logging.WARNING)
     print_all_levels(log, "console debugging")
 
+    logger.remove_handlers(log, log_handlers)
+
 if __name__ == '__main__':
     test_logger()

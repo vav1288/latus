@@ -18,13 +18,14 @@ class sqlite():
         self.db_path = db_path # full path to db file
         self.conn = None
         self.cur = None
+        self.last_command = None
 
     def __del__(self):
         if self.conn is not None:
-            self.log.warning("conn not closed %s", self.db_path)
+            self.log.warning("conn not closed, db : %s, last_command : %s", self.db_path, self.last_command)
             self.close()
         if self.cur is not None:
-            self.log.warning("cur not closed %s", self.db_path)
+            self.log.warning("cur not closed, db : %s, last_command : %s", self.db_path, self.last_command)
             self.close()
 
     def set_cols(self, cols):
@@ -203,6 +204,7 @@ class sqlite():
     def exec_db(self, command, commit_flag = True):
         # for some reason, the database can just disappear for short periods of time
         # so this code tolerates this disappearance
+        self.last_command = command # for debug
         #print command
         Done = False
         TryCount = 0

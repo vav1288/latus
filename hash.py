@@ -38,6 +38,7 @@ class hash():
     # todo: clean up these 'return's
     def get_hash(self, path):
         if not os.path.exists(path):
+            self.log.error("path does not exist," + path)
             return None, None
         # don't allow the calculation or caching of metadata hashes
         if self.is_metadata_root(os.path.split(path)[0]):
@@ -51,7 +52,9 @@ class hash():
         # Trick to get around 260 char limit
         # http://msdn.microsoft.com/en-us/library/aa365247.aspx#maxpath
         try:
+            # todo : wrap this up in a function
             abs_path = u"\\\\?\\" + os.path.abspath(path)
+            abs_path = os.path.abspath(path)
             mtime = os.path.getmtime(path)
             size = os.path.getsize(path)
         except UnicodeDecodeError, details:
@@ -157,6 +160,7 @@ class hash():
         file_hash = hashlib.sha512()
         # it's a lot faster taking a buffer at a time vs 1 byte at a time (2 orders of magnitude faster)
         bucket_size = 4096 # just a guess ...
+        f = None
         try:
             f = open(path, "rb")
             val = f.read(bucket_size)
@@ -165,9 +169,13 @@ class hash():
                 val = f.read(bucket_size)
             sha512_val = file_hash.hexdigest()
             f.close()
+            f = None
         except IOError, details:
             self.log.error(str(details) + "," + path)
             sha512_val = None
+        if f is not None:
+            f.close()
+            f = None
 
         #elapsed_time = time.time() - start_time
         #print ("calc_hash," + path + "," + str(elapsed_time))

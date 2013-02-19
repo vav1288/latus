@@ -84,6 +84,12 @@ class merge:
         if self.verbose:
             print "metadata_path :", self.hash_obj.get_metadata_db_fn()
 
+    def __del__(self):
+        if self.out_file is not None:
+            self.log.warning("did not close out_file : " + self.out_file_path)
+            self.out_file.close()
+            self.out_file = None
+
     def __iter__(self):
         return self.next()
 
@@ -184,14 +190,19 @@ class merge:
         if self.verbose:
             print "Scanning complete"
 
-    def analyze(self, p):
+    # note that this "analyze" is different from "analyze_file" ... modify names?
+    def analyze(self):
+        if self.verbose:
+            print "analyze :", self.source_root
         # first, make sure the database is up to date
-        self.scan(p)
+        self.scan(self.source_root)
         hash_counts = collections.defaultdict(int)
         hash_obj = hash.hash()
         # the iterator uses self.source_root (not sure if I like this or not, but not sure what else to do)
-        for p in self:
-            hash_val, cache_flag = hash_obj.get_hash(p)
+        for file_path in self:
+            hash_val, cache_flag = hash_obj.get_hash(os.path.join(self.source_root, file_path))
+            if hash_val is None:
+                self.log.error("%s %s", file_path, hash_val)
             hash_counts[hash_val] += 1
         for h in collections.Counter(hash_counts):
             paths = hash_obj.get_paths_from_hash(h)
@@ -220,7 +231,7 @@ class merge:
                 return False
 
         if self.mode is MODE_ANALYZE:
-            self.analyze(self.source_root)
+            self.analyze()
         else:
             # move or copy
             self.scan(self.dest_root)
@@ -237,7 +248,7 @@ class merge:
         hash_obj.clean()
 
 if __name__ == "__main__":
-    #m = merge(".", verbose=True, mode=MODE_ANALYZE)
-    #m.run()
+    m = merge(".", verbose=True, mode=MODE_ANALYZE)
+    m.run()
     print "Do not use this program directly."
     print "Use merge_cli."
