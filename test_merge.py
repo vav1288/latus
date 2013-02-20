@@ -15,7 +15,6 @@ class test_merge(unittest.TestCase):
         self.m.clean() # start with a fresh database
         # Load up the database with file info.  Generally this is run in run(), but since we're
         # doing one file at at file for some of these tests we need to do this separately.
-        self.m.scan(test_latus.get_simple_root())
 
     def tearDown(self):
         del self.m
@@ -24,7 +23,7 @@ class test_merge(unittest.TestCase):
     def create_merge_object(self, dest_root = None, src_root = None):
         if src_root is None:
             src_root = self.src_root
-        self.m = merge.merge(src_root, self.out_file_path, dest_root, True, test_latus.get_root(), get_log_file_path = test_latus.get_log_file_path)
+        self.m = merge.merge(src_root, self.out_file_path, dest_root, True, test_latus.get_root())
 
     # a single file
     def test_single_file_does_not_exist(self):
@@ -49,17 +48,14 @@ class test_merge(unittest.TestCase):
 
     def test_unicode_filename(self):
         self.create_merge_object(None, test_latus.get_unicode_root())
-        self.m.scan(test_latus.get_unicode_root())
+        self.m.analyze()
 
     def test_analyze(self):
         self.create_merge_object(src_root = test_latus.get_root())
         self.m.analyze()
         h = hash.hash()
         for file_path in test_latus.get_unicode_file_paths(test_latus.get_unicode_root()):
-            # todo : I don't like to have to do the abspath to get this to work ... figure out how to remove it
-            abs_path = os.path.abspath(file_path)[2:]
-            hash_val, cache_flag = h.get_hash(abs_path)
-            print abs_path, hash_val, cache_flag
+            hash_val, cache_flag = h.get_hash(file_path)
             assert(hash_val is not None)
 
     def test_run(self):

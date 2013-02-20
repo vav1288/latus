@@ -12,17 +12,14 @@ import test_latus
 class TestHash(unittest.TestCase):
     def setUp(self):
         test_latus.write_files() # make sure this is first, since log files will go here
-        self.log = logging.getLogger(__name__)
-        self.handlers = logger.setup(self.log, test_latus.get_log_file_path)
+        self.log = logger.get_log()
+        #self.handlers = logger.setup(test_latus.get_log_file_path)
         # sha512 of "a"
         self.correct_hash_val = "1f40fc92da241694750979ee6cf582f2d5d7d28e18335de05abc54d0560e0f5302860c652bf08d560252aa5e74210546f369fbbbce8c12cfc7957b2652fe9a75"
         self.root = test_latus.get_root()
-        self.hash = hash.hash(self.root, test_latus.get_log_file_path)
+        self.hash = hash.hash(self.root)
         self.static_test_file_path = os.path.join(self.root, "simple", "src", "a.txt")
         self.dynamic_test_file_path = os.path.join(self.root, "simple", "dest_exists_under_different_name", "a_but_different_name.txt")
-
-    def tearDown(self):
-        logger.remove_handlers(self.log, self.handlers)
 
     # clean
     def test_a_clean(self):

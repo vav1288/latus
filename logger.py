@@ -2,6 +2,7 @@
 import sys
 import logging
 import logging.handlers
+import const
 
 """ General logging capability.
 
@@ -17,14 +18,15 @@ http://en.wikipedia.org/wiki/Log4j
 # which is currently sys.stderr.
 #
 
-# this is usually used as a default
-def get_log_file_path():
-    return "latus.log"
+def get_log():
+    return logging.getLogger(const.NAME)
 
-def setup(log, get_log_file_path = get_log_file_path, max_bytes = 1000000, stream_out = sys.stdout):
+def setup(log_file_path = const.LOG_FILE, max_bytes = 1000000, stream_out = sys.stdout):
     # note that (message) is not pre-quoted, in case there are multiple fields
     format_string = '"%(asctime)s","%(name)s","%(levelname)s","module","%(module)s","line","%(lineno)d",%(message)s'
     handlers = {}
+
+    log = get_log()
 
     # create console handler
     console_handler = logging.StreamHandler(stream_out)
@@ -34,7 +36,7 @@ def setup(log, get_log_file_path = get_log_file_path, max_bytes = 1000000, strea
     handlers['console'] = console_handler
 
     # create file handler
-    file_handler = logging.handlers.RotatingFileHandler(get_log_file_path(), maxBytes=max_bytes)
+    file_handler = logging.handlers.RotatingFileHandler(log_file_path, maxBytes=max_bytes)
     file_formatter = logging.Formatter(format_string)
     file_handler.setFormatter(file_formatter)
     log.addHandler(file_handler)
@@ -42,6 +44,6 @@ def setup(log, get_log_file_path = get_log_file_path, max_bytes = 1000000, strea
 
     return handlers
 
-def remove_handlers(log, handlers):
+def remove_handlers(handlers):
     for handler in handlers:
-        log.removeHandler(handler)
+        get_log().removeHandler(handler)

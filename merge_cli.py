@@ -7,11 +7,9 @@ import logger
 import merge
 
 class merge_cli():
-    def __init__(self, get_log_file_path = logger.get_log_file_path):
-        self.NAME = "merge_cli"
-        self.get_log_file_path = get_log_file_path
-        self.log = logging.getLogger(self.NAME)
-        logger.setup(self.log, self.get_log_file_path)
+    def __init__(self):
+        #self.NAME = "merge_cli"
+        self.log = logger.get_log()
 
     def parse_args(self):
         usage_example = "example: " + os.path.split(sys.argv[0])[-1] + " -s my_source -d my_dest"
@@ -37,12 +35,13 @@ class merge_cli():
     def run(self):
         lm = merge.merge(self.source, self.out_file_path , self.dest, verbose=self.verbose,
                                      metadata_root_override = self.metadata_path,
-                                     mode = self.mode, get_log_file_path = self.get_log_file_path)
+                                     mode = self.mode)
         lm.run()
 
 if __name__ == "__main__":
     lm_cli = merge_cli()
     lm_cli.parse_args()
+    logger.setup()
     if lm_cli.verbose:
         lm_cli.log.setLevel(logging.INFO)
     lm_cli.run()

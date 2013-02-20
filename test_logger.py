@@ -1,5 +1,4 @@
 
-import os
 import test_latus
 import logging
 import logger
@@ -11,9 +10,8 @@ def print_all_levels(log, msg = ""):
     log.debug('"debug test message %s"', msg)
 
 def test_logger():
-    name = 'logger'
-    log = logging.getLogger(name)
-    log_handlers = logger.setup(log, test_latus.get_log_file_path)
+    log = logger.get_log()
+    log_handlers = logger.setup(test_latus.get_log_file_path())
 
     print_all_levels(log, "default")
 
@@ -22,7 +20,7 @@ def test_logger():
     log_handlers['file'].setLevel(logging.WARNING)
     print_all_levels(log, "console debugging")
 
-    logger.remove_handlers(log, log_handlers)
+    logger.remove_handlers(log_handlers)
 
 if __name__ == '__main__':
     test_logger()

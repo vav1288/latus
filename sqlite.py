@@ -9,9 +9,8 @@ import logger
 class sqlite():
     """ A layer on top of Python's SQLite capability.
     """
-    def __init__(self, db_path, get_log_file_path = logger.get_log_file_path):
-        self.log = logging.getLogger(__name__)
-        self.handlers = logger.setup(self.log, get_log_file_path)
+    def __init__(self, db_path):
+        self.log = logger.get_log()
         self.type = {}
         self.cols_order = []
         self.ExecCount = 0 # of pending execs

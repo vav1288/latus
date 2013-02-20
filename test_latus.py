@@ -2,6 +2,7 @@
 # latus-wide testing routines
 
 import os
+import const
 
 SRC = u"src"
 DEST_EMPTY = u"dest_empty"
@@ -20,7 +21,7 @@ def get_simple_root():
 
 # use this instead of logger.py's get_log_file_path() so the log file is put in the proper place for testing
 def get_log_file_path():
-    return os.path.join(get_root(), __name__  + u".log")
+    return os.path.join(get_root(), const.LOG_FILE)
 
 # note that this makes the required dirs if necessary
 def write_to_file(p, contents):
@@ -50,8 +51,8 @@ def get_unicode_file_paths(root_dir):
     paths = []
     space = 32 # ' '
     length = 64
-    max =  4096 - space # fairly arbitrary max - perhaps this should be a different value?
-    for start in range(space, max, length):
+    max_code =  4096 - space # fairly arbitrary max - perhaps this should be a different value?
+    for start in range(space, max_code, length):
         # start and end with something always valid
         file_name = u'A' + make_unicode_string(start, length) + u'.txt'
         paths.append(os.path.join(root_dir, file_name))

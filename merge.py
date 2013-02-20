@@ -52,10 +52,8 @@ def search_result_to_str(search_result):
     return str
 
 class merge:
-    def __init__(self, source_root, out_file_path = None, dest_root = None, verbose = False, metadata_root_override = None, mode = MODE_MOVE, get_log_file_path = logger.get_log_file_path):
-        self.log = logging.getLogger(__name__)
-        self.get_log_file_path = get_log_file_path
-        self.log_handlers = logger.setup(self.log, self.get_log_file_path)
+    def __init__(self, source_root, out_file_path = None, dest_root = None, verbose = False, metadata_root_override = None, mode = MODE_MOVE):
+        self.log = logger.get_log()
 
         self.mode = mode
         self.verbose = verbose
@@ -80,9 +78,14 @@ class merge:
         if metadata_root_override is not None:
             self.metadata_path = metadata_root_override
 
-        self.hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
+        self.hash_obj = hash.hash(self.metadata_path)
         if self.verbose:
             print "metadata_path :", self.hash_obj.get_metadata_db_fn()
+
+        # seems like this is a bad place for this ... a lot of processing in __init__
+        if self.dest_root is not None:
+            if os.path.exists(self.dest_root):
+                self.scan(self.dest_root)
 
     def __del__(self):
         if self.out_file is not None:
@@ -119,8 +122,8 @@ class merge:
         result = None
         found_paths = None
         dest_path = os.path.join(self.dest_root, path)
-        src_hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
-        dest_hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
+        src_hash_obj = hash.hash(self.metadata_path)
+        dest_hash_obj = hash.hash(self.metadata_path)
         dest_dir_abs_path_no_drive = os.path.abspath(self.dest_root)[2:]
         attrib = 0
         try:
@@ -137,7 +140,10 @@ class merge:
         # todo: make this check an option
         if not (attrib & win32con.FILE_ATTRIBUTE_HIDDEN or attrib & win32con.FILE_ATTRIBUTE_SYSTEM):
             source_hash, source_cache_flag = src_hash_obj.get_hash(source_path)
-            dest_hash, dest_cache_flag = dest_hash_obj.get_hash(dest_path)
+            if os.path.exists(dest_path):
+                dest_hash, dest_cache_flag = dest_hash_obj.get_hash(dest_path)
+            else:
+                dest_hash = None
             if source_hash == dest_hash:
                 result = EXISTS_EXACT
                 found_paths = dest_path
@@ -165,7 +171,7 @@ class merge:
         return result, found_paths
 
     # Merge a file.
-    # file_path is the path inside the src or dest (the 'right side' of the path, removing the source root)
+    # file_path is the path inside the src or dest (the 'right side' of the path, i.e. without the root)
     def merge_file(self, file_path):
         search_result, search_paths = self.analyze_file(file_path)
         if self.dest_root is not None:
@@ -181,9 +187,13 @@ class merge:
     def scan(self, root_dir):
         if self.verbose:
             print "Scanning :", root_dir
-        hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
+        hash_obj = hash.hash(self.metadata_path)
         for dirpath, dirnames, filenames in os.walk(root_dir):
             for name in filenames:
+                metadata_dir_name = self.hash_obj.get_metadata_dir_name()
+                if metadata_dir_name in dirnames:
+                    # don't visit metadata directories (see os.walk docs - this is a little tricky)
+                    dirnames.remove(metadata_dir_name)
                 path = os.path.join(dirpath, name)
                 source_hash, source_cache_flag = hash_obj.get_hash(path)
                 # print source_hash, source_cache_flag
@@ -194,16 +204,16 @@ class merge:
     def analyze(self):
         if self.verbose:
             print "analyze :", self.source_root
-        # first, make sure the database is up to date
-        self.scan(self.source_root)
+        if self.dest_root is not None:
+            self.scan(self.dest_root)
         hash_counts = collections.defaultdict(int)
         hash_obj = hash.hash()
         # the iterator uses self.source_root (not sure if I like this or not, but not sure what else to do)
         for file_path in self:
-            hash_val, cache_flag = hash_obj.get_hash(os.path.join(self.source_root, file_path))
-            if hash_val is None:
-                self.log.error("%s %s", file_path, hash_val)
-            hash_counts[hash_val] += 1
+            src_hash_val, src_cache_flag = hash_obj.get_hash(os.path.join(self.source_root, file_path))
+            if src_hash_val is None:
+                self.log.error("%s %s", file_path, src_hash_val)
+            hash_counts[src_hash_val] += 1
         for h in collections.Counter(hash_counts):
             paths = hash_obj.get_paths_from_hash(h)
             if paths is not None:
@@ -234,7 +244,6 @@ class merge:
             self.analyze()
         else:
             # move or copy
-            self.scan(self.dest_root)
             for path in self:
                 self.merge_file(path)
 
@@ -244,7 +253,7 @@ class merge:
             self.out_file = None
 
     def clean(self):
-        hash_obj = hash.hash(self.metadata_path, self.get_log_file_path)
+        hash_obj = hash.hash(self.metadata_path)
         hash_obj.clean()
 
 if __name__ == "__main__":
