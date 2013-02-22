@@ -29,22 +29,22 @@ class test_merge(unittest.TestCase):
     def test_single_file_does_not_exist(self):
         self.create_merge_object(os.path.join(test_latus.get_simple_root(), test_latus.DEST_EMPTY))
         search_result, search_paths = self.m.merge_file(self.a_file)
-        assert(search_result == merge.DOES_NOT_EXIST)
+        self.assertEqual(search_result, merge.DOES_NOT_EXIST)
 
     def test_single_file_exists_exact(self):
         self.create_merge_object(os.path.join(test_latus.get_simple_root(), test_latus.DEST_EXISTS_EXACT))
         search_result, search_paths = self.m.merge_file(self.a_file)
-        assert(search_result == merge.EXISTS_EXACT)
+        self.assertEqual(search_result, merge.EXISTS_EXACT)
 
     def test_single_file_exists_different(self):
         self.create_merge_object(os.path.join(test_latus.get_simple_root(), test_latus.DEST_EXISTS_DIFFERENT))
         search_result, search_paths = self.m.merge_file(self.a_file)
-        assert(search_result == merge.EXISTS_CONFLICT)
+        self.assertEqual(search_result, merge.EXISTS_CONFLICT)
 
     def test_single_file_exists(self):
         self.create_merge_object(os.path.join(test_latus.get_simple_root(), test_latus.DEST_EXISTS_UNDER_DIFFERENT_NAME))
         search_result, search_paths = self.m.merge_file(self.a_file)
-        assert(search_result == merge.EXISTS_ELSEWHERE)
+        self.assertEqual(search_result, merge.EXISTS_ELSEWHERE)
 
     def test_unicode_filename(self):
         self.create_merge_object(None, test_latus.get_unicode_root())
@@ -56,7 +56,7 @@ class test_merge(unittest.TestCase):
         h = hash.hash()
         for file_path in test_latus.get_unicode_file_paths(test_latus.get_unicode_root()):
             hash_val, cache_flag = h.get_hash(file_path)
-            assert(hash_val is not None)
+            self.assertNotEqual(hash_val, None)
 
     def test_run(self):
         self.create_merge_object(os.path.join(test_latus.get_simple_root(), "dest_empty"), test_latus.get_simple_root())

@@ -29,7 +29,7 @@ class TestHash(unittest.TestCase):
     def test_b_new_table_entry(self):
         hash_val, cache_flag = self.hash.get_hash(self.static_test_file_path)
         #print "b", hash_val, cache_flag
-        self.assertTrue(hash_val == self.correct_hash_val)
+        self.assertEqual(hash_val, self.correct_hash_val)
         self.assertTrue(cache_flag is False)
 
     # lookup hash in table
@@ -38,14 +38,14 @@ class TestHash(unittest.TestCase):
         self.hash.get_hash(self.static_test_file_path)
         hash_val, cache_flag = self.hash.get_hash(self.static_test_file_path)
         #print "c", hash_val, cache_flag
-        self.assertTrue(hash_val == self.correct_hash_val)
+        self.assertEqual(hash_val, self.correct_hash_val)
         self.assertTrue(cache_flag is True)
 
     # lookup file via hash
     def test_d_lookup_file_via_hash(self):
         paths = self.hash.get_paths_from_hash(self.correct_hash_val)
         #print paths[0]
-        self.assertTrue(os.path.abspath(paths[0]) == os.path.abspath(self.static_test_file_path))
+        self.assertEqual(os.path.abspath(paths[0]), os.path.abspath(self.static_test_file_path))
 
     # update table
     def test_e_update_table(self):
@@ -62,4 +62,4 @@ class TestHash(unittest.TestCase):
         new_hash_val, new_cache_flag = self.hash.get_hash(self.dynamic_test_file_path)
         #print new_hash_val, new_cache_flag
         self.assertTrue(cache_flag is False)
-        self.assertTrue(hash_val != new_hash_val)
+        self.assertNotEqual(hash_val, new_hash_val)

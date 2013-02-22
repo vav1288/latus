@@ -1,5 +1,4 @@
 
-import traceback
 import hashlib
 import os
 import const
@@ -19,8 +18,6 @@ class hash():
     """
 
     def __init__(self, metadata_root_override = None):
-        self.SUITE_NAME = const.NAME
-        self.METADATA_DIR_NAME = "." + self.SUITE_NAME
         self.DB_NAME = "lfs" # local file system
         self.HASH_TABLE_NAME = "hash"
         self.ABS_PATH_STRING = "abspath"
@@ -114,10 +111,7 @@ class hash():
         return metadata_root
 
     def get_metadata_dir_path(self, path):
-        return os.path.join(self.get_metadata_root(path), self.METADATA_DIR_NAME)
-
-    def get_metadata_dir_name(self):
-        return self.METADATA_DIR_NAME
+        return os.path.join(self.get_metadata_root(path), const.METADATA_DIR_NAME)
 
     # from a target file, determine the metadata sqlite filename
     def get_metadata_db_fn(self, path = None):
