@@ -1,0 +1,14 @@
+#
+# the usual things to not put in the repo
+temp/
+repo_ignore/
+*.log
+#
+# from PyCharm
+.idea
+#
+# test files are programmatically generated
+test/
+#
+# compiled files
+*.pyc
