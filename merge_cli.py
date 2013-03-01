@@ -37,6 +37,7 @@ class merge_cli():
                                      metadata_root_override = self.metadata_path,
                                      mode = self.mode)
         lm.run()
+        lm.close()
 
 if __name__ == "__main__":
     lm_cli = merge_cli()

@@ -63,3 +63,6 @@ class test_merge(unittest.TestCase):
         self.m.run()
         # todo: what do I test for?
 
+#if __name__ == "__main__":
+#    unittest.main()
+

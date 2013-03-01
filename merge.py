@@ -80,6 +80,10 @@ class merge:
         if self.verbose:
             print "metadata_path :", self.hash_obj.get_metadata_db_fn()
 
+        if self.dest_root is not None:
+            scan_dest = scan.scan(self.dest_root, self.metadata_path)
+            scan_dest.run()
+
     def __del__(self):
         if self.out_file is not None:
             self.log.warning("did not close out_file : " + self.out_file_path)
@@ -87,13 +91,14 @@ class merge:
             self.out_file = None
 
     def compare(self, partial_path):
-        result = None
         found_paths = None
+        dest_hash = None
         source_path = os.path.join(self.source_root, partial_path)
         dest_path = os.path.join(self.dest_root, partial_path)
         dest_hash_obj = hash.hash(self.metadata_path)
         source_hash, src_cache = self.hash_obj.get_hash(source_path)
-        dest_hash, dest_cache = self.hash_obj.get_hash(dest_path)
+        if os.path.exists(dest_path):
+            dest_hash, dest_cache = self.hash_obj.get_hash(dest_path)
         if source_hash == dest_hash:
             result = EXISTS_EXACT
             found_paths = dest_path
@@ -105,16 +110,9 @@ class merge:
                 # Doesn't exist at dest, but first see if it exists anywhere
                 # in order to avoid making redundant copies.
                 found_paths = None
-                paths_from_hash = dest_hash_obj.get_paths_from_hash(source_hash, os.path.splitdrive(os.path.abspath(self.dest_root))[1])
-                # remove the 'source' entry in the list as well as any others that are outside of dest
-                if paths_from_hash is not None:
-                    for single_path_from_hash in copy.copy(paths_from_hash):
-                        dest_dir_abs_path_no_drive = os.path.abspath(dest_path)[:2]
-                        if single_path_from_hash.find(dest_dir_abs_path_no_drive) != 0:
-                            paths_from_hash.remove(single_path_from_hash)
-                    if len(paths_from_hash) > 0:
-                        found_paths = paths_from_hash
-                if found_paths is None:
+                dest_hash_root = os.path.splitdrive(os.path.abspath(self.dest_root))[1]
+                paths_from_hash = dest_hash_obj.get_paths_from_hash(source_hash, dest_hash_root)
+                if paths_from_hash is None:
                     result = DOES_NOT_EXIST
                 else:
                     result = EXISTS_ELSEWHERE
@@ -124,38 +122,20 @@ class merge:
     # file_path is the path inside the src or dest (the 'right side' of the path, i.e. without the root)
     def merge_file(self, file_path):
         search_result, search_paths = self.compare(file_path)
-        if self.dest_root is not None:
-            # if there is no dest_path, then we are merely indexing
-            # todo: does it make sense to separate out the indexing capability from the merging?  It seems confusing for them to be 'one thing'.
-            if search_result == DOES_NOT_EXIST:
-                self.out_file.write(mode_to_str(self.mode) + " " + os.path.join(self.source_root, file_path) + " " + os.path.join(self.dest_root, file_path) + "\n")
-            else:
-                self.out_file.write("REM " + search_result_to_str(search_result) + " " + os.path.join(self.source_root, file_path) + " " + os.path.join(self.dest_root, file_path) + "\n")
+        # if there is no dest_path, then we are merely indexing
+        # todo: does it make sense to separate out the indexing capability from the merging?  It seems confusing for them to be 'one thing'.
+        if search_result == DOES_NOT_EXIST:
+            self.out_file.write(mode_to_str(self.mode) + " " + os.path.join(self.source_root, file_path) + " " + os.path.join(self.dest_root, file_path) + "\n")
+        else:
+            self.out_file.write("REM " + search_result_to_str(search_result) + " " + os.path.join(self.source_root, file_path) + " " + os.path.join(self.dest_root, file_path) + "\n")
         return search_result, search_paths
-
-    # Recursively scan a directory and write to the database
-    #def scan(self, root_dir):
-    #    if self.verbose:
-    #        print "Scanning :", root_dir
-    #    hash_obj = hash.hash(self.metadata_path)
-    #    for dirpath, dirnames, filenames in os.walk(root_dir):
-    #        for name in filenames:
-    #            metadata_dir_name = self.hash_obj.get_metadata_dir_name()
-    #            if metadata_dir_name in dirnames:
-    #                # don't visit metadata directories (see os.walk docs - this is a little tricky)
-    #                dirnames.remove(metadata_dir_name)
-    #            path = os.path.join(dirpath, name)
-    #            source_hash, source_cache_flag = hash_obj.get_hash(path)
-    #            # print source_hash, source_cache_flag
-    #    if self.verbose:
-    #        print "Scanning complete"
 
     # note that this "analyze" is different from "analyze" class ... modify names?
     def analyze(self):
         if self.verbose:
             print "analyze :", self.source_root
         # refresh the metadata
-        scan_source = scan.scan(self.source_root)
+        scan_source = scan.scan(self.source_root, self.metadata_path)
         scan_source.run()
         hash_counts = collections.defaultdict(int)
         # the iterator uses self.source_root (not sure if I like this or not, but not sure what else to do)
@@ -197,8 +177,6 @@ class merge:
             self.analyze()
         else:
             # move or copy
-            scan_dest = scan.scan(self.dest_root)
-            scan_dest.run()
             source_walker = walker.walker(self.source_root)
             for file_path in source_walker:
                 self.merge_file(file_path)
@@ -213,7 +191,7 @@ class merge:
         hash_obj.clean()
 
 if __name__ == "__main__":
-    m = merge(os.path.join("test", "simple"), verbose=True, mode=MODE_MOVE)
-    m.run()
+    #m = merge(os.path.join("test", "simple"), verbose=True, mode=MODE_MOVE)
+    #m.run()
     print "Do not use this program directly."
     print "Use merge_cli."

@@ -1,5 +1,6 @@
 #
 # the usual things to not put in the repo
+temp.*
 temp/
 repo_ignore/
 *.log

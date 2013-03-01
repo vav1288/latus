@@ -204,7 +204,7 @@ class sqlite():
         # for some reason, the database can just disappear for short periods of time
         # so this code tolerates this disappearance
         self.last_command = command # for debug
-        #print command
+        #print "exec_db command", command
         Done = False
         TryCount = 0
         MaxTries = 3
