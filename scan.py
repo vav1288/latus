@@ -8,12 +8,9 @@ import walker
 import logger
 
 class scan():
-    def __init__(self, root, metadata_root_override = None):
+    def __init__(self, root, metadata_root):
         self.root = root
-        self.metadata_path = None
-        if metadata_root_override is not None:
-            self.metadata_path = metadata_root_override
-        self.hash_obj = hash.hash(self.metadata_path)
+        self.metadata_root = metadata_root
 
     # Scan a single file.  This will update the metadata for this file.
     # Path is the partial path from the 'root' of the source (or dest).  i.e. that part to the 'right' of the root.
@@ -32,7 +29,8 @@ class scan():
         except UnicodeDecodeError, details:
             logger.get_log().error(str(details) + "," + abs_source_path)
         if not (attrib & attrib_mask):
-            hash_result, cache_result = self.hash_obj.get_hash(file_path)
+            hash_obj = hash.hash(self.metadata_root)
+            hash_result, cache_result = hash_obj.get_hash(file_path)
         #print file_path, hash_result, cache_result
         return hash_result, cache_result
 

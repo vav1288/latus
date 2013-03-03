@@ -53,7 +53,7 @@ class test_merge(unittest.TestCase):
     def test_analyze(self):
         self.create_merge_object(src_root = test_latus.get_root())
         self.m.analyze()
-        h = hash.hash()
+        h = hash.hash(test_latus.get_root())
         for file_path in test_latus.get_unicode_file_paths(test_latus.get_unicode_root()):
             hash_val, cache_flag = h.get_hash(file_path)
             self.assertNotEqual(hash_val, None)
@@ -63,6 +63,6 @@ class test_merge(unittest.TestCase):
         self.m.run()
         # todo: what do I test for?
 
-#if __name__ == "__main__":
-#    unittest.main()
+if __name__ == "__main__":
+    unittest.main()
 

@@ -8,7 +8,6 @@ import merge
 
 class merge_cli():
     def __init__(self):
-        #self.NAME = "merge_cli"
         self.log = logger.get_log()
 
     def parse_args(self):
@@ -23,9 +22,9 @@ class merge_cli():
 
         args = parser.parse_args()
         if args.test is None:
-            self.metadata_path = None
+            self.metadata_root_override = None
         else:
-            self.metadata_path = args.test[0]
+            self.metadata_root_override = args.test[0]
         self.verbose = args.verbose
         self.mode = merge.str_to_mode(args.mode)
         self.source = args.source
@@ -34,8 +33,8 @@ class merge_cli():
 
     def run(self):
         lm = merge.merge(self.source, self.out_file_path , self.dest, verbose=self.verbose,
-                                     metadata_root_override = self.metadata_path,
-                                     mode = self.mode)
+                         metadata_root_override = self.metadata_root_override,
+                         mode = self.mode)
         lm.run()
         lm.close()
 

@@ -1,9 +1,10 @@
 
 import hashlib
 import os
-import const
 import sqlite
 import logger
+import walker
+import metadata_location
 
 # todo: check the disk space where the cache resides and make sure we don't consume too much space
 #
@@ -17,37 +18,33 @@ class hash():
     Also maintains a hash cache to avoid unnecessary recalculations/
     """
 
-    def __init__(self, metadata_root_override = None):
-        self.DB_NAME = "lfs" # local file system
+    def __init__(self, metadata_root):
         self.HASH_TABLE_NAME = "hash"
         self.ABS_PATH_STRING = "abspath"
         self.MTIME_STRING = "mtime"
         self.SIZE_STRING = "size"
         self.SHA512_STRING = "sha512"
-        self.metadata_root_override = metadata_root_override
+        self.metadata_root = metadata_root
         self.log = logger.get_log()
 
-    # this is the main function to call
     # todo: clean up these 'return's
     def get_hash(self, path):
         if not os.path.exists(path):
             self.log.error("path does not exist," + path)
             return None, None
         # don't allow the calculation or caching of metadata hashes
-        if self.is_metadata_root(os.path.split(path)[0]):
+        if metadata_location.is_metadata_root(os.path.split(path)[0]):
             self.log.error("tried to get hash of metadata," + path)
             return None, None
 
-        self.init_db(self.get_metadata_db_fn(path))
+        self.init_db(metadata_location.get_metadata_db_fn(path))
         # use the absolute path, but w/o the drive specification in the hash table
         abs_path_no_drive = os.path.splitdrive(os.path.abspath(path))[1]
         #print "abs_path_no_drive", abs_path_no_drive
         # Trick to get around 260 char limit
         # http://msdn.microsoft.com/en-us/library/aa365247.aspx#maxpath
         try:
-            # todo : wrap this up in a function
-            abs_path = u"\\\\?\\" + os.path.abspath(path)
-            abs_path = os.path.abspath(path)
+            abs_path = walker.get_long_abs_path(path)
             mtime = os.path.getmtime(path)
             size = os.path.getsize(path)
         except UnicodeDecodeError, details:
@@ -71,11 +68,10 @@ class hash():
             got_from_cache = False
         self.db.close()
         ret = (hash, got_from_cache)
-        #print "__get_hash_debug__", self.get_metadata_db_fn(), abs_path_no_drive, hash, got_from_cache
         return ret
 
     def get_paths_from_hash(self, hash, root = None):
-        self.init_db(self.get_metadata_db_fn())
+        self.init_db(metadata_location.get_metadata_db_fn())
         path_desc = {}
         operators = {}
         path_desc[self.SHA512_STRING] = hash
@@ -91,31 +87,11 @@ class hash():
     # mainly for testing purposes
     # relies on the 'user' of this class to provide their own get_metadata_root()
     def clean(self):
-        metadata_db_fn = self.get_metadata_db_fn()
+        metadata_db_fn = metadata_location.get_metadata_db_fn()
         #print metadata_db_fn
         db = sqlite.sqlite(metadata_db_fn)
         db.clean()
         db.close()
-
-    # use this to avoid copying metadata when doing a merge
-    def is_metadata_root(self, path):
-        return path == self.get_metadata_dir_path(path)
-
-    def get_metadata_root(self, path):
-        if self.metadata_root_override:
-            metadata_root = self.metadata_root_override
-        else:
-            metadata_root = os.path.abspath(path)
-            while os.path.split(metadata_root)[1]:
-                metadata_root = os.path.split(metadata_root)[0]
-        return metadata_root
-
-    def get_metadata_dir_path(self, path):
-        return os.path.join(self.get_metadata_root(path), const.METADATA_DIR_NAME)
-
-    # from a target file, determine the metadata sqlite filename
-    def get_metadata_db_fn(self, path = None):
-        return os.path.join(self.get_metadata_dir_path(path), self.DB_NAME + ".db")
 
     def init_db(self, db_path):
         db_dir = os.path.split(db_path)[0]

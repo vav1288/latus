@@ -10,7 +10,7 @@ class test_merge_cli(unittest.TestCase):
         self.lm_cli = merge_cli.merge_cli()
         self.lm_cli.verbose = True
         root = os.path.join(test_latus.get_root(), "simple")
-        self.lm_cli.metadata_path = root
+        self.lm_cli.metadata_root_override = root
         self.lm_cli.source = os.path.join(root, "src")
         self.lm_cli.dest = os.path.join(root, "dest_temp")
         self.lm_cli.out_file_path = os.path.join(root,"domerge.bat")

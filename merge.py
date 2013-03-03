@@ -5,11 +5,11 @@ import os
 import sys
 import platform
 import collections
-import copy
 import logger
 import hash
 import walker
 import scan
+import metadata_location
 
 MODE_UNDEFINED, MODE_ANALYZE, MODE_COPY, MODE_MOVE = tuple(range(4))
 EXISTS_EXACT, EXISTS_ELSEWHERE, EXISTS_CONFLICT, DOES_NOT_EXIST = tuple(range(4))
@@ -55,7 +55,6 @@ class merge:
 
         self.mode = mode
         self.verbose = verbose
-        self.metadata_path = None
 
         self.dest_root = dest_root
         self.source_root = source_root
@@ -73,15 +72,21 @@ class merge:
         if self.dest_root is not None:
             self.log.info('"dest_root","%s"', self.dest_root)
 
-        if metadata_root_override is not None:
-            self.metadata_path = metadata_root_override
+        if metadata_root_override is None:
+            self.source_metadata_root = metadata_location.get_metadata_root(self.source_root)
+            self.dest_metadata_root = metadata_location.get_metadata_root(self.dest_root)
+        else:
+            self.source_metadata_root = metadata_root_override
+            self.dest_metadata_root = metadata_root_override
 
-        self.hash_obj = hash.hash(self.metadata_path)
         if self.verbose:
-            print "metadata_path :", self.hash_obj.get_metadata_db_fn()
+            print "metadata_path :", metadata_location.get_metadata_db_fn()
+
+        self.source_hash = hash.hash(self.source_metadata_root)
 
         if self.dest_root is not None:
-            scan_dest = scan.scan(self.dest_root, self.metadata_path)
+            self.dest_hash = hash.hash(self.dest_metadata_root)
+            scan_dest = scan.scan(self.dest_root, self.dest_metadata_root)
             scan_dest.run()
 
     def __del__(self):
@@ -95,10 +100,9 @@ class merge:
         dest_hash = None
         source_path = os.path.join(self.source_root, partial_path)
         dest_path = os.path.join(self.dest_root, partial_path)
-        dest_hash_obj = hash.hash(self.metadata_path)
-        source_hash, src_cache = self.hash_obj.get_hash(source_path)
+        source_hash, src_cache = self.source_hash.get_hash(source_path)
         if os.path.exists(dest_path):
-            dest_hash, dest_cache = self.hash_obj.get_hash(dest_path)
+            dest_hash, dest_cache = self.dest_hash.get_hash(dest_path)
         if source_hash == dest_hash:
             result = EXISTS_EXACT
             found_paths = dest_path
@@ -111,7 +115,7 @@ class merge:
                 # in order to avoid making redundant copies.
                 found_paths = None
                 dest_hash_root = os.path.splitdrive(os.path.abspath(self.dest_root))[1]
-                paths_from_hash = dest_hash_obj.get_paths_from_hash(source_hash, dest_hash_root)
+                paths_from_hash = self.dest_hash.get_paths_from_hash(source_hash, dest_hash_root)
                 if paths_from_hash is None:
                     result = DOES_NOT_EXIST
                 else:
@@ -130,23 +134,22 @@ class merge:
             self.out_file.write("REM " + search_result_to_str(search_result) + " " + os.path.join(self.source_root, file_path) + " " + os.path.join(self.dest_root, file_path) + "\n")
         return search_result, search_paths
 
-    # note that this "analyze" is different from "analyze" class ... modify names?
     def analyze(self):
         if self.verbose:
             print "analyze :", self.source_root
         # refresh the metadata
-        scan_source = scan.scan(self.source_root, self.metadata_path)
+        scan_source = scan.scan(self.source_root, self.source_metadata_root)
         scan_source.run()
         hash_counts = collections.defaultdict(int)
         # the iterator uses self.source_root (not sure if I like this or not, but not sure what else to do)
         source_walker = walker.walker(self.source_root)
         for file_path in source_walker:
-            src_hash_val, src_cache_flag = self.hash_obj.get_hash(source_walker.get_path(file_path))
+            src_hash_val, src_cache_flag = self.source_hash.get_hash(source_walker.get_path(file_path))
             if src_hash_val is None:
                 self.log.error("%s %s", file_path, src_hash_val)
             hash_counts[src_hash_val] += 1
         for h in collections.Counter(hash_counts):
-            paths = self.hash_obj.get_paths_from_hash(h)
+            paths = self.source_hash.get_paths_from_hash(h)
             # todo: bug fix : this yields all the files with this hash ... need to only give the ones
             # that are in the tree below self.source_root .
             if paths is not None:
@@ -187,8 +190,9 @@ class merge:
             self.out_file = None
 
     def clean(self):
-        hash_obj = hash.hash(self.metadata_path)
-        hash_obj.clean()
+        self.source_hash.clean()
+        if self.dest_root is not None:
+            self.dest_hash.clean()
 
 if __name__ == "__main__":
     #m = merge(os.path.join("test", "simple"), verbose=True, mode=MODE_MOVE)

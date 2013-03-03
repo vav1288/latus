@@ -6,6 +6,9 @@ import msvcrt
 def get_long_abs_path(in_path):
     # Trick to get around 260 char limit
     # http://msdn.microsoft.com/en-us/library/aa365247.aspx#maxpath
+    #
+    # todo: how do I make sure this is unicode?
+    #print in_path
     return u"\\\\?\\" + os.path.abspath(in_path)
 
 class walker:
