@@ -4,6 +4,7 @@ import win32con
 import win32api
 import pywintypes
 import hash
+import os_util
 import walker
 import logger
 
@@ -19,7 +20,7 @@ class scan():
         cache_result = None
         #dir_abs_path_no_drive = os.path.abspath(self.root)[2:]
         attrib = 0
-        abs_source_path = walker.get_long_abs_path(file_path)
+        abs_source_path = os_util.get_long_abs_path(file_path)
         try:
             # Trick to get around 260 char limit
             # http://msdn.microsoft.com/en-us/library/aa365247.aspx#maxpath

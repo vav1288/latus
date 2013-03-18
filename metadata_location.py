@@ -7,8 +7,8 @@ import const
 def is_metadata_root(path):
     return path == get_metadata_dir_path(path)
 
-# from a target file, determine the metadata sqlite filename
-def get_metadata_db_fn(path = None):
+# from a target file, determine the metadata sqlite file path
+def get_metadata_db_path(path = None):
     return os.path.join(get_metadata_dir_path(path), const.DB_NAME + ".db")
 
 def get_metadata_dir_path(path):

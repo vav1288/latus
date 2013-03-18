@@ -11,7 +11,7 @@ def print_all_levels(log, msg = ""):
 
 def test_logger():
     log = logger.get_log()
-    log_handlers = logger.setup(test_latus.get_log_file_path())
+    log_handlers = logger.setup()
 
     print_all_levels(log, "default")
 

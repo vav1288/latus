@@ -3,7 +3,7 @@ import hashlib
 import os
 import sqlite
 import logger
-import walker
+import os_util
 import metadata_location
 
 # todo: check the disk space where the cache resides and make sure we don't consume too much space
@@ -29,27 +29,25 @@ class hash():
 
     # todo: clean up these 'return's
     def get_hash(self, path):
-        if not os.path.exists(path):
-            self.log.error("path does not exist," + path)
+        abs_path = os_util.get_long_abs_path(path) # to get around 260 char limit
+        if not os.path.exists(abs_path):
+            self.log.error("path does not exist," + abs_path)
             return None, None
         # don't allow the calculation or caching of metadata hashes
         if metadata_location.is_metadata_root(os.path.split(path)[0]):
             self.log.error("tried to get hash of metadata," + path)
             return None, None
 
-        self.init_db(metadata_location.get_metadata_db_fn(path))
-        # use the absolute path, but w/o the drive specification in the hash table
-        abs_path_no_drive = os.path.splitdrive(os.path.abspath(path))[1]
-        #print "abs_path_no_drive", abs_path_no_drive
-        # Trick to get around 260 char limit
-        # http://msdn.microsoft.com/en-us/library/aa365247.aspx#maxpath
+        self.init_db(metadata_location.get_metadata_db_path(path))
         try:
-            abs_path = walker.get_long_abs_path(path)
-            mtime = os.path.getmtime(path)
-            size = os.path.getsize(path)
+            mtime = os.path.getmtime(abs_path)
+            size = os.path.getsize(abs_path)
         except UnicodeDecodeError, details:
-            self.log.error(str(details) + "," + path)
+            self.log.error(str(details) + "," + abs_path)
             return None, None
+        # use the absolute path, but w/o the drive specification in the hash table
+        #print "abs_path_no_drive", abs_path_no_drive
+        abs_path_no_drive = os.path.splitdrive(os.path.abspath(path))[1]
         if self.is_in_table(abs_path_no_drive):
             hash = self.get_hash_from_db(abs_path_no_drive, mtime, size)
             if hash is None:
@@ -71,7 +69,7 @@ class hash():
         return ret
 
     def get_paths_from_hash(self, hash, root = None):
-        self.init_db(metadata_location.get_metadata_db_fn())
+        self.init_db(metadata_location.get_metadata_db_path())
         path_desc = {}
         operators = {}
         path_desc[self.SHA512_STRING] = hash
@@ -87,7 +85,7 @@ class hash():
     # mainly for testing purposes
     # relies on the 'user' of this class to provide their own get_metadata_root()
     def clean(self):
-        metadata_db_fn = metadata_location.get_metadata_db_fn()
+        metadata_db_fn = metadata_location.get_metadata_db_path()
         #print metadata_db_fn
         db = sqlite.sqlite(metadata_db_fn)
         db.clean()

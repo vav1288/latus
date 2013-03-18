@@ -27,8 +27,8 @@ class merge_cli():
             self.metadata_root_override = args.test[0]
         self.verbose = args.verbose
         self.mode = merge.str_to_mode(args.mode)
-        self.source = args.source
-        self.dest = args.dest
+        self.source = unicode(args.source)
+        self.dest = unicode(args.dest)
         self.out_file_path = args.outfile
 
     def run(self):

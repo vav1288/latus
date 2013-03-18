@@ -3,6 +3,7 @@
 temp.*
 temp/
 repo_ignore/
+dist/
 *.log
 #
 # from PyCharm

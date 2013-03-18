@@ -19,10 +19,6 @@ def get_unicode_root():
 def get_simple_root():
     return os.path.join(get_root(), u"simple")
 
-# use this instead of logger.py's get_log_file_path() so the log file is put in the proper place for testing
-def get_log_file_path():
-    return os.path.join(get_root(), const.LOG_FILE)
-
 # note that this makes the required dirs if necessary
 def write_to_file(p, contents):
     #print "p", p
