@@ -2,10 +2,11 @@
 import os
 import const
 import msvcrt
+import util
 
 class walker:
     def __init__(self, root):
-        self.root = unicode(root) # safety net for str root paths that have unicode children
+        self.root = util.decode_text(root) # safety net for str root paths that have unicode children
 
     def __iter__(self):
         return self.next()

@@ -3,7 +3,8 @@ import hashlib
 import os
 import sqlite
 import logger
-import os_util
+import util
+import time
 import metadata_location
 
 # todo: check the disk space where the cache resides and make sure we don't consume too much space
@@ -23,22 +24,23 @@ class hash():
         self.ABS_PATH_STRING = "abspath"
         self.MTIME_STRING = "mtime"
         self.SIZE_STRING = "size"
-        self.SHA512_STRING = "sha512"
+        self.SHA512_VAL_STRING = "sha512_val"
+        self.SHA512_TIME_STRING = "sha512_time"
         self.metadata_root = metadata_root
         self.log = logger.get_log()
 
     # todo: clean up these 'return's
     def get_hash(self, path):
-        abs_path = os_util.get_long_abs_path(path) # to get around 260 char limit
+        abs_path = util.get_long_abs_path(path) # to get around 260 char limit
         if not os.path.exists(abs_path):
             self.log.error("path does not exist," + abs_path)
             return None, None
         # don't allow the calculation or caching of metadata hashes
-        if metadata_location.is_metadata_root(os.path.split(path)[0]):
+        if metadata_location.is_metadata_root(os.path.split(path)[0], self.metadata_root):
             self.log.error("tried to get hash of metadata," + path)
             return None, None
 
-        self.init_db(metadata_location.get_metadata_db_path(path))
+        self.init_db(metadata_location.get_metadata_db_path(path, self.metadata_root))
         try:
             mtime = os.path.getmtime(abs_path)
             size = os.path.getsize(abs_path)
@@ -46,34 +48,34 @@ class hash():
             self.log.error(str(details) + "," + abs_path)
             return None, None
         # use the absolute path, but w/o the drive specification in the hash table
-        #print "abs_path_no_drive", abs_path_no_drive
-        abs_path_no_drive = os.path.splitdrive(os.path.abspath(path))[1]
-        if self.is_in_table(abs_path_no_drive):
-            hash = self.get_hash_from_db(abs_path_no_drive, mtime, size)
-            if hash is None:
+        canon_abs_path_no_drive = util.encode_text(util.get_abs_path_wo_drive(path))
+        #print util.printable_text(canon_abs_path_no_drive)
+        if self.is_in_table(canon_abs_path_no_drive):
+            sha512_hash = self.get_hash_from_db(canon_abs_path_no_drive, mtime, size)
+            if sha512_hash is None:
                 # file has changed - update the hash (since file mtime or size has changed, hash is no longer valid)
-                hash = self.calc_hash(abs_path)
+                sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
                 self.db.update({self.MTIME_STRING : os.path.getmtime(abs_path),
                                 self.SIZE_STRING : os.path.getsize(abs_path),
-                                self.SHA512_STRING : hash },
-                               {self.ABS_PATH_STRING : abs_path_no_drive})
+                                self.SHA512_VAL_STRING : sha512_hash },
+                               {self.ABS_PATH_STRING : canon_abs_path_no_drive})
                 got_from_cache = False
             else:
                 got_from_cache = True
         else:
-            hash = self.calc_hash(abs_path)
-            self.db.insert((abs_path_no_drive, mtime, size, hash))
+            sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
+            self.db.insert((canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time))
             got_from_cache = False
         self.db.close()
-        ret = (hash, got_from_cache)
+        ret = (sha512_hash, got_from_cache)
         return ret
 
     def get_paths_from_hash(self, hash, root = None):
-        self.init_db(metadata_location.get_metadata_db_path())
+        self.init_db(metadata_location.get_metadata_db_path(None, self.metadata_root))
         path_desc = {}
         operators = {}
-        path_desc[self.SHA512_STRING] = hash
-        operators[self.SHA512_STRING] = "="
+        path_desc[self.SHA512_VAL_STRING] = hash
+        operators[self.SHA512_VAL_STRING] = "="
         if root is not None:
             path_desc[self.ABS_PATH_STRING] = root + "%"#
             operators[self.ABS_PATH_STRING] = "LIKE"
@@ -85,7 +87,7 @@ class hash():
     # mainly for testing purposes
     # relies on the 'user' of this class to provide their own get_metadata_root()
     def clean(self):
-        metadata_db_fn = metadata_location.get_metadata_db_path()
+        metadata_db_fn = metadata_location.get_metadata_db_path(None, self.metadata_root)
         #print metadata_db_fn
         db = sqlite.sqlite(metadata_db_fn)
         db.clean()
@@ -103,20 +105,26 @@ class hash():
             self.db.add_col_text(self.ABS_PATH_STRING)
             self.db.add_col_float(self.MTIME_STRING)
             self.db.add_col_integer(self.SIZE_STRING)
-            self.db.add_col_text(self.SHA512_STRING)
+            self.db.add_col_text(self.SHA512_VAL_STRING)
+            self.db.add_col_float(self.SHA512_TIME_STRING)
             self.db.add_col_timestamp()
             self.db.add_col_auto_index()
             self.db.create_table(self.HASH_TABLE_NAME)
+            # use indices to speed access
+            self.db.create_index(self.ABS_PATH_STRING)
+            self.db.create_index(self.SHA512_VAL_STRING)
         else:
-            self.db.set_cols([self.ABS_PATH_STRING, self.MTIME_STRING, self.SIZE_STRING, self.SHA512_STRING])
+            self.db.set_cols([self.ABS_PATH_STRING, self.MTIME_STRING, self.SIZE_STRING, self.SHA512_VAL_STRING,
+                              self.SHA512_TIME_STRING])
 
-    def calc_hash(self, path):
-        #start_time = time.time()
+    def calc_sha512(self, path):
+        start_time = time.time()
 
         # execution times on sample 'big file':
         # sha512 : 0.5 sec
         # sha256 : 0.75 sec
         # md5 : 0.35 sec
+        # generally SHA512 is 1.4-1.5x MD5 (experiment done on a variety of files and sizes)
 
         if not os.path.isfile(path):
             self.log.error("%s is not a file", path)
@@ -135,16 +143,16 @@ class hash():
             f.close()
             f = None
         except IOError, details:
-            self.log.error(str(details) + "," + path)
+            self.log.warn(str(details) + "," + path)
             sha512_val = None
         if f is not None:
             f.close()
             f = None
 
-        #elapsed_time = time.time() - start_time
+        elapsed_time = time.time() - start_time
         #print ("calc_hash," + path + "," + str(elapsed_time))
 
-        return sha512_val
+        return sha512_val, elapsed_time
 
     # Look up the hash from the table, assuming if a file path, mtime and size are the same it's
     # truely the same file and therefore the same hash.
@@ -155,7 +163,7 @@ class hash():
         file_info[self.MTIME_STRING] = mtime
         file_info[self.SIZE_STRING] = size
         hash = None
-        hash_list = self.db.get(file_info, self.SHA512_STRING)
+        hash_list = self.db.get(file_info, self.SHA512_VAL_STRING)
         if hash_list is not None:
             hash = hash_list[0]
         return hash
@@ -164,7 +172,7 @@ class hash():
     def is_in_table(self, path):
         file_info = {}
         file_info['abspath'] = path
-        return self.db.get(file_info, "sha512") is not None
+        return self.db.get(file_info, self.SHA512_VAL_STRING) is not None
 
 
 

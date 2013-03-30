@@ -4,13 +4,12 @@
 import os
 import sys
 import platform
-import collections
 import logger
-import hash
+import util
+import logging
 import walker
-import scan
-import target
-import metadata_location
+import folder
+import argparse
 
 MODE_UNDEFINED, MODE_ANALYZE, MODE_COPY, MODE_MOVE = tuple(range(4))
 EXISTS_EXACT, EXISTS_ELSEWHERE, EXISTS_CONFLICT, DOES_NOT_EXIST = tuple(range(4))
@@ -57,13 +56,13 @@ class merge:
         self.mode = mode
         self.verbose = verbose
 
-        self.source = target.target(source_root, metadata_root_override)
+        self.source = folder.folder(source_root, metadata_root_override)
         if self.verbose:
             print "source : metadata_db_path :", self.source.get_metadata_db_path()
         if dest_root is None:
             self.dest = None
         else:
-            self.dest = target.target(dest_root, metadata_root_override)
+            self.dest = folder.folder(dest_root, metadata_root_override)
             if self.verbose:
                 print "dest : metadata_db_path :", self.source.get_metadata_db_path()
 
@@ -82,8 +81,8 @@ class merge:
             self.log.info('"dest_root","%s"', self.dest.root)
 
         if self.dest is not None:
-            scan_dest = scan.scan(self.dest.root, self.dest.metadata_root)
-            scan_dest.run()
+            scan_dest = folder.folder(self.dest.root, self.dest.metadata_root)
+            scan_dest.scan()
 
     def __del__(self):
         if self.out_file is not None:
@@ -108,9 +107,7 @@ class merge:
                 result = EXISTS_CONFLICT
             else:
                 # Doesn't exist at dest, but first see if it exists anywhere
-                # in order to avoid making redundant copies.
-                found_paths = None
-                dest_hash_root = os.path.splitdrive(os.path.abspath(self.dest.root))[1]
+                dest_hash_root = util.get_abs_path_wo_drive(self.dest.root)
                 found_paths = self.dest.target_hash.get_paths_from_hash(source_hash, dest_hash_root)
                 if found_paths is None:
                     result = DOES_NOT_EXIST
@@ -130,35 +127,10 @@ class merge:
             self.out_file.write("REM " + search_result_to_str(search_result) + " " + os.path.join(self.source.root, file_path) + " " + os.path.join(self.dest.root, file_path) + "\n")
         return search_result, search_paths
 
-    def analyze(self):
-        if self.verbose:
-            print "analyze :", self.source.root
-        # refresh the metadata
-        scan_source = scan.scan(self.source.root, self.source.metadata_root)
-        scan_source.run()
-        hash_counts = collections.defaultdict(int)
-        # the iterator uses self.source_root (not sure if I like this or not, but not sure what else to do)
-        source_walker = walker.walker(self.source.root)
-        for file_path in source_walker:
-            src_hash_val, src_cache_flag = self.source.target_hash.get_hash(source_walker.get_path(file_path))
-            if src_hash_val is None:
-                self.log.error("%s %s", file_path, src_hash_val)
-            hash_counts[src_hash_val] += 1
-        for h in collections.Counter(hash_counts):
-            paths = self.source.target_hash.get_paths_from_hash(h)
-            # todo: bug fix : this yields all the files with this hash ... need to only give the ones
-            # that are in the tree below self.source_root .
-            if paths is not None:
-                # todo : figure out how paths can be None
-                if len(paths) > 1:
-                    print len(paths)
-                    for p in paths:
-                        print p
-
     def run(self):
         if self.verbose:
             if self.out_file is not None:
-                self.out_file.write("REM " + __name__ + "\n")
+                self.out_file.write("REM " + str(sys.argv) + "\n")
                 self.out_file.write("REM source " + self.source.root + "\n")
                 if self.dest.root is not None:
                     self.out_file.write("REM dest " + self.dest.root + "\n")
@@ -191,7 +163,41 @@ class merge:
             self.dest.target_hash.clean()
 
 if __name__ == "__main__":
-    #m = merge(os.path.join("test", "simple"), verbose=True, mode=MODE_MOVE)
-    #m.run()
-    print "Do not use this program directly."
-    print "Use merge_cli."
+    log = logger.get_log()
+
+    epilog = """
+Execute with no arguments to run the GUI version.
+
+Command line example:
+""" + os.path.split(sys.argv[0])[-1] + " -s my_source -d my_dest"
+
+    parser = argparse.ArgumentParser(epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("-s", "--source", help="path to source directory/folder")
+    parser.add_argument("-d", "--dest", default = None, help="path to destination directory/folder")
+    parser.add_argument("-m", "--mode", nargs=1, default = 'm', choices='acm', help="analyze, copy or move")
+    parser.add_argument("-o", "--outfile", help="output file path")
+    parser.add_argument("-t", "--test", nargs=1, help="special test parameters (metadata path)", default = None)
+    parser.add_argument("-v", "--verbose", help="print informational messages", action="store_true")
+
+    args = parser.parse_args()
+    if args.source is None:
+        print "no arguments - stub for GUI version"
+        exit()
+    if args.test is None:
+        metadata_root_override = None
+    else:
+        metadata_root_override = args.test[0]
+    verbose = args.verbose
+    mode = str_to_mode(args.mode)
+    source = util.decode_text(args.source)
+    dest = util.decode_text(args.dest)
+    out_file_path = args.outfile
+
+    logger.setup()
+    if verbose:
+        log.setLevel(logging.INFO)
+    m = merge(source, out_file_path , dest, verbose = verbose,
+                     metadata_root_override = metadata_root_override,
+                     mode = mode)
+    m.run()
+    m.close()

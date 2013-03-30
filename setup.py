@@ -2,4 +2,4 @@
 from distutils.core import setup
 import py2exe
 
-setup(console=['merge_cli.py'])
+setup(console=['merge.py'])

@@ -46,18 +46,6 @@ class test_merge(unittest.TestCase):
         search_result, search_paths = self.m.merge_file(self.a_file)
         self.assertEqual(search_result, merge.EXISTS_ELSEWHERE)
 
-    def test_unicode_filename(self):
-        self.create_merge_object(None, test_latus.get_unicode_root())
-        self.m.analyze()
-
-    def test_analyze(self):
-        self.create_merge_object(src_root = test_latus.get_root())
-        self.m.analyze()
-        h = hash.hash(test_latus.get_root())
-        for file_path in test_latus.get_unicode_file_paths(test_latus.get_unicode_root()):
-            hash_val, cache_flag = h.get_hash(file_path)
-            self.assertNotEqual(hash_val, None)
-
     def test_run(self):
         self.create_merge_object(os.path.join(test_latus.get_simple_root(), "dest_empty"), test_latus.get_simple_root())
         self.m.run()

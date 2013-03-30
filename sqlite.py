@@ -3,10 +3,10 @@ import sqlite3
 import time
 import os
 import sys
-import logging
+import util
 import logger
 
-class sqlite():
+class sqlite:
     """ A layer on top of Python's SQLite capability.
     """
     def __init__(self, db_path):
@@ -106,6 +106,17 @@ class sqlite():
         colstr += "," + self.autoindex_str + ' ' + self.type[self.autoindex_str]
         cmd = 'CREATE TABLE IF NOT EXISTS ' + self.table + "(" + colstr + ")"
         self.connect(True)
+        #self.log.info(cmd)
+        self.exec_db(cmd)
+
+    def create_index(self, key, unique = False):
+        cmd = "CREATE"
+        if unique:
+            cmd += " UNIQUE"
+        cmd += " INDEX"
+        cmd += " idx_" + key
+        cmd += " ON " + self.table + "(" + key + ")"
+        #self.log.info(cmd)
         self.exec_db(cmd)
 
     def connect_to_table(self, table):
@@ -149,24 +160,22 @@ class sqlite():
 
     # Latus STRing - should call this for string constants
     def lstr(self, s):
-        return unicode(s)
+        return util.decode_text(s)
 
-    # convert unicode and escape (CUE)
+    # convert to unicode and escape (CUE)
     # Converts various types and escape out special characters for sqlite.
     # returns a unicode string
     def cue(self,s):
-        #print s
         if not isinstance(s, basestring):
             s = str(s) # e.g. numerics
-        if not isinstance(s, unicode):
-            s = unicode(s, "U8", "replace") # required for non-ascii filenames
-        s = s.replace(self.lstr("'"), self.lstr("''")) # for sqlite
-        #print s.encode("U8")
+        s = util.decode_text(s)
+        s = s.replace(u"'", u"''") # for sqlite string
         return s
+
 
     # gets a list of entries of a particular column based on spec
     def get(self, qualifiers, col_name, operators = None):
-        cmd = self.lstr("SELECT ") + unicode(col_name) + self.lstr(" from ") + unicode(self.table) + self.lstr(" WHERE ")
+        cmd = self.lstr("SELECT ") + self.cue(col_name) + self.lstr(" from ") + self.cue(self.table) + self.lstr(" WHERE ")
         subcmd = u""
         if qualifiers is not None:
             for col in qualifiers.keys():
