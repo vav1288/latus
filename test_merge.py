@@ -7,7 +7,8 @@ import hash
 
 class test_merge(unittest.TestCase):
     def setUp(self):
-        test_latus.write_files()
+        self.test_latus = test_latus.test_latus()
+        self.test_latus.write_files()
         self.a_file = "a.txt"
         self.src_root = os.path.join(test_latus.get_simple_root(), test_latus.SRC)
         self.out_file_path = os.path.join(test_latus.get_simple_root(), "domerge.bat")

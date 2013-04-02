@@ -51,6 +51,7 @@ class analyze:
                         print util.encode_text(p)
         if self.verbose:
             print "total files analyzed :", file_count
+        return hash_counts
 
 if __name__ == "__main__":
     logger.setup()

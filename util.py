@@ -23,8 +23,11 @@ def is_windows():
 def get_long_abs_path(in_path):
     # Trick to get around 260 char limit
     # http://msdn.microsoft.com/en-us/library/aa365247.aspx#maxpath
-    if is_windows():
-        abs_path = u"\\\\?\\" + os.path.abspath(in_path)
+    long_prefix = u"\\\\?\\"
+    prefix_len = len(long_prefix)
+    starts_with = in_path[:4].startswith(long_prefix)
+    if is_windows() and ((len(in_path) < prefix_len) or not starts_with):
+        abs_path = long_prefix + os.path.abspath(in_path)
     else:
         abs_path = os.path.abspath(in_path)
     return abs_path
@@ -42,6 +45,7 @@ def get_abs_path_wo_drive(p):
 
 def get_file_attributes(in_path):
     attrib = 0
+    attributes = []
     hidden_flag = False
     system_flag = False
     if is_windows():
@@ -49,13 +53,17 @@ def get_file_attributes(in_path):
         try:
             attrib = win32api.GetFileAttributes(long_abs_path)
         except pywintypes.error, details:
-            logger.get_log().error(details + u"," + long_abs_path)
-        except UnicodeDecodeError, details:
-            logger.get_log().error(details + u"," + long_abs_path)
-        hidden_flag = attrib & win32con.FILE_ATTRIBUTE_HIDDEN
-        system_flag = attrib & win32con.FILE_ATTRIBUTE_SYSTEM
+            logger.get_log().error(details)
+            logger.get_log().error(long_abs_path)
+        if attrib & win32con.FILE_ATTRIBUTE_HIDDEN:
+            attributes.append(win32con.FILE_ATTRIBUTE_HIDDEN)
+        if attrib & win32con.FILE_ATTRIBUTE_SYSTEM:
+            attributes.append(win32con.FILE_ATTRIBUTE_SYSTEM)
     # todo : Linux version of this
-    return hidden_flag, system_flag
+    return attributes
+
+def make_hidden(in_path):
+    win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
 
 # From: "Getting unicode right in Python" by Nick Johnson
 # 1) All text strings, everywhere should be of type unicode, not str. If you're handling text, and your variable is a

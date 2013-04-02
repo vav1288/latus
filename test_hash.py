@@ -2,8 +2,9 @@
 import os
 import shutil
 import unittest
-import logging
 import logger
+import util
+import folder
 import hash
 import test_latus
 
@@ -11,14 +12,17 @@ import test_latus
 
 class TestHash(unittest.TestCase):
     def setUp(self):
-        test_latus.write_files() # make sure this is first, since log files will go here
+        self.test_latus = test_latus.test_latus()
+        self.test_latus.write_files() # make sure this is first, since log files will go here
         self.log = logger.get_log()
         # sha512 of "a"
         self.correct_hash_val = "1f40fc92da241694750979ee6cf582f2d5d7d28e18335de05abc54d0560e0f5302860c652bf08d560252aa5e74210546f369fbbbce8c12cfc7957b2652fe9a75"
         self.root = test_latus.get_root()
+        # load up metadata
+        self.target = folder.folder(self.root, self.root)
         self.hash = hash.hash(self.root)
-        self.static_test_file_path = os.path.join(self.root, "simple", "src", "a.txt")
-        self.dynamic_test_file_path = os.path.join(self.root, "simple", "dest_exists_under_different_name", "a_but_different_name.txt")
+        self.static_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.SRC, "a.txt")
+        self.dynamic_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.DEST_EXISTS_UNDER_DIFFERENT_NAME, "a_but_different_name.txt")
 
     # clean
     def test_a_clean(self):
@@ -33,6 +37,7 @@ class TestHash(unittest.TestCase):
 
     # lookup hash in table
     def test_c_lookup_hash(self):
+        self.target.scan() # load metadata
         # get hash twice so 2nd time it's in the cache
         self.hash.get_hash(self.static_test_file_path)
         hash_val, cache_flag = self.hash.get_hash(self.static_test_file_path)
@@ -42,12 +47,16 @@ class TestHash(unittest.TestCase):
 
     # lookup file via hash
     def test_d_lookup_file_via_hash(self):
+        self.target.scan() # load metadata
         paths = self.hash.get_paths_from_hash(self.correct_hash_val)
-        #print paths[0]
-        self.assertEqual(os.path.abspath(paths[0]), os.path.abspath(self.static_test_file_path))
+        self.assertIsNotNone(paths)
+        self.assertIn(util.get_abs_path_wo_drive(self.static_test_file_path), paths)
+        #print paths
+        #self.assertEqual(os.path.abspath(paths[0]), os.path.abspath(self.static_test_file_path))
 
     # update table
     def test_e_update_table(self):
+        self.target.scan() # load metadata
         if os.path.exists(self.dynamic_test_file_path):
             os.remove(self.dynamic_test_file_path)
         shutil.copy(self.static_test_file_path, self.dynamic_test_file_path)

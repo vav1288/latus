@@ -2,25 +2,30 @@
 import os
 import unittest
 import test_latus
+import folder
 import analyze
-import hash
 
 class test_analyze(unittest.TestCase):
     def setUp(self):
-        test_latus.write_files()
-        self.a_file = "a.txt"
-        self.root = os.path.join(test_latus.get_root(), test_latus.SRC)
-        self.a = analyze.analyze(self.root, test_latus.get_root(), True)
+        self.test_latus = test_latus.test_latus()
+        self.test_latus.write_files()
+        root = test_latus.get_root()
+        # Load up metadata from the root (this way we have many duplicate files, so we can make sure
+        # we only get the subset in simple we're looking for).
+        f = folder.folder(root, root)
+        f.scan()
+        self.analyze = analyze.analyze(root, root, True)
 
     def tearDown(self):
-        del self.a
+        del self.analyze
 
     def test_analyze(self):
-        self.a.run()
-        h = hash.hash(test_latus.get_root())
-        for file_path in test_latus.get_unicode_file_paths(test_latus.get_unicode_root()):
-            hash_val, cache_flag = h.get_hash(file_path)
-            self.assertNotEqual(hash_val, None)
+        # check we found the right number of files
+        hashes = self.analyze.run()
+        # todo : figure out how to not have these constants of 2 and - 1
+        self.assertEqual(len(hashes), 2) # 2 different file contents
+        n_found = hashes[hashes.keys()[0]]
+        self.assertEqual(n_found, self.test_latus.number_of_files_written() - 1) # -1 since we have one other type of contents
 
 if __name__ == "__main__":
     unittest.main()

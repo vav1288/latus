@@ -2,6 +2,8 @@
 import hashlib
 import os
 import sqlite
+import win32api
+import win32con
 import logger
 import util
 import time
@@ -19,14 +21,16 @@ class hash():
     Also maintains a hash cache to avoid unnecessary recalculations/
     """
 
-    def __init__(self, metadata_root):
+    def __init__(self, metadata_root = None, verbose = False, include_attrib = []):
         self.HASH_TABLE_NAME = "hash"
         self.ABS_PATH_STRING = "abspath"
         self.MTIME_STRING = "mtime"
         self.SIZE_STRING = "size"
         self.SHA512_VAL_STRING = "sha512_val"
         self.SHA512_TIME_STRING = "sha512_time"
-        self.metadata_root = metadata_root
+        self.metadata_root = metadata_root # should only be None if we're not using metadata
+        self.verbose = verbose
+        self.include_attrib = include_attrib
         self.log = logger.get_log()
 
     # todo: clean up these 'return's
@@ -40,33 +44,37 @@ class hash():
             self.log.error("tried to get hash of metadata," + path)
             return None, None
 
-        self.init_db(metadata_location.get_metadata_db_path(path, self.metadata_root))
-        try:
-            mtime = os.path.getmtime(abs_path)
-            size = os.path.getsize(abs_path)
-        except UnicodeDecodeError, details:
-            self.log.error(str(details) + "," + abs_path)
-            return None, None
-        # use the absolute path, but w/o the drive specification in the hash table
-        canon_abs_path_no_drive = util.encode_text(util.get_abs_path_wo_drive(path))
-        #print util.printable_text(canon_abs_path_no_drive)
-        if self.is_in_table(canon_abs_path_no_drive):
-            sha512_hash = self.get_hash_from_db(canon_abs_path_no_drive, mtime, size)
-            if sha512_hash is None:
-                # file has changed - update the hash (since file mtime or size has changed, hash is no longer valid)
-                sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
-                self.db.update({self.MTIME_STRING : os.path.getmtime(abs_path),
-                                self.SIZE_STRING : os.path.getsize(abs_path),
-                                self.SHA512_VAL_STRING : sha512_hash },
-                               {self.ABS_PATH_STRING : canon_abs_path_no_drive})
-                got_from_cache = False
+        if self.metadata_root is not None:
+            self.init_db(metadata_location.get_metadata_db_path(path, self.metadata_root))
+            try:
+                mtime = os.path.getmtime(abs_path)
+                size = os.path.getsize(abs_path)
+            except UnicodeDecodeError, details:
+                self.log.error(str(details) + "," + abs_path)
+                return None, None
+            # use the absolute path, but w/o the drive specification in the hash table
+            canon_abs_path_no_drive = util.encode_text(util.get_abs_path_wo_drive(path))
+            #print util.printable_text(canon_abs_path_no_drive)
+            if self.is_in_table(canon_abs_path_no_drive):
+                sha512_hash = self.get_hash_from_db(canon_abs_path_no_drive, mtime, size)
+                if sha512_hash is None:
+                    # file has changed - update the hash (since file mtime or size has changed, hash is no longer valid)
+                    sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
+                    self.db.update({self.MTIME_STRING : os.path.getmtime(abs_path),
+                                    self.SIZE_STRING : os.path.getsize(abs_path),
+                                    self.SHA512_VAL_STRING : sha512_hash },
+                                   {self.ABS_PATH_STRING : canon_abs_path_no_drive})
+                    got_from_cache = False
+                else:
+                    got_from_cache = True
             else:
-                got_from_cache = True
+                sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
+                self.db.insert((canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time))
+                got_from_cache = False
+            self.db.close()
         else:
             sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
-            self.db.insert((canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time))
             got_from_cache = False
-        self.db.close()
         ret = (sha512_hash, got_from_cache)
         return ret
 
@@ -97,6 +105,7 @@ class hash():
         db_dir = os.path.split(db_path)[0]
         if not os.path.exists(db_dir):
             os.mkdir(db_dir)
+            util.make_hidden(db_dir)
 
         #print db_path
         self.db = sqlite.sqlite(db_path)
@@ -117,8 +126,26 @@ class hash():
             self.db.set_cols([self.ABS_PATH_STRING, self.MTIME_STRING, self.SIZE_STRING, self.SHA512_VAL_STRING,
                               self.SHA512_TIME_STRING])
 
+    def update_digest(self, file_path, hash):
+        attributes = util.get_file_attributes(file_path)
+        if not attributes or attributes <= self.include_attrib:
+            if self.verbose:
+                print util.encode_text(file_path)
+            # it's a lot faster taking a buffer at a time vs 1 byte at a time (2 orders of magnitude faster)
+            bucket_size = 4096 # just a guess ...
+            try:
+                f = open(file_path, "rb")
+                val = f.read(bucket_size)
+                while len(val):
+                    hash.update(val)
+                    val = f.read(bucket_size)
+                f.close()
+            except IOError, details:
+                self.log.warn(str(details) + "," + file_path)
+
     def calc_sha512(self, path):
         start_time = time.time()
+        hash = hashlib.sha512()
 
         # execution times on sample 'big file':
         # sha512 : 0.5 sec
@@ -126,28 +153,19 @@ class hash():
         # md5 : 0.35 sec
         # generally SHA512 is 1.4-1.5x MD5 (experiment done on a variety of files and sizes)
 
-        if not os.path.isfile(path):
-            self.log.error("%s is not a file", path)
-            return None
-        file_hash = hashlib.sha512()
-        # it's a lot faster taking a buffer at a time vs 1 byte at a time (2 orders of magnitude faster)
-        bucket_size = 4096 # just a guess ...
-        f = None
-        try:
-            f = open(path, "rb")
-            val = f.read(bucket_size)
-            while len(val):
-                file_hash.update(val)
-                val = f.read(bucket_size)
-            sha512_val = file_hash.hexdigest()
-            f.close()
-            f = None
-        except IOError, details:
-            self.log.warn(str(details) + "," + path)
-            sha512_val = None
-        if f is not None:
-            f.close()
-            f = None
+        if os.path.isfile(path):
+            self.update_digest(path, hash)
+        elif os.path.isdir(path):
+            # this should provide the same hash as DirHash by Mounir IDRASSI (mounir@idrix.fr) (good for testing)
+            # todo : a flag to control if we use system and hidden files or not
+            paths = []
+            for root, dirs, files in os.walk(path):
+                for names in files:
+                    paths.append(os.path.join(root,names))
+            paths.sort(key=lambda y: y.lower())
+            for path in paths:
+                self.update_digest(path, hash)
+        sha512_val = hash.hexdigest()
 
         elapsed_time = time.time() - start_time
         #print ("calc_hash," + path + "," + str(elapsed_time))
@@ -174,5 +192,27 @@ class hash():
         file_info['abspath'] = path
         return self.db.get(file_info, self.SHA512_VAL_STRING) is not None
 
+if __name__ == "__main__":
+    import sys
+    import argparse
 
+    logger.setup()
+
+    epilog = """
+example:
+""" + os.path.split(sys.argv[0])[-1] + " -p myfolder"
+
+    parser = argparse.ArgumentParser(epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("-p", "--path", default=u'.', help="path to source directory/folder")
+    parser.add_argument("-a", "--all", action="store_true", help="hash all files (default is to ignore hidden and system files")
+    parser.add_argument("-v", "--verbose", action="store_true", help="print informational messages")
+
+    args = parser.parse_args()
+    if args.all:
+        file_attrib = (win32con.FILE_ATTRIBUTE_HIDDEN, win32con.FILE_ATTRIBUTE_SYSTEM)
+    else:
+        file_attrib = []
+    f = hash(verbose=args.verbose, include_attrib=file_attrib)
+    hash, cache_flag = f.get_hash(args.path)
+    print hash
 

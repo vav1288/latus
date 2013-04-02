@@ -1,6 +1,7 @@
 
 import os
 import sys
+import win32con
 import time
 import util
 import logger
@@ -28,10 +29,10 @@ class fsinfo:
                 long_abs_path = util.get_long_abs_path(path)
                 self.file_count += 1
                 self.total_size += os.path.getsize(long_abs_path)
-                hidden_flag, system_flag = util.get_file_attributes(path)
-                if hidden_flag:
+                attributes = util.get_file_attributes(path)
+                if win32con.FILE_ATTRIBUTE_HIDDEN in attributes:
                     self.hidden_count += 1
-                if system_flag:
+                if win32con.FILE_ATTRIBUTE_SYSTEM in attributes:
                     self.system_count += 1
                 mtime = os.path.getmtime(long_abs_path)
                 # Some mtime are not valid.  Try to filter out the bad ones.

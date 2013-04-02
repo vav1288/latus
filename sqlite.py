@@ -3,6 +3,8 @@ import sqlite3
 import time
 import os
 import sys
+import win32api
+import win32con
 import util
 import logger
 
@@ -18,6 +20,7 @@ class sqlite:
         self.conn = None
         self.cur = None
         self.last_command = None
+        self.created_flag = not os.path.exists(db_path) # True if we created the db this instance - used to manage the file
 
     def __del__(self):
         if self.conn is not None:
@@ -61,6 +64,8 @@ class sqlite:
             self.conn.close()
         self.cur = None
         self.conn = None
+        if os.path.exists(self.db_path) and self.created_flag and util.is_windows():
+            win32api.SetFileAttributes(self.db_path,win32con.FILE_ATTRIBUTE_HIDDEN)
 
     def exists(self):
         return os.path.exists(self.db_path)
@@ -158,7 +163,7 @@ class sqlite:
         #print e
         self.exec_db(e, False)
 
-    # Latus STRing - should call this for string constants
+    # should call this for string constants
     def lstr(self, s):
         return util.decode_text(s)
 
