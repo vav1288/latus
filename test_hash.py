@@ -12,8 +12,6 @@ import test_latus
 
 class TestHash(unittest.TestCase):
     def setUp(self):
-        self.test_latus = test_latus.test_latus()
-        self.test_latus.write_files() # make sure this is first, since log files will go here
         self.log = logger.get_log()
         # sha512 of "a"
         self.correct_hash_val = "1f40fc92da241694750979ee6cf582f2d5d7d28e18335de05abc54d0560e0f5302860c652bf08d560252aa5e74210546f369fbbbce8c12cfc7957b2652fe9a75"
@@ -23,6 +21,11 @@ class TestHash(unittest.TestCase):
         self.hash = hash.hash(self.root)
         self.static_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.SRC, "a.txt")
         self.dynamic_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.DEST_EXISTS_UNDER_DIFFERENT_NAME, "a_but_different_name.txt")
+
+    def tearDown(self):
+        # this test perturbs the files - put them back the way they were
+        t = test_latus.test_latus()
+        t.write_files(force=True) # force is needed to ensure we do the writes
 
     # clean
     def test_a_clean(self):

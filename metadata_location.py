@@ -9,7 +9,7 @@ def is_metadata_root(path, metadata_root_override):
 
 # from a target file, determine the metadata sqlite file path
 def get_metadata_db_path(path, metadata_root_override):
-    return os.path.join(get_metadata_dir_path(path, metadata_root_override), const.DB_NAME + ".db")
+    return os.path.join(get_metadata_dir_path(path, metadata_root_override), const.LFS_DB_NAME + const.DB_EXT)
 
 def get_metadata_dir_path(path, metadata_root_override):
     return os.path.join(get_metadata_root(path, metadata_root_override), const.METADATA_DIR_NAME)

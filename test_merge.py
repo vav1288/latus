@@ -3,15 +3,13 @@ import os
 import unittest
 import test_latus
 import merge
-import hash
+import const
 
 class test_merge(unittest.TestCase):
     def setUp(self):
-        self.test_latus = test_latus.test_latus()
-        self.test_latus.write_files()
         self.a_file = "a.txt"
         self.src_root = os.path.join(test_latus.get_simple_root(), test_latus.SRC)
-        self.out_file_path = os.path.join(test_latus.get_simple_root(), "domerge.bat")
+        self.out_file_path = os.path.join(test_latus.get_simple_root(), const.OUTPUT_FILE)
         self.create_merge_object()
         self.m.clean() # start with a fresh database
         # Load up the database with file info.  Generally this is run in run(), but since we're

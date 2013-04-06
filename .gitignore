@@ -1,4 +1,6 @@
 #
+# our output files
+domerge.bat
 # the usual things to not put in the repo
 temp.*
 temp/
@@ -10,7 +12,7 @@ dist/
 .idea
 #
 # test files are programmatically generated
-test/
+tstfiles/
 #
 # compiled files
 *.pyc

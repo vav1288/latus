@@ -1,14 +1,12 @@
 
-import os
 import unittest
+import logging
 import test_latus
 import folder
 import analyze
 
 class test_analyze(unittest.TestCase):
     def setUp(self):
-        self.test_latus = test_latus.test_latus()
-        self.test_latus.write_files()
         root = test_latus.get_root()
         # Load up metadata from the root (this way we have many duplicate files, so we can make sure
         # we only get the subset in simple we're looking for).
@@ -25,7 +23,9 @@ class test_analyze(unittest.TestCase):
         # todo : figure out how to not have these constants of 2 and - 1
         self.assertEqual(len(hashes), 2) # 2 different file contents
         n_found = hashes[hashes.keys()[0]]
-        self.assertEqual(n_found, self.test_latus.number_of_files_written() - 1) # -1 since we have one other type of contents
+        t = test_latus.test_latus()
+        n_files_written = t.write_files(force=True, write_flag=False)
+        self.assertEqual(n_found, n_files_written - 1) # -1 since we have one other contents (different_test_string)
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,6 +4,7 @@ import win32api
 import win32con
 import platform
 import pywintypes
+import logging
 import unicodedata
 import logger
 
@@ -42,6 +43,11 @@ def get_abs_path_wo_drive(p):
     p = os.path.abspath(p)
     p = remove_drive_spec(p)
     return p
+
+def del_files(file_list):
+    for f in file_list:
+        if os.path.exists(f):
+            os.remove(f)
 
 def get_file_attributes(in_path):
     attrib = 0

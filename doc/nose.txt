@@ -1,0 +1,3 @@
+Make sure nosetests --nocapture is used, since there's a nose bug where if non-ASCII is
+sent to stdout, nose blows up.  Should also do : --exclude-dir=tstfiles to also try to
+make sure nose doesn't encounter non-ASCII characters.
