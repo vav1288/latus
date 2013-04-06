@@ -17,3 +17,6 @@ tstfiles/
 #
 # compiled files
 *.pyc
+#
+# using MANIFEST.in to drive builds
+MANIFEST
