@@ -181,8 +181,8 @@ Command line example:
 
     args = parser.parse_args()
     if args.source is None:
-        print "no arguments - stub for GUI version"
-        exit()
+        # stub for GUI version
+        sys.exit("-h for help")
     if args.test is None:
         metadata_root_override = None
     else:

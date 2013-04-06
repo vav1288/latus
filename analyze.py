@@ -61,7 +61,7 @@ if __name__ == "__main__":
 Execute with no arguments to run the GUI version.
 
 Command line example:
-""" + os.path.split(sys.argv[0])[-1] + " -s my_source -d my_dest"
+""" + os.path.split(sys.argv[0])[-1] + " -p my_source"
 
     parser = argparse.ArgumentParser(epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-p", "--path", help="path to directory/folder to analyze")
@@ -71,8 +71,8 @@ Command line example:
 
     args = parser.parse_args()
     if args.path is None:
-        print "no arguments - stub for GUI version"
-        exit()
+        # stub for GUI version
+        sys.exit("-h for help")
     if args.test is None:
         metadata_root_override = None
     else:

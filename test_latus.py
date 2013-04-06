@@ -2,7 +2,7 @@
 # latus-wide testing routines
 
 import os
-import logging
+import shutil
 import const
 import util
 
@@ -57,6 +57,9 @@ class test_latus():
         paths = get_unicode_file_paths(root_dir)
         for file_path in paths:
             self.write_to_file(file_path, test_string, write_flag)
+
+    def clean(self):
+        shutil.rmtree(get_root())
 
 def get_root():
     return const.TEST_DIR
