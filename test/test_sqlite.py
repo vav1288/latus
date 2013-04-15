@@ -1,11 +1,8 @@
 
 import tempfile
 import unittest
-import logging
 import logger
-import os
 import sqlite
-import test_latus
 
 class TestSQLite(unittest.TestCase):
     def setUp(self):
@@ -50,3 +47,6 @@ class TestSQLite(unittest.TestCase):
         self.create_table()
         self.write_table()
         self.close()
+
+if __name__ == "__main__":
+    unittest.main()

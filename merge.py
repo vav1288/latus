@@ -6,7 +6,6 @@ import sys
 import platform
 import logger
 import util
-import logging
 import walker
 import folder
 import argparse
@@ -163,6 +162,7 @@ class merge:
             self.dest.target_hash.clean()
 
 if __name__ == "__main__":
+    logger.setup()
     log = logger.get_log()
 
     epilog = """
@@ -177,7 +177,7 @@ Command line example:
     parser.add_argument("-m", "--mode", nargs=1, default = 'm', choices='acm', help="analyze, copy or move")
     parser.add_argument("-o", "--outfile", help="output file path")
     parser.add_argument("-t", "--test", nargs=1, help="special test parameters (metadata path)", default = None)
-    parser.add_argument("-v", "--verbose", help="print informational messages", action="store_true")
+    util.add_common_arg(parser)
 
     args = parser.parse_args()
     if args.source is None:
@@ -193,11 +193,8 @@ Command line example:
     dest = util.decode_text(args.dest)
     out_file_path = args.outfile
 
-    logger.setup()
-    if verbose:
-        log.setLevel(logging.INFO)
-    m = merge(source, out_file_path , dest, verbose = verbose,
-                     metadata_root_override = metadata_root_override,
-                     mode = mode)
+    logger.set_log_level(args.loglevel)
+    m = merge(source, out_file_path , dest, verbose = args.verbose,
+              metadata_root_override = metadata_root_override, mode = mode)
     m.run()
     m.close()

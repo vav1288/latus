@@ -1,0 +1,17 @@
+
+verbose vs. log level settings
+------------------------------
+
+verbose is intended for user interaction.  For example, if a user wants
+to see what the program is doing step by step, verbose can be used.
+A common usage is for the user to 'debug' their parameters and make sure
+they are using the application properly.
+
+log level settings are intended for developers.  The most common usages
+are for debug of coding errors and/or collect runtime statistics.
+This is especially handy in situations where developers can't modify the
+source code on the fly for some reason (e.g. they only have executables,
+or they don't readily have a way to modify the source).  Generally, users should 
+not see log messages unless there are program bugs that cause the program
+to malfunction in some way (programs should not merely silently crash - the
+user should be alterted in some way).

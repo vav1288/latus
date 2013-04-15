@@ -1,6 +1,5 @@
 
 import unittest
-import logging
 import test_latus
 import folder
 import analyze

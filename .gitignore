@@ -17,6 +17,7 @@ tstfiles/
 #
 # compiled files
 *.pyc
+__pycache__/
 #
 # using MANIFEST.in to drive builds
 MANIFEST

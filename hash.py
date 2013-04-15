@@ -49,8 +49,9 @@ class hash():
             try:
                 mtime = os.path.getmtime(abs_path)
                 size = os.path.getsize(abs_path)
-            except UnicodeDecodeError, details:
-                self.log.error(str(details) + "," + abs_path)
+            except UnicodeDecodeError: # , details:
+                # self.log.error(str(details) + "," + abs_path)
+                self.log.error(abs_path)
                 return None, None
             # use the absolute path, but w/o the drive specification in the hash table
             canon_abs_path_no_drive = util.encode_text(util.get_abs_path_wo_drive(path))
@@ -130,7 +131,7 @@ class hash():
         attributes = util.get_file_attributes(file_path)
         if not attributes or attributes <= self.include_attrib:
             if self.verbose:
-                print util.encode_text(file_path)
+                print (util.encode_text(file_path))
             # it's a lot faster taking a buffer at a time vs 1 byte at a time (2 orders of magnitude faster)
             bucket_size = 4096 # just a guess ...
             try:
@@ -140,8 +141,8 @@ class hash():
                     hash.update(val)
                     val = f.read(bucket_size)
                 f.close()
-            except IOError, details:
-                self.log.warn(str(details) + "," + file_path)
+            except IOError: # , details:
+                self.log.warn(file_path)
 
     def calc_sha512(self, path):
         start_time = time.time()
@@ -214,5 +215,5 @@ example:
         file_attrib = []
     f = hash(verbose=args.verbose, include_attrib=file_attrib)
     hash, cache_flag = f.get_hash(args.path)
-    print hash
+    print (hash)
 

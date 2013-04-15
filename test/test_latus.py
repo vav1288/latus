@@ -3,6 +3,7 @@
 
 import os
 import shutil
+import time
 import const
 import util
 
@@ -39,6 +40,11 @@ class test_latus():
             self.write_to_file(os.path.join(get_simple_root(), DEST_EXISTS_UNDER_DIFFERENT_NAME, u"a_but_different_name.txt"), test_string, write_flag)
         if force or not os.path.exists(get_unicode_root()):
             self.write_unicode_files(get_unicode_root(), test_string, write_flag)
+        if force or not os.path.exists(get_mtime_root()):
+            f = os.path.join(get_mtime_root(), a_file_name)
+            t = get_mtime_time()
+            self.write_to_file(f, test_string, write_flag)
+            os.utime(f, (t, t))
 
         return self.files_written
 
@@ -47,7 +53,8 @@ class test_latus():
         # turn off writing to enable us to merely count the files we would have written
         # (we need to know how many files written for testing purposes)
         if write_flag:
-            make_dirs(os.path.split(p)[0])
+            d = os.path.dirname(p)
+            make_dirs(d)
             f = open(p, "w")
             f.write(contents)
             f.close()
@@ -70,21 +77,27 @@ def get_unicode_root():
 def get_simple_root():
     return os.path.join(get_root(), u"simple")
 
+def get_mtime_root():
+    return os.path.join(get_root(), u"mtime")
+
+def get_mtime_time():
+    return time.mktime(time.strptime("12", "%y"))
+
 def make_dirs(p):
     if not os.path.exists(p):
         os.makedirs(p)
 
 def make_unicode_string(start, length, inc = 1):
-    s = u''
-    c = start
-    space = 32 # ' '
+    out_string = u''
+    char_codepoint = start
     # Avoid / and \ so we don't mistakenly create a folder, as well as other illegal filename chars
     illegal_chars = [ u'/', u"\\", u";", u"*", u"?", u'"', u"<", u">", u"|", u":"]
-    while len(s) < length:
-        if (c >= space) and not (unichr(c) in illegal_chars):
-            s = s + unichr(c)
-        c = c + inc
-    return s
+    while len(out_string) < length:
+        unicode_char = chr(char_codepoint)
+        if (char_codepoint >= ord(u' ')) and not (unicode_char in illegal_chars):
+            out_string = out_string + unicode_char
+        char_codepoint = char_codepoint + inc
+    return out_string
 
 def get_unicode_file_paths(root_dir):
     paths = []
@@ -99,4 +112,4 @@ def get_unicode_file_paths(root_dir):
 
 if __name__ == "__main__":
     test = test_latus()
-    test.write_files()
+    test.write_files(force=True)

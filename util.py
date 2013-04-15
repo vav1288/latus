@@ -4,7 +4,6 @@ import win32api
 import win32con
 import platform
 import pywintypes
-import logging
 import unicodedata
 import logger
 
@@ -52,14 +51,12 @@ def del_files(file_list):
 def get_file_attributes(in_path):
     attrib = 0
     attributes = []
-    hidden_flag = False
-    system_flag = False
     if is_windows():
         long_abs_path = get_long_abs_path(in_path)
         try:
             attrib = win32api.GetFileAttributes(long_abs_path)
-        except pywintypes.error, details:
-            logger.get_log().error(details)
+        except pywintypes.error:
+            #logger.get_log().error()
             logger.get_log().error(long_abs_path)
         if attrib & win32con.FILE_ATTRIBUTE_HIDDEN:
             attributes.append(win32con.FILE_ATTRIBUTE_HIDDEN)
@@ -70,6 +67,12 @@ def get_file_attributes(in_path):
 
 def make_hidden(in_path):
     win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
+
+def add_common_arg(parser):
+    parser.add_argument("-v", "--verbose", action="store_true", help="print informational messages")
+    parser.add_argument("-l", "--loglevel", choices=('d', 'debug', 'i', 'info', 'w', 'warning', 'e', 'error'),
+                        default='w', nargs=1,help="set logging level")
+
 
 # From: "Getting unicode right in Python" by Nick Johnson
 # 1) All text strings, everywhere should be of type unicode, not str. If you're handling text, and your variable is a
@@ -90,7 +93,8 @@ def make_hidden(in_path):
 
 # call this for all strings we read in
 def decode_text(in_text):
-    return in_text.decode(text_encoding)
+    return in_text
+    #return in_text.decode(text_encoding)
 
 # call this for all string we write out (e.g. to database or print statements)
 def encode_text(in_text):

@@ -3,7 +3,6 @@ import os
 import unittest
 import test_latus
 import merge
-import logging
 
 class test_merge_cli(unittest.TestCase):
     def setUp(self):

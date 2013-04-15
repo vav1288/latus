@@ -169,11 +169,7 @@ class sqlite:
 
     # convert to unicode and escape (CUE)
     # Converts various types and escape out special characters for sqlite.
-    # returns a unicode string
     def cue(self,s):
-        if not isinstance(s, basestring):
-            s = str(s) # e.g. numerics
-        s = util.decode_text(s)
         s = s.replace(u"'", u"''") # for sqlite string
         return s
 
