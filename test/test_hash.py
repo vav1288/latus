@@ -2,11 +2,11 @@
 import os
 import shutil
 import unittest
-import logger
-import util
-import folder
-import hash
-import test_latus
+from .. import util
+from .. import folder
+from .. import hash
+from .. import logger
+from . import test_latus
 
 # todo: make it so the tests run OK w/o relying the order of _a, _b, etc.
 
@@ -74,3 +74,6 @@ class TestHash(unittest.TestCase):
         #print new_hash_val, new_cache_flag
         self.assertTrue(cache_flag is False)
         self.assertNotEqual(hash_val, new_hash_val)
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,10 +1,8 @@
 
-import hash
-import os
-import hashlib
-import util
-import metadata_location
-import walker
+from . import hash
+from . import util
+from . import metadata_location
+from . import walker
 
 # target is a folder (windows) or directory (unix), typically a source or dest
 class folder:

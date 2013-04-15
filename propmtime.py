@@ -10,7 +10,7 @@ import win32con
 import os
 import argparse
 import time
-import util
+from . import util
 
 class propmtime():
     def __init__(self, root, process_hidden = False, process_system = False, print_flag = False):
@@ -47,7 +47,7 @@ class propmtime():
                             mtime = os.path.getctime(long_full_path)
                     except WindowsError:
                         if self.print_flag:
-                            print (util.encode_text(long_full_path), details)
+                            print((util.encode_text(long_full_path), details))
                         self.error_count += 1
                     # make sure it's still not in the future ... if it is, ignore it
                     if mtime <= start_time:
@@ -61,7 +61,7 @@ class propmtime():
                     os.utime(long_path, (latest_time, latest_time))
             except WindowsError:
                 if self.print_flag:
-                    print (util.default_text_encoding(long_path), details)
+                    print((util.default_text_encoding(long_path), details))
                 self.error_count += 1
 
         self.total_time = time.time() - start_time
@@ -70,9 +70,9 @@ class propmtime():
 
     def print_stats(self):
         if self.error_count > 0:
-            print (self.error_count, "total errors")
-        print ("total files/folders/directories:", self.files_folders_count)
-        print ("elapsed time:", self.total_time, "sec")
+            print((self.error_count, "total errors"))
+        print(("total files/folders/directories:", self.files_folders_count))
+        print(("elapsed time:", self.total_time, "sec"))
 
 if __name__ == "__main__":
     desc = """Many OSs (including Windows) only change the modification time of a folder/directory based on its
@@ -104,11 +104,11 @@ Default is to ignore hidden and system files."""
     pmt = propmtime(args.path, process_hidden, process_system, args.verbose)
 
     if not os.path.isdir(util.get_long_abs_path(args.path)):
-        print ("error:", args.path, "is not a folder/directory")
+        print(("error:", args.path, "is not a folder/directory"))
         print ("exiting...")
         exit()
     if args.verbose:
-        print ("path:", args.path)
+        print(("path:", args.path))
 
     pmt.run()
     if args.verbose:

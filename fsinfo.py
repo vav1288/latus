@@ -3,8 +3,8 @@ import os
 import sys
 import win32con
 import time
-import util
-import logger
+from . import util
+from . import logger
 
 class fsinfo:
     def __init__(self, root):
@@ -13,7 +13,7 @@ class fsinfo:
         #print time.asctime(time.localtime(self.earliest_believable_time))
 
     def run(self):
-        print u"path", u"\"" + self.root + u"\""
+        print(("path", "\"" + self.root + "\""))
         self.file_count = 0
         self.dir_count = 0
         self.total_size = 0
@@ -46,20 +46,20 @@ class fsinfo:
                         self.latest_time = mtime
             for d in dirs:
                 self.dir_count += 1
-        print u"file_count", self.file_count
-        print u"system_count", self.system_count
-        print u"hidden_count", self.hidden_count
-        print u"total_size", self.total_size
-        print u"dir_count", self.dir_count
+        print(("file_count", self.file_count))
+        print(("system_count", self.system_count))
+        print(("hidden_count", self.hidden_count))
+        print(("total_size", self.total_size))
+        print(("dir_count", self.dir_count))
         if self.earliest_path is not None:
-            print u"earliest \"" + self.earliest_path + u"\"", u"\"" + time.asctime(time.localtime(self.earliest_time)) + u"\"", self.earliest_time
+            print(("earliest \"" + self.earliest_path + "\"", "\"" + time.asctime(time.localtime(self.earliest_time)) + "\"", self.earliest_time))
         if self.latest_path is not None:
-            print u"latest \"" + self.latest_path + u"\"", u"\"" + time.asctime(time.localtime(self.latest_time)) + u"\"", self.latest_time
+            print(("latest \"" + self.latest_path + "\"", "\"" + time.asctime(time.localtime(self.latest_time)) + "\"", self.latest_time))
 
 if __name__ == "__main__":
     logger.setup()
     if len(sys.argv) < 2:
-        path = u"."
+        path = "."
     else:
         path = sys.argv[1]
     path = util.decode_text(path)

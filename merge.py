@@ -4,11 +4,12 @@
 import os
 import sys
 import platform
-import logger
-import util
-import walker
-import folder
 import argparse
+from . import logger
+from . import util
+from . import walker
+from . import folder
+
 
 MODE_UNDEFINED, MODE_ANALYZE, MODE_COPY, MODE_MOVE = tuple(range(4))
 EXISTS_EXACT, EXISTS_ELSEWHERE, EXISTS_CONFLICT, DOES_NOT_EXIST = tuple(range(4))
@@ -57,13 +58,13 @@ class merge:
 
         self.source = folder.folder(source_root, metadata_root_override)
         if self.verbose:
-            print "source : metadata_db_path :", self.source.get_metadata_db_path()
+            print(("source : metadata_db_path :", self.source.get_metadata_db_path()))
         if dest_root is None:
             self.dest = None
         else:
             self.dest = folder.folder(dest_root, metadata_root_override)
             if self.verbose:
-                print "dest : metadata_db_path :", self.source.get_metadata_db_path()
+                print(("dest : metadata_db_path :", self.source.get_metadata_db_path()))
 
         self.out_file = None
         self.out_file_path = out_file_path
@@ -134,13 +135,13 @@ class merge:
                 if self.dest.root is not None:
                     self.out_file.write("REM dest " + self.dest.root + "\n")
         if not os.path.exists(self.source.root):
-            print "Source does not exist :", self.source.root
-            print "Exiting"
+            print(("Source does not exist :", self.source.root))
+            print ("Exiting")
             return False
         if self.dest is not None:
             if not os.path.exists(self.source.root):
-                print "Source does not exist :", self.source.root
-                print "Exiting"
+                print(("Source does not exist :", self.source.root))
+                print ("Exiting")
                 return False
 
         if self.mode is MODE_ANALYZE:

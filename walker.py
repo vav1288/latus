@@ -1,17 +1,17 @@
 
 import os
-import const
+from . import const
 import msvcrt
-import util
+from . import util
 
 class walker:
     def __init__(self, root):
         self.root = util.decode_text(root) # safety net for str root paths that have unicode children
 
     def __iter__(self):
-        return self.next()
+        return next(self)
 
-    def next(self):
+    def __next__(self):
         for dirpath, dirnames, filenames in os.walk(self.root):
             metadata_dir_name = const.METADATA_DIR_NAME
             if metadata_dir_name in dirnames:
@@ -25,7 +25,7 @@ class walker:
                     full_abs_path = os.path.abspath(os.path.join(dirpath, name))
                     root_abs_path = os.path.abspath(self.root)
                     partial_path = full_abs_path.replace(root_abs_path, "")
-                    if (partial_path[0] == u"\\") or (partial_path[0] == u"/"):
+                    if (partial_path[0] == "\\") or (partial_path[0] == "/"):
                         # Generally these strings end up with an extra separator at the start we need to remove.
                         # These should cover both Windows and Linux.
                         partial_path = partial_path[1:]

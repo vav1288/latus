@@ -2,7 +2,7 @@
 import sys
 import logging
 import logging.handlers
-import const
+from . import const
 
 """ General logging capability.
 

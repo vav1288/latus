@@ -1,7 +1,6 @@
 
-import test_latus
 import logging
-import logger
+from .. import logger
 
 def print_all_levels(log, msg = ""):
     log.error('"error test message %s"', msg)

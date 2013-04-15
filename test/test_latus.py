@@ -4,14 +4,14 @@
 import os
 import shutil
 import time
-import const
-import util
+from .. import const
+from .. import util
 
-SRC = u"src"
-DEST_EMPTY = u"dest_empty"
-DEST_EXISTS_EXACT = u"dest_exists_exact"
-DEST_EXISTS_DIFFERENT = u"dest_exists_different"
-DEST_EXISTS_UNDER_DIFFERENT_NAME = u"dest_exists_under_different_name"
+SRC = "src"
+DEST_EMPTY = "dest_empty"
+DEST_EXISTS_EXACT = "dest_exists_exact"
+DEST_EXISTS_DIFFERENT = "dest_exists_different"
+DEST_EXISTS_UNDER_DIFFERENT_NAME = "dest_exists_under_different_name"
 
 N_UNICODE = 63
 TEST_MAX_CODE = 8192
@@ -23,9 +23,9 @@ class test_latus():
     #
     # todo: determine if we already have these written out so we can avoid time consuming deletes and re-writes
     def write_files(self, force = False, write_flag = True):
-        test_string = u"a"
-        different_test_string = u"b"
-        a_file_name = u"a.txt"
+        test_string = "a"
+        different_test_string = "b"
+        a_file_name = "a.txt"
 
         self.files_written = 0
         util.del_files((os.path.join(get_root(), const.METADATA_DIR_NAME, const.LFS_DB_NAME + const.DB_EXT),
@@ -37,7 +37,7 @@ class test_latus():
             make_dirs(os.path.join(get_simple_root(), DEST_EMPTY))
             self.write_to_file(os.path.join(get_simple_root(), DEST_EXISTS_EXACT, a_file_name), test_string, write_flag)
             self.write_to_file(os.path.join(get_simple_root(), DEST_EXISTS_DIFFERENT, a_file_name), different_test_string, write_flag)
-            self.write_to_file(os.path.join(get_simple_root(), DEST_EXISTS_UNDER_DIFFERENT_NAME, u"a_but_different_name.txt"), test_string, write_flag)
+            self.write_to_file(os.path.join(get_simple_root(), DEST_EXISTS_UNDER_DIFFERENT_NAME, "a_but_different_name.txt"), test_string, write_flag)
         if force or not os.path.exists(get_unicode_root()):
             self.write_unicode_files(get_unicode_root(), test_string, write_flag)
         if force or not os.path.exists(get_mtime_root()):
@@ -72,13 +72,13 @@ def get_root():
     return const.TEST_DIR
 
 def get_unicode_root():
-    return os.path.join(get_root(), u"unicode")
+    return os.path.join(get_root(), "unicode")
 
 def get_simple_root():
-    return os.path.join(get_root(), u"simple")
+    return os.path.join(get_root(), "simple")
 
 def get_mtime_root():
-    return os.path.join(get_root(), u"mtime")
+    return os.path.join(get_root(), "mtime")
 
 def get_mtime_time():
     return time.mktime(time.strptime("12", "%y"))
@@ -88,13 +88,13 @@ def make_dirs(p):
         os.makedirs(p)
 
 def make_unicode_string(start, length, inc = 1):
-    out_string = u''
+    out_string = ''
     char_codepoint = start
     # Avoid / and \ so we don't mistakenly create a folder, as well as other illegal filename chars
-    illegal_chars = [ u'/', u"\\", u";", u"*", u"?", u'"', u"<", u">", u"|", u":"]
+    illegal_chars = [ '/', "\\", ";", "*", "?", '"', "<", ">", "|", ":"]
     while len(out_string) < length:
         unicode_char = chr(char_codepoint)
-        if (char_codepoint >= ord(u' ')) and not (unicode_char in illegal_chars):
+        if (char_codepoint >= ord(' ')) and not (unicode_char in illegal_chars):
             out_string = out_string + unicode_char
         char_codepoint = char_codepoint + inc
     return out_string
@@ -106,7 +106,7 @@ def get_unicode_file_paths(root_dir):
     max_code =  TEST_MAX_CODE - space # fairly arbitrary max - perhaps this should be a different value?
     for start in range(space, max_code, length):
         # start and end with something always valid
-        file_name = u'A' + make_unicode_string(start, length) + u'.txt'
+        file_name = 'A' + make_unicode_string(start, length) + '.txt'
         paths.append(os.path.join(root_dir, file_name))
     return paths
 

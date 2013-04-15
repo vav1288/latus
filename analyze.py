@@ -4,9 +4,9 @@ import os
 import sys
 import platform
 import collections
-import logger
-import util
-import folder
+from . import logger
+from . import util
+from . import folder
 
 class analyze:
     def __init__(self, path, metadata_root_override, verbose = False):
@@ -15,14 +15,14 @@ class analyze:
 
         self.folder = folder.folder(path, metadata_root_override, verbose)
         if self.verbose:
-            print ("metadata_db_path :", self.folder.get_metadata_db_path())
+            print(("metadata_db_path :", self.folder.get_metadata_db_path()))
 
         logger.get_log().info('"computer","%s"',platform.node())
         logger.get_log().info('"path","%s"',self.path)
 
     def run(self):
         if self.verbose:
-            print ("analyze :", self.path)
+            print(("analyze :", self.path))
         file_count = 0
         self.folder.scan() # ensure metadata is up to date
         hash_counts = collections.defaultdict(int)
@@ -44,11 +44,11 @@ class analyze:
             if paths is not None:
                 # todo : figure out how paths can be None
                 if len(paths) > 1:
-                    print (len(paths))
+                    print((len(paths)))
                     for p in paths:
-                        print (util.encode_text(p))
+                        print((util.encode_text(p)))
         if self.verbose:
-            print ("total files analyzed :", file_count)
+            print(("total files analyzed :", file_count))
         if not len(hash_counts):
             print ("All files unique")
         return hash_counts

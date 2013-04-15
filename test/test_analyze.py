@@ -1,8 +1,8 @@
 
 import unittest
-import test_latus
-import folder
-import analyze
+from . import test_latus
+from .. import folder
+from .. import analyze
 
 class test_analyze(unittest.TestCase):
     def setUp(self):
@@ -21,7 +21,10 @@ class test_analyze(unittest.TestCase):
         hashes = self.analyze.run()
         # todo : figure out how to not have these constants of 2 and - 1
         self.assertEqual(len(hashes), 2) # 2 different file contents
-        n_found = hashes[hashes.keys()[0]]
+        # Check for the file that appears the most often. For this input case this works OK since
+        # we have one file contents that the vast majority of the files have, and one other that only appears
+        # a small number of times.
+        n_found = max(hashes.values())
         t = test_latus.test_latus()
         n_files_written = t.write_files(force=True, write_flag=False)
         self.assertEqual(n_found, n_files_written - 1) # -1 since we have one other contents (different_test_string)

@@ -1,6 +1,6 @@
 
 import os
-import const
+from . import const
 
 
 # use this to avoid the metadata

@@ -1,13 +1,12 @@
 
 import hashlib
 import os
-import sqlite
-import win32api
+from . import sqlite
 import win32con
-import logger
-import util
+from . import logger
+from . import util
 import time
-import metadata_location
+from . import metadata_location
 
 # todo: check the disk space where the cache resides and make sure we don't consume too much space
 #
@@ -131,7 +130,7 @@ class hash():
         attributes = util.get_file_attributes(file_path)
         if not attributes or attributes <= self.include_attrib:
             if self.verbose:
-                print (util.encode_text(file_path))
+                print((util.encode_text(file_path)))
             # it's a lot faster taking a buffer at a time vs 1 byte at a time (2 orders of magnitude faster)
             bucket_size = 4096 # just a guess ...
             try:
@@ -204,7 +203,7 @@ example:
 """ + os.path.split(sys.argv[0])[-1] + " -p myfolder"
 
     parser = argparse.ArgumentParser(epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("-p", "--path", default=u'.', help="path to source directory/folder")
+    parser.add_argument("-p", "--path", default='.', help="path to source directory/folder")
     parser.add_argument("-a", "--all", action="store_true", help="hash all files (default is to ignore hidden and system files")
     parser.add_argument("-v", "--verbose", action="store_true", help="print informational messages")
 

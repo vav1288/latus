@@ -5,8 +5,8 @@ import os
 import sys
 import win32api
 import win32con
-import util
-import logger
+from . import util
+from . import logger
 
 class sqlite:
     """ A layer on top of Python's SQLite capability.
@@ -138,7 +138,7 @@ class sqlite:
             lstr += self.cue(elem)
             if do_quotes:
                 lstr += self.lstr("'")
-        lstr += u')'
+        lstr += ')'
         return lstr
 
     def insert(self, vals):
@@ -150,15 +150,15 @@ class sqlite:
     def update(self, values, where):
         # todo: do something like : c.execute('UPDATE objects SET created=?,modified=? WHERE id=?', (row[0:3])) ?
         valstr = self.lstr("")
-        for key in values.keys():
+        for key in list(values.keys()):
             if len(valstr) > 0:
                 valstr += self.lstr(',')
             valstr += self.cue(key) + self.lstr("='") + self.cue(values[key]) + self.lstr("'")
         wherestr = self.lstr("")
-        for key in where.keys():
+        for key in list(where.keys()):
             if len(wherestr) > 0:
                 wherestr += self.lstr(' AND ')
-            wherestr += self.cue(key) + u"='" + self.cue(where[key]) + u"'"
+            wherestr += self.cue(key) + "='" + self.cue(where[key]) + "'"
         e = self.lstr("UPDATE ") + self.table + self.lstr(" SET ") + valstr + self.lstr(" WHERE ") + wherestr
         #print e
         self.exec_db(e, False)
@@ -170,16 +170,17 @@ class sqlite:
     # convert to unicode and escape (CUE)
     # Converts various types and escape out special characters for sqlite.
     def cue(self,s):
-        s = s.replace(u"'", u"''") # for sqlite string
+        s = str(s)
+        s = s.replace("'", "''") # for sqlite string
         return s
 
 
     # gets a list of entries of a particular column based on spec
     def get(self, qualifiers, col_name, operators = None):
         cmd = self.lstr("SELECT ") + self.cue(col_name) + self.lstr(" from ") + self.cue(self.table) + self.lstr(" WHERE ")
-        subcmd = u""
+        subcmd = ""
         if qualifiers is not None:
-            for col in qualifiers.keys():
+            for col in list(qualifiers.keys()):
                 if len(subcmd) > 1:
                     subcmd += self.lstr(" AND ")
                 if operators is None:

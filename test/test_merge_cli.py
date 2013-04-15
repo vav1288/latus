@@ -1,8 +1,8 @@
 
 import os
 import unittest
-import test_latus
-import merge
+from . import test_latus
+from .. import merge
 
 class test_merge_cli(unittest.TestCase):
     def setUp(self):
@@ -33,3 +33,5 @@ class test_merge_cli(unittest.TestCase):
             found_it = True
         assert(found_it)
 
+if __name__ == "__main__":
+    unittest.main()

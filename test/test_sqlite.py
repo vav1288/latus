@@ -1,8 +1,8 @@
 
 import tempfile
 import unittest
-import logger
-import sqlite
+from .. import logger
+from .. import sqlite
 
 class TestSQLite(unittest.TestCase):
     def setUp(self):

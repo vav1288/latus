@@ -1,9 +1,9 @@
 
 import os
 import unittest
-import test_latus
-import merge
-import const
+from . import test_latus
+from .. import merge
+from .. import const
 
 class test_merge(unittest.TestCase):
     def setUp(self):
