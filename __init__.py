@@ -1,7 +1,5 @@
 
-from . import analyze
-from . import merge
-from .test import test_latus
+from .latus.test import test_latus
 
 def setUpPackage():
     tl = test_latus.test_latus()
