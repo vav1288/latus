@@ -1,0 +1,1 @@
+merge.py -v -s test\simple\src -d test\simple\dest_temp -o domerge.bat
