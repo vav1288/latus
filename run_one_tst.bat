@@ -1,0 +1,1 @@
+nosetests latus.latus.test.test_hash:TestHash.test_a_clean -v -s

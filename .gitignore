@@ -13,7 +13,7 @@ build/
 .idea
 #
 # test files are programmatically generated
-tstfiles/
+test/data/
 #
 # compiled files
 *.pyc
