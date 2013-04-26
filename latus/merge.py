@@ -4,7 +4,6 @@
 import os
 import sys
 import platform
-import argparse
 from . import folder, logger, util, walker
 
 
@@ -29,7 +28,7 @@ def mode_to_str(mode):
     elif mode == MODE_COPY:
         str = "copy"
     elif mode == MODE_ANALYZE:
-        str = "analyze"
+        str = "finddup"
     return str
 
 def search_result_to_str(search_result):

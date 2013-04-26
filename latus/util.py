@@ -1,15 +1,16 @@
 import os
+import sys
 import win32api
 import platform
+import collections
 
 import win32con
 import pywintypes
 
 from . import logger
 
-
-text_normalization = 'NFC'
-text_encoding = 'utf8'
+#text_normalization = 'NFC'
+#text_encoding = 'utf8'
 
 # for when we go to Python 3.x:
 # @lru_cache()
@@ -69,21 +70,28 @@ def get_file_attributes(in_path):
 def make_hidden(in_path):
     win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
 
-def add_common_arg(parser):
-    parser.add_argument("-v", "--verbose", action="store_true", help="print informational messages")
-    parser.add_argument("-l", "--loglevel", choices=('d', 'debug', 'i', 'info', 'w', 'warning', 'e', 'error'),
-                        default='w', nargs=1,help="set logging level")
-
-
-# remnants from the Python 2.x version
+# supplying metadata location is handy for testing
+Metadata = collections.namedtuple('metadata', ['root', 'name'])
 
 # call this for all strings we read in
+# (this was used for Python 2.x and actually did a decode ... may not need to do that anymore)
 def decode_text(in_text):
+    # todo: check that this is UTF-8 and if not convert
     return in_text
 
-# call this for all string we write out (e.g. to database or print statements)
-def encode_text(in_text):
-    return in_text
-
-
+def check_text_encoding(do_exit = False, give_help = True):
+    # required for printing unicode to console
+    # http://daveagp.wordpress.com/2010/10/26/what-a-character/
+    desired_encoding = "UTF-8"
+    ok = (sys.stdin.encoding == desired_encoding)
+    if not ok:
+        if give_help:
+            print ("current text encoding:", sys.stdin.encoding)
+            print ("desired text encoding:", desired_encoding)
+            print ("This can be fixed by setting the PYTHONIOENCODING environment variable.")
+            print ("Please do this (e.g. Windows environment variable setup or console):")
+            print ("set PYTHONIOENCODING=utf_8")
+        if do_exit:
+            exit("proper text encoding not set up ... exiting")
+    return ok
 

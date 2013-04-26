@@ -1,9 +1,10 @@
 
 import platform
 import collections
+import pprint
 from . import folder, logger, util
 
-class analyze:
+class finddup:
     def __init__(self, path, metadata_root_override, verbose = False):
         self.verbose = verbose
         self.path = path
@@ -17,23 +18,27 @@ class analyze:
 
     def run(self):
         if self.verbose:
-            print(("analyze :", self.path))
+            print(("finddup :", self.path))
         file_count = 0
         self.folder.scan() # ensure metadata is up to date
         hash_counts = collections.defaultdict(int)
         for file_path in self.folder.get_walker():
             full_path = self.folder.get_walker().get_path(file_path) # ugly ...
-            #if self.verbose:
-            #    print "analyze", util.encode_text(full_path)
+            if self.verbose:
+                print ("finddup", full_path)
             hash_val = self.folder.get_hash(full_path)
             hash_counts[hash_val] += 1
             file_count += 1
+        #pprint.pprint(hash_counts)
+        print("-------------------")
         for h in collections.Counter(hash_counts):
 
             # todo: CLEAN THIS UP!!! UGLY!!!
             p = util.get_abs_path_wo_drive(self.path)
+            pprint.pprint(p)
+            pprint.pprint(h)
             paths = self.folder.target_hash.get_paths_from_hash(h, p)
-
+            pprint.pprint(paths)
             # todo: bug fix : this yields all the files with this hash ... need to only give the ones
             # that are in the tree below self.source_root .
             if paths is not None:
@@ -41,7 +46,8 @@ class analyze:
                 if len(paths) > 1:
                     print((len(paths)))
                     for p in paths:
-                        print((util.encode_text(p)))
+                        print(p)
+        print("-------------------")
         if self.verbose:
             print(("total files analyzed :", file_count))
         if not len(hash_counts):

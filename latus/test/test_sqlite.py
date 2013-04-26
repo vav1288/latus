@@ -1,14 +1,15 @@
 
-import tempfile
 import unittest
-from .. import logger, sqlite
+from . import test_latus
+from .. import logger, sqlite, metadata_location, util
 
 class TestSQLite(unittest.TestCase):
     def setUp(self):
         self.log = logger.get_log()
 
     def create_table(self):
-        db_name = tempfile.mktemp('.db')
+        md = util.Metadata(test_latus.get_root(), self.__module__)
+        db_name = metadata_location.get_metadata_db_path(None, md)
         self.table = 'test_table'
         self.key_string = 'key'
         self.value_string = 'value'

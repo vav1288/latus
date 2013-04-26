@@ -30,10 +30,13 @@ def setup(log_file_path = const.LOG_FILE, max_bytes = 1000000, stream_out = sys.
 
     log = get_log()
 
+    log.setLevel(logging.INFO)
+
     # create console handler
     console_handler = logging.StreamHandler(stream_out)
     console_formatter = logging.Formatter(console_format_string)
     console_handler.setFormatter(console_formatter)
+    console_handler.setLevel(logging.WARN)
     log.addHandler(console_handler)
     handlers['console'] = console_handler
 

@@ -17,6 +17,7 @@ class sqlite:
         self.cols_order = []
         self.ExecCount = 0 # of pending execs
         self.db_path = db_path # full path to db file
+        print (db_path) # jca
         self.conn = None
         self.cur = None
         self.last_command = None

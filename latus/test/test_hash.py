@@ -13,10 +13,11 @@ class TestHash(unittest.TestCase):
         self.log = logger.get_log()
         # sha512 of "a"
         self.correct_hash_val = "1f40fc92da241694750979ee6cf582f2d5d7d28e18335de05abc54d0560e0f5302860c652bf08d560252aa5e74210546f369fbbbce8c12cfc7957b2652fe9a75"
-        self.root = test_latus.get_root()
+        self.root = test_latus.get_simple_root() # should this be get_root()?  make sure some test covers unicode...
         # load up metadata
-        self.target = folder.folder(self.root, self.root)
-        self.hash = hash.hash(self.root)
+        md = util.Metadata(self.root, self.__module__)
+        self.target = folder.folder(root=self.root, metadata_root=md)
+        self.hash = hash.hash(metadata_root=md)
         self.static_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.SRC, "a.txt")
         self.dynamic_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.DEST_EXISTS_UNDER_DIFFERENT_NAME, "a_but_different_name.txt")
 

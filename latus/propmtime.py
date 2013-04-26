@@ -49,7 +49,7 @@ class propmtime():
                             mtime = os.path.getctime(long_full_path)
                     except WindowsError:
                         if self.print_flag:
-                            print((util.encode_text(long_full_path), details))
+                            print(long_full_path)
                         self.error_count += 1
                     # make sure it's still not in the future ... if it is, ignore it
                     if mtime <= start_time:
@@ -63,7 +63,7 @@ class propmtime():
                     os.utime(long_path, (latest_time, latest_time))
             except WindowsError:
                 if self.print_flag:
-                    print((util.default_text_encoding(long_path), details))
+                    print(long_path)
                 self.error_count += 1
 
         self.total_time = time.time() - start_time

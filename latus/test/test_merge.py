@@ -1,7 +1,7 @@
 
 import os
 import unittest
-from .. import merge, const
+from .. import merge, const, util
 from . import test_latus
 
 
@@ -20,9 +20,10 @@ class test_merge(unittest.TestCase):
 
     # note that this is dest then src, since usually we change the dest so it has to be first
     def create_merge_object(self, dest_root = None, src_root = None):
+        md = util.Metadata(test_latus.get_root(), self.__module__)
         if src_root is None:
             src_root = self.src_root
-        self.m = merge.merge(src_root, self.out_file_path, dest_root, True, test_latus.get_root())
+        self.m = merge.merge(src_root, self.out_file_path, dest_root, True, metadata_root_override=md)
 
     # a single file
     def test_single_file_does_not_exist(self):

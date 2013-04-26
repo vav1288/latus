@@ -20,8 +20,6 @@ class test_latus():
 
     # This writes various input files.  The goal is to not have to package up test files in the repo, if we
     # can avoid it.  Also, this way we can readily re-initialize and fully clean up test files.
-    #
-    # todo: determine if we already have these written out so we can avoid time consuming deletes and re-writes
     def write_files(self, force = False, write_flag = True):
         test_string = "a"
         different_test_string = "b"
@@ -112,6 +110,4 @@ def get_unicode_file_paths(root_dir):
         paths.append(os.path.join(root_dir, file_name))
     return paths
 
-if __name__ == "__main__":
-    test = test_latus()
-    test.write_files(force=True)
+
