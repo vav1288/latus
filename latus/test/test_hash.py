@@ -4,7 +4,7 @@ import shutil
 import unittest
 
 # todo: make it so the tests run OK w/o relying the order of _a, _b, etc.
-from .. import hash, folder, logger, util
+from .. import hash, logger, util
 from . import test_latus
 
 
@@ -16,7 +16,6 @@ class TestHash(unittest.TestCase):
         self.root = test_latus.get_simple_root() # should this be get_root()?  make sure some test covers unicode...
         # load up metadata
         md = util.Metadata(self.root, self.__module__)
-        self.target = folder.folder(root=self.root, metadata_root=md)
         self.hash = hash.hash(metadata_root=md)
         self.static_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.SRC, "a.txt")
         self.dynamic_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.DEST_EXISTS_UNDER_DIFFERENT_NAME, "a_but_different_name.txt")
@@ -39,7 +38,7 @@ class TestHash(unittest.TestCase):
 
     # lookup hash in table
     def test_c_lookup_hash(self):
-        self.target.scan() # load metadata
+        self.hash.scan(self.root) # load metadata
         # get hash twice so 2nd time it's in the cache
         self.hash.get_hash(self.static_test_file_path)
         hash_val, cache_flag = self.hash.get_hash(self.static_test_file_path)
@@ -49,7 +48,7 @@ class TestHash(unittest.TestCase):
 
     # lookup file via hash
     def test_d_lookup_file_via_hash(self):
-        self.target.scan() # load metadata
+        self.hash.scan(self.root) # load metadata
         paths = self.hash.get_paths_from_hash(self.correct_hash_val)
         self.assertIsNotNone(paths)
         self.assertIn(util.get_abs_path_wo_drive(self.static_test_file_path), paths)
@@ -58,7 +57,7 @@ class TestHash(unittest.TestCase):
 
     # update table
     def test_e_update_table(self):
-        self.target.scan() # load metadata
+        self.hash.scan(self.root) # load metadata
         if os.path.exists(self.dynamic_test_file_path):
             os.remove(self.dynamic_test_file_path)
         shutil.copy(self.static_test_file_path, self.dynamic_test_file_path)

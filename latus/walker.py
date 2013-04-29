@@ -10,11 +10,6 @@ class walker:
     def __iter__(self):
         return next(self)
 
-    # todo: why do I need both __next__() and next()?
-
-#    def next(self):
-#        self.__next__()
-
     def __next__(self):
         for dirpath, dirnames, filenames in os.walk(self.root):
             metadata_dir_name = const.METADATA_DIR_NAME

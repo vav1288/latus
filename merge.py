@@ -28,9 +28,9 @@ Command line example:
         # stub for GUI version
         sys.exit("-h for help")
     if args.test is None:
-        metadata_root_override = None
+        metadata_override = None
     else:
-        metadata_root_override = args.test[0]
+        metadata_override = util.Metadata(args.test[0], None)
     verbose = args.verbose
     mode = merge.str_to_mode(args.mode)
     source = util.decode_text(args.source)
@@ -39,6 +39,6 @@ Command line example:
 
     logger.set_log_level(args.loglevel)
     m = merge.merge(source, out_file_path , dest, verbose = args.verbose,
-              metadata_root_override = metadata_root_override, mode = mode)
+              metadata_override= metadata_override, mode = mode)
     m.run()
     m.close()

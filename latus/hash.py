@@ -3,10 +3,7 @@ import os
 import time
 from collections import namedtuple
 
-from . import sqlite
-from . import util
-from . import metadata_location
-from . import logger
+from . import sqlite, util, metadata_location, logger, walker
 
 # todo: check the disk space where the cache resides and make sure we don't consume too much space
 #
@@ -34,8 +31,40 @@ class hash():
         self.HashTuple = namedtuple("hash", ['sha512', 'got_from_cache'])
         self.log = logger.get_log()
 
+    def lookup_hash(self, path):
+        abs_path = util.get_long_abs_path(path) # to get around 260 char limit
+        try:
+            mtime = os.path.getmtime(abs_path)
+            size = os.path.getsize(abs_path)
+        except UnicodeDecodeError: # , details:
+            # self.log.error(str(details) + "," + abs_path)
+            self.log.error(abs_path)
+            return None, None
+        # use the absolute path, but w/o the drive specification in the hash table
+        canon_abs_path_no_drive = util.get_abs_path_wo_drive(path)
+        if self.is_in_table(canon_abs_path_no_drive):
+            sha512_hash = self.get_hash_from_db(canon_abs_path_no_drive, mtime, size)
+            if sha512_hash is None:
+                # file has changed - update the hash (since file mtime or size has changed, hash is no longer valid)
+                sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
+                self.db.update({self.MTIME_STRING : os.path.getmtime(abs_path),
+                                self.SIZE_STRING : os.path.getsize(abs_path),
+                                self.SHA512_VAL_STRING : sha512_hash,
+                                self.COUNT_STRING : self.COUNT_STRING + " + 1"},
+                               {self.ABS_PATH_STRING : canon_abs_path_no_drive})
+                got_from_cache = False
+            else:
+                got_from_cache = True
+        else:
+            sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
+            self.db.insert((canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time, 0))
+            got_from_cache = False
+        return sha512_hash, got_from_cache
+
     # todo: clean up these 'return's
     def get_hash(self, path):
+        db_path = metadata_location.get_metadata_db_path(path, self.metadata_root)
+        #print ("get_hash.db_path", db_path)
         abs_path = util.get_long_abs_path(path) # to get around 260 char limit
         if not os.path.exists(abs_path):
             self.log.error("path does not exist," + abs_path)
@@ -45,52 +74,39 @@ class hash():
             self.log.error("tried to get hash of metadata," + path)
             return self.HashTuple(None, None)
 
-        if self.metadata_root is not None:
-            self.init_db(metadata_location.get_metadata_db_path(path, self.metadata_root))
-            try:
-                mtime = os.path.getmtime(abs_path)
-                size = os.path.getsize(abs_path)
-            except UnicodeDecodeError: # , details:
-                # self.log.error(str(details) + "," + abs_path)
-                self.log.error(abs_path)
-                return None, None
-            # use the absolute path, but w/o the drive specification in the hash table
-            canon_abs_path_no_drive = util.get_abs_path_wo_drive(path)
-            #print util.printable_text(canon_abs_path_no_drive)
-            if self.is_in_table(canon_abs_path_no_drive):
-                sha512_hash = self.get_hash_from_db(canon_abs_path_no_drive, mtime, size)
-                if sha512_hash is None:
-                    # file has changed - update the hash (since file mtime or size has changed, hash is no longer valid)
-                    sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
-                    self.db.update({self.MTIME_STRING : os.path.getmtime(abs_path),
-                                    self.SIZE_STRING : os.path.getsize(abs_path),
-                                    self.SHA512_VAL_STRING : sha512_hash,
-                                    self.COUNT_STRING : self.COUNT_STRING + " + 1"},
-                                   {self.ABS_PATH_STRING : canon_abs_path_no_drive})
-                    got_from_cache = False
-                else:
-                    got_from_cache = True
-            else:
-                sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
-                self.db.insert((canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time, 0))
-                got_from_cache = False
-            self.db.close()
-        else:
-            sha512_hash, sha512_calc_time = self.calc_sha512(abs_path)
-            got_from_cache = False
+        self.init_db(db_path)
+        sha512_hash, got_from_cache = self.lookup_hash(path)
+        self.db.close()
+
         return self.HashTuple(sha512_hash, got_from_cache)
 
+    # update the metadata
+    def scan(self, path):
+        db_path = metadata_location.get_metadata_db_path(path, self.metadata_root)
+        self.init_db(db_path)
+        scan_walker = walker.walker(path)
+        for partial_path in scan_walker:
+            full_path = scan_walker.get_path(partial_path)
+            attributes = util.get_file_attributes(full_path)
+            # should an attribute filter flag be added here?
+            if not attributes:
+                self.lookup_hash(full_path)
+        self.db.close()
+
     def get_paths_from_hash(self, hash, root = None):
-        self.init_db(metadata_location.get_metadata_db_path(None, self.metadata_root))
+        db_path = metadata_location.get_metadata_db_path(root, self.metadata_root)
+        #print ("get_paths_from_hash.db_path", db_path)
+        #print ("get_paths_from_hash.root", root)
+        self.init_db(db_path)
         path_desc = {}
         operators = {}
         path_desc[self.SHA512_VAL_STRING] = hash
         operators[self.SHA512_VAL_STRING] = "="
         if root is not None:
-            path_desc[self.ABS_PATH_STRING] = root + "%"#
+            path_desc[self.ABS_PATH_STRING] = util.get_abs_path_wo_drive(root) + "%"#
             operators[self.ABS_PATH_STRING] = "LIKE"
         paths = self.db.get(path_desc, self.ABS_PATH_STRING, operators)
-        #print "__get_paths_from_hash_debug__", self.get_metadata_db_fn(), hash, paths
+        #print ("get_paths_from_hash", db_path, hash, paths)
         self.db.close()
         return paths
 
@@ -106,7 +122,7 @@ class hash():
             os.mkdir(db_dir)
             util.make_hidden(db_dir)
 
-        #print db_path
+        #print ("init_db.db_path", db_path)
         self.db = sqlite.sqlite(db_path)
         self.db.connect_to_table(self.HASH_TABLE_NAME)
         if not self.db.exists():

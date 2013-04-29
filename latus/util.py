@@ -9,10 +9,6 @@ import pywintypes
 
 from . import logger
 
-#text_normalization = 'NFC'
-#text_encoding = 'utf8'
-
-# for when we go to Python 3.x:
 # @lru_cache()
 def is_windows():
     is_win = False

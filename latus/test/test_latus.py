@@ -4,6 +4,7 @@
 import os
 import shutil
 import time
+import win32api
 from .. import util, const
 
 SRC = "src"
@@ -11,6 +12,7 @@ DEST_EMPTY = "dest_empty"
 DEST_EXISTS_EXACT = "dest_exists_exact"
 DEST_EXISTS_DIFFERENT = "dest_exists_different"
 DEST_EXISTS_UNDER_DIFFERENT_NAME = "dest_exists_under_different_name"
+NON_EXECUTION_DRIVE_TEST_FILES = ["a.txt", "aa.txt"]
 
 # something to give good unicode coverage ...
 N_UNICODE = 63
@@ -80,6 +82,7 @@ def get_simple_root():
 def get_mtime_root():
     return os.path.join(get_root(), "mtime")
 
+# get an mtime back in time
 def get_mtime_time():
     return time.mktime(time.strptime("12", "%y"))
 
@@ -109,5 +112,36 @@ def get_unicode_file_paths(root_dir):
         file_name = 'A' + make_unicode_string(start, length) + '.txt'
         paths.append(os.path.join(root_dir, file_name))
     return paths
+
+# This returns a path that is not on the same drive as we're executing on
+# that we can use for testing across drives.  Also writes a file into this dir.
+def get_non_execution_test_dir():
+    candidate_drives = []
+    # get the drive letters that aren't what we're currently executing on
+    for drive in win32api.GetLogicalDriveStrings().split("\x00"):
+        if len(drive) > 0:
+            if drive[0] != os.getcwd()[0]:
+                candidate_drives.append(drive[0])
+    dir = None
+    # now, see which drive we can use - i.e. is writable
+    for drive in candidate_drives:
+        if dir is None:
+            dir_to_try = os.path.join(drive + ":", "/", "temp", const.NAME, get_root())
+            if os.path.exists(dir_to_try):
+                dir = dir_to_try
+            else:
+                try:
+                    os.makedirs(dir_to_try)
+                    dir = dir_to_try
+                except:
+                    pass
+            if dir is not None:
+                try:
+                    for file_name in NON_EXECUTION_DRIVE_TEST_FILES:
+                        with open(os.path.join(dir, file_name), "w") as f:
+                            f.write("a")
+                except:
+                    dir = None
+    return dir
 
 

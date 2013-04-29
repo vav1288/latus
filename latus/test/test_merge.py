@@ -23,7 +23,7 @@ class test_merge(unittest.TestCase):
         md = util.Metadata(test_latus.get_root(), self.__module__)
         if src_root is None:
             src_root = self.src_root
-        self.m = merge.merge(src_root, self.out_file_path, dest_root, True, metadata_root_override=md)
+        self.m = merge.merge(src_root, self.out_file_path, dest_root, True, metadata_override=md)
 
     # a single file
     def test_single_file_does_not_exist(self):

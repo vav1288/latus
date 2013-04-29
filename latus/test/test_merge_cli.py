@@ -10,7 +10,7 @@ class test_merge_cli(unittest.TestCase):
         root = os.path.join(test_latus.get_root(), "simple")
         md = util.Metadata(root, self.__module__)
         self.lm_cli = merge.merge(os.path.join(root, "src"), os.path.join(root,"domerge.bat"),
-                                  os.path.join(root, "dest_temp"), verbose=True, metadata_root_override=md)
+                                  os.path.join(root, "dest_temp"), verbose=True, metadata_override=md)
 
     def tearDown(self):
         del self.lm_cli

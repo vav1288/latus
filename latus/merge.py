@@ -4,7 +4,7 @@
 import os
 import sys
 import platform
-from . import folder, logger, util, walker
+from . import hash, logger, util, walker
 
 
 MODE_UNDEFINED, MODE_ANALYZE, MODE_COPY, MODE_MOVE = tuple(range(4))
@@ -46,21 +46,23 @@ def search_result_to_str(search_result):
     return str
 
 class merge:
-    def __init__(self, source_root, out_file_path = None, dest_root = None, verbose = False, metadata_root_override = None, mode = MODE_MOVE):
+    def __init__(self, source_root, out_file_path = None, dest_root = None, verbose = False, metadata_override = None, mode = MODE_MOVE):
         self.log = logger.get_log()
 
+        self.source_root = source_root
+        self.dest_root = dest_root
         self.mode = mode
         self.verbose = verbose
 
-        self.source = folder.folder(source_root, metadata_root_override)
-        if self.verbose:
-            print(("source : metadata_db_path :", self.source.get_metadata_db_path()))
+        self.source = hash.hash(metadata_override)
+        #if self.verbose:
+        #    print(("source : metadata_db_path :", self.source.get_metadata_db_path()))
         if dest_root is None:
             self.dest = None
         else:
-            self.dest = folder.folder(dest_root, metadata_root_override)
-            if self.verbose:
-                print(("dest : metadata_db_path :", self.source.get_metadata_db_path()))
+            self.dest = hash.hash(metadata_override)
+            #if self.verbose:
+            #    print(("dest : metadata_db_path :", self.source.get_metadata_db_path()))
 
         self.out_file = None
         self.out_file_path = out_file_path
@@ -72,13 +74,13 @@ class merge:
                 sys.exit("error : could not open : " + self.out_file_path)
 
         self.log.info('"computer","%s"',platform.node())
-        self.log.info('"source_root","%s"',self.source.root)
+        self.log.info('"source_root","%s"', source_root)
         if self.dest is not None:
-            self.log.info('"dest_root","%s"', self.dest.root)
+            self.log.info('"dest_root","%s"', dest_root)
 
         if self.dest is not None:
-            scan_dest = folder.folder(self.dest.root, self.dest.metadata_root)
-            scan_dest.scan()
+            scan_dest = hash.hash(self.dest.metadata_root)
+            scan_dest.scan(dest_root)
 
     def __del__(self):
         if self.out_file is not None:
@@ -89,11 +91,11 @@ class merge:
     def compare(self, partial_path):
         found_paths = None
         dest_hash = None
-        source_path = os.path.join(self.source.root, partial_path)
-        dest_path = os.path.join(self.dest.root, partial_path)
-        source_hash, src_cache = self.source.target_hash.get_hash(source_path)
+        source_path = os.path.join(self.source_root, partial_path)
+        dest_path = os.path.join(self.dest_root, partial_path)
+        source_hash, src_cache = self.source.get_hash(source_path)
         if os.path.exists(dest_path):
-            dest_hash, dest_cache = self.dest.target_hash.get_hash(dest_path)
+            dest_hash, dest_cache = self.dest.get_hash(dest_path)
         if source_hash == dest_hash:
             result = EXISTS_EXACT
             found_paths = dest_path
@@ -103,8 +105,8 @@ class merge:
                 result = EXISTS_CONFLICT
             else:
                 # Doesn't exist at dest, but first see if it exists anywhere
-                dest_hash_root = util.get_abs_path_wo_drive(self.dest.root)
-                found_paths = self.dest.target_hash.get_paths_from_hash(source_hash, dest_hash_root)
+                dest_hash_root = util.get_abs_path_wo_drive(self.dest_root)
+                found_paths = self.dest.get_paths_from_hash(source_hash, dest_hash_root)
                 if found_paths is None:
                     result = DOES_NOT_EXIST
                 else:
@@ -118,25 +120,25 @@ class merge:
         # if there is no dest_path, then we are merely indexing
         # todo: does it make sense to separate out the indexing capability from the merging?  It seems confusing for them to be 'one thing'.
         if search_result == DOES_NOT_EXIST:
-            self.out_file.write(mode_to_str(self.mode) + " " + os.path.join(self.source.root, file_path) + " " + os.path.join(self.dest.root, file_path) + "\n")
+            self.out_file.write(mode_to_str(self.mode) + " " + os.path.join(self.source_root, file_path) + " " + os.path.join(self.dest_root, file_path) + "\n")
         else:
-            self.out_file.write("REM " + search_result_to_str(search_result) + " " + os.path.join(self.source.root, file_path) + " " + os.path.join(self.dest.root, file_path) + "\n")
+            self.out_file.write("REM " + search_result_to_str(search_result) + " " + os.path.join(self.source_root, file_path) + " " + os.path.join(self.dest_root, file_path) + "\n")
         return search_result, search_paths
 
     def run(self):
         if self.verbose:
             if self.out_file is not None:
                 self.out_file.write("REM " + str(sys.argv) + "\n")
-                self.out_file.write("REM source " + self.source.root + "\n")
-                if self.dest.root is not None:
-                    self.out_file.write("REM dest " + self.dest.root + "\n")
-        if not os.path.exists(self.source.root):
-            print(("Source does not exist :", self.source.root))
+                self.out_file.write("REM source " + self.source_root + "\n")
+                if self.dest_root is not None:
+                    self.out_file.write("REM dest " + self.dest_root + "\n")
+        if not os.path.exists(self.source_root):
+            print(("Source does not exist :", self.source_root))
             print ("Exiting")
             return False
         if self.dest is not None:
-            if not os.path.exists(self.source.root):
-                print(("Source does not exist :", self.source.root))
+            if not os.path.exists(self.source_root):
+                print(("Source does not exist :", self.source_root))
                 print ("Exiting")
                 return False
 
@@ -144,7 +146,7 @@ class merge:
             self.analyze()
         else:
             # move or copy
-            source_walker = walker.walker(self.source.root)
+            source_walker = walker.walker(self.source_root)
             for file_path in source_walker:
                 self.merge_file(file_path)
 
@@ -154,7 +156,7 @@ class merge:
             self.out_file = None
 
     def clean(self):
-        self.source.target_hash.clean()
+        self.source.clean()
         if self.dest is not None:
-            self.dest.target_hash.clean()
+            self.dest.clean()
 

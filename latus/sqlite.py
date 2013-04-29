@@ -17,7 +17,6 @@ class sqlite:
         self.cols_order = []
         self.ExecCount = 0 # of pending execs
         self.db_path = db_path # full path to db file
-        print (db_path) # jca
         self.conn = None
         self.cur = None
         self.last_command = None
@@ -175,7 +174,6 @@ class sqlite:
         s = s.replace("'", "''") # for sqlite string
         return s
 
-
     # gets a list of entries of a particular column based on spec
     def get(self, qualifiers, col_name, operators = None):
         cmd = self.lstr("SELECT ") + self.cue(col_name) + self.lstr(" from ") + self.cue(self.table) + self.lstr(" WHERE ")
@@ -190,7 +188,7 @@ class sqlite:
                     operator = operators[col] # e.g. LIKE
                 subcmd += self.cue(col) + self.lstr(" ") + operator + self.lstr(" '") + self.cue(qualifiers[col]) + self.lstr("'")
             cmd += subcmd
-        #print "cmd", cmd
+        #print ("cmd", cmd)
         self.cur.execute(cmd)
         all = self.cur.fetchall()
         vals = []

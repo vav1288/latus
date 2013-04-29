@@ -23,7 +23,7 @@ example:
         file_attrib = (win32con.FILE_ATTRIBUTE_HIDDEN, win32con.FILE_ATTRIBUTE_SYSTEM)
     else:
         file_attrib = []
-    h = hash.hash(verbose=args.verbose, include_attrib=file_attrib)
+    h = hash.hash(None, verbose=args.verbose, include_attrib=file_attrib)
     calculated_hash = h.get_hash(args.path)
     # need to dump as a dict to include the names in the namedtuple
     lprint.lprint(calculated_hash.__dict__, lprint.JSON_STYLE)

@@ -1,19 +1,20 @@
 
 import os
 
-from . import const, util
+from . import const, logger
 
-def is_metadata_root(file_path, metadata_root_override):
-    return file_path == get_metadata_root(file_path, metadata_root_override)
+def is_metadata_root(file_path, metadata_override):
+    return file_path == get_metadata_root(file_path, metadata_override)
 
 # from a target file, determine the metadata sqlite file path
-def get_metadata_db_path(file_path, metadata_root_override):
-    metadata_dir = get_metadata_root(file_path, metadata_root_override)
-    if metadata_root_override is None:
-        metadata_filename = const.LFS_DB_NAME + const.DB_EXT
-    else:
-        metadata_filename = metadata_root_override.name + const.DB_EXT
-    return os.path.join(metadata_dir, const.METADATA_DIR_NAME, metadata_filename)
+def get_metadata_db_path(file_path, metadata_override):
+    metadata_dir = get_metadata_root(file_path, metadata_override)
+    metadata_filename = const.LFS_DB_NAME + const.DB_EXT
+    if metadata_override is not None:
+        if metadata_override.name is not None:
+            metadata_filename = metadata_override.name + const.DB_EXT
+    db_path = os.path.join(metadata_dir, const.METADATA_DIR_NAME, metadata_filename)
+    return db_path
 
 def get_metadata_root(file_path, metadata_root_override):
     if metadata_root_override is None:
