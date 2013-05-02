@@ -54,13 +54,13 @@ class merge:
         self.mode = mode
         self.verbose = verbose
 
-        self.source = hash.hash(metadata_override)
+        self.source = hash.hash(source_root, metadata_override)
         #if self.verbose:
         #    print(("source : metadata_db_path :", self.source.get_metadata_db_path()))
         if dest_root is None:
             self.dest = None
         else:
-            self.dest = hash.hash(metadata_override)
+            self.dest = hash.hash(dest_root, metadata_override)
             #if self.verbose:
             #    print(("dest : metadata_db_path :", self.source.get_metadata_db_path()))
 
@@ -79,7 +79,7 @@ class merge:
             self.log.info('"dest_root","%s"', dest_root)
 
         if self.dest is not None:
-            scan_dest = hash.hash(self.dest.metadata_root)
+            scan_dest = hash.hash(dest_root, self.dest.metadata_root)
             scan_dest.scan(dest_root)
 
     def __del__(self):
@@ -93,9 +93,9 @@ class merge:
         dest_hash = None
         source_path = os.path.join(self.source_root, partial_path)
         dest_path = os.path.join(self.dest_root, partial_path)
-        source_hash, src_cache = self.source.get_hash(source_path)
+        source_hash, src_cache, src_count = self.source.get_hash(source_path)
         if os.path.exists(dest_path):
-            dest_hash, dest_cache = self.dest.get_hash(dest_path)
+            dest_hash, dest_cache, dest_count = self.dest.get_hash(dest_path)
         if source_hash == dest_hash:
             result = EXISTS_EXACT
             found_paths = dest_path
@@ -106,7 +106,7 @@ class merge:
             else:
                 # Doesn't exist at dest, but first see if it exists anywhere
                 dest_hash_root = util.get_abs_path_wo_drive(self.dest_root)
-                found_paths = self.dest.get_paths_from_hash(source_hash, dest_hash_root)
+                found_paths = self.dest.get_paths_from_hash(source_hash)
                 if found_paths is None:
                     result = DOES_NOT_EXIST
                 else:

@@ -34,7 +34,7 @@ class TestSQLite(unittest.TestCase):
         self.assertEqual(self.first_name, self.db.get(key_val_dict, self.value_string)[0])
         key_val_dict[self.key_string] = self.last_name_key
         self.assertEqual(self.last_name, self.db.get(key_val_dict, self.value_string)[0])
-        self.db.update({self.value_string : "JC"}, {self.key_string : self.first_name_key})
+        self.db.update({self.value_string : "\"JC\""}, {self.key_string : self.first_name_key})
 
     def close(self):
         self.db.close()

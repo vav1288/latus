@@ -153,29 +153,34 @@ class sqlite:
         for key in list(values.keys()):
             if len(valstr) > 0:
                 valstr += self.lstr(',')
-            valstr += self.cue(key) + self.lstr("='") + self.cue(values[key]) + self.lstr("'")
+            # this expects the value strings to be quoted already (so the numeric values or equations can be unquoted)
+            valstr += self.cue(key) + self.lstr("=") + self.cue(values[key])
         wherestr = self.lstr("")
         for key in list(where.keys()):
             if len(wherestr) > 0:
                 wherestr += self.lstr(' AND ')
             wherestr += self.cue(key) + "='" + self.cue(where[key]) + "'"
         e = self.lstr("UPDATE ") + self.table + self.lstr(" SET ") + valstr + self.lstr(" WHERE ") + wherestr
-        #print e
+        #print ("update", e)
         self.exec_db(e, False)
 
     # should call this for string constants
+    # todo: just remove this
     def lstr(self, s):
-        return util.decode_text(s)
+        return s
+        #return util.decode_text(s)
 
     # convert to unicode and escape (CUE)
     # Converts various types and escape out special characters for sqlite.
     def cue(self,s):
         s = str(s)
         s = s.replace("'", "''") # for sqlite string
+        s = s.replace("\"", "'") # " --> ' for sqlite --- this is a kluge but I don't know of anything better ...
         return s
 
     # gets a list of entries of a particular column based on spec
     def get(self, qualifiers, col_name, operators = None):
+        tolerance = 0.001 # todo: determine if this is really the best value - perhaps store strings instead of floating point?
         cmd = self.lstr("SELECT ") + self.cue(col_name) + self.lstr(" from ") + self.cue(self.table) + self.lstr(" WHERE ")
         subcmd = ""
         if qualifiers is not None:
@@ -185,8 +190,13 @@ class sqlite:
                 if operators is None:
                     operator = self.lstr("=")
                 else:
-                    operator = operators[col] # e.g. LIKE
-                subcmd += self.cue(col) + self.lstr(" ") + operator + self.lstr(" '") + self.cue(qualifiers[col]) + self.lstr("'")
+                    operator = operators[col] # e.g. LIKE or BETWEEN
+                if operator.lower() == 'between':
+                    # todo: assume (actually require) floats to come in as floats, and not convert them here
+                    subcmd += self.cue(col) + self.lstr(" ") + operator + self.lstr(" ") + self.cue(float(qualifiers[col]) - tolerance) + \
+                              " AND " + self.cue(float(qualifiers[col]) + tolerance)
+                else:
+                    subcmd += self.cue(col) + self.lstr(" ") + operator + self.lstr(" '") + self.cue(qualifiers[col]) + self.lstr("'")
             cmd += subcmd
         #print ("cmd", cmd)
         self.cur.execute(cmd)
@@ -196,6 +206,7 @@ class sqlite:
             vals.append(one_row[0]) # fetchall allows multiple columns - we're just getting one column entry
         if len(vals) < 1:
             vals = None
+        #print ("vals", vals)
         return(vals)
 
     def commit(self):

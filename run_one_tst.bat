@@ -1,1 +1,1 @@
-nosetests latus.latus.test.test_finddup:test_finddup.test_b_non_exec_drive -v -s
+nosetests latus.latus.test.test_hash:TestHash.test_e_update_table -v -s

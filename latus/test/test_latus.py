@@ -28,6 +28,10 @@ class test_latus():
         a_file_name = "a.txt"
 
         self.files_written = 0
+
+        # todo: this doesn't delete the files like we have them now for testing - update it somehow to the new format
+        # that has the test name in the metadata file.
+
         util.del_files((os.path.join(get_root(), const.METADATA_DIR_NAME, const.LFS_DB_NAME + const.DB_EXT),
                        os.path.join(get_simple_root(), const.METADATA_DIR_NAME, const.LFS_DB_NAME + const.DB_EXT),
                        os.path.join(get_simple_root(), const.OUTPUT_FILE)))
@@ -66,7 +70,8 @@ class test_latus():
             self.write_to_file(file_path, test_string, write_flag)
 
     def clean(self):
-        shutil.rmtree(get_root())
+        if os.path.exists(get_root()):
+            shutil.rmtree(get_root())
 
 def get_root():
     # must not match nose's regex for test files/directories below the main directory "test",

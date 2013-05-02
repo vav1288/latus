@@ -15,8 +15,14 @@ class test_merge(unittest.TestCase):
         # Load up the database with file info.  Generally this is run in run(), but since we're
         # doing one file at at file for some of these tests we need to do this separately.
 
+        simple_root = os.path.join(test_latus.get_root(), "simple")
+        md = util.Metadata(simple_root, self.__module__)
+        self.lm = merge.merge(os.path.join(simple_root, "src"), os.path.join(simple_root,"domerge.bat"),
+                                  os.path.join(simple_root, "dest_temp"), verbose=True, metadata_override=md)
+
     def tearDown(self):
         del self.m
+        del self.lm
 
     # note that this is dest then src, since usually we change the dest so it has to be first
     def create_merge_object(self, dest_root = None, src_root = None):
@@ -50,6 +56,26 @@ class test_merge(unittest.TestCase):
         self.create_merge_object(os.path.join(test_latus.get_simple_root(), "dest_empty"), test_latus.get_simple_root())
         self.m.run()
         # todo: what do I test for?
+
+    def test_copy(self):
+        self.lm.mode = merge.str_to_mode("copy")
+        self.lm.run()
+        self.lm.close()
+        data = open(self.lm.out_file_path).read()
+        found_it = False
+        if "copy" in data:
+            found_it = True
+        assert(found_it)
+
+    def test_move(self):
+        self.lm.mode = merge.str_to_mode("move")
+        self.lm.run()
+        self.lm.close()
+        data = open(self.lm.out_file_path).read()
+        found_it = False
+        if "move" in data:
+            found_it = True
+        assert(found_it)
 
 if __name__ == "__main__":
     unittest.main()

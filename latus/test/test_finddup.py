@@ -10,7 +10,7 @@ class test_finddup(unittest.TestCase):
         # Load up metadata from the root (this way we have many duplicate files, so we can make sure
         # we only get the subset in simple we're looking for).
         md = util.Metadata(root, self.__module__)
-        h = hash.hash(metadata_root=md)
+        h = hash.hash(root, metadata_root=md)
         h.scan(root)
         self.dup = finddup.finddup(path=root, metadata_override=md, verbose=True)
 
@@ -36,7 +36,7 @@ class test_finddup(unittest.TestCase):
     def test_b_non_exec_drive(self):
         d = test_latus.get_non_execution_test_dir()
         print (d)
-        h = hash.hash(None)
+        h = hash.hash(d, None)
         h.scan(d)
         finder = finddup.finddup(path=d, metadata_override=None, verbose=True)
         dups_list = finder.run()

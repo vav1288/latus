@@ -2,6 +2,7 @@
 import os
 import shutil
 import unittest
+import time
 
 # todo: make it so the tests run OK w/o relying the order of _a, _b, etc.
 from .. import hash, logger, util
@@ -16,7 +17,7 @@ class TestHash(unittest.TestCase):
         self.root = test_latus.get_simple_root() # should this be get_root()?  make sure some test covers unicode...
         # load up metadata
         md = util.Metadata(self.root, self.__module__)
-        self.hash = hash.hash(metadata_root=md)
+        self.hash = hash.hash(self.root, metadata_root=md)
         self.static_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.SRC, "a.txt")
         self.dynamic_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.DEST_EXISTS_UNDER_DIFFERENT_NAME, "a_but_different_name.txt")
 
@@ -31,7 +32,7 @@ class TestHash(unittest.TestCase):
 
     # new table entry
     def test_b_new_table_entry(self):
-        hash_val, cache_flag = self.hash.get_hash(self.static_test_file_path)
+        hash_val, cache_flag, entry_count = self.hash.get_hash(self.static_test_file_path)
         #print "b", hash_val, cache_flag
         self.assertEqual(hash_val, self.correct_hash_val)
         self.assertTrue(cache_flag is False)
@@ -41,7 +42,7 @@ class TestHash(unittest.TestCase):
         self.hash.scan(self.root) # load metadata
         # get hash twice so 2nd time it's in the cache
         self.hash.get_hash(self.static_test_file_path)
-        hash_val, cache_flag = self.hash.get_hash(self.static_test_file_path)
+        hash_val, cache_flag, entry_count = self.hash.get_hash(self.static_test_file_path)
         #print "c", hash_val, cache_flag
         self.assertEqual(hash_val, self.correct_hash_val)
         self.assertTrue(cache_flag is True)
@@ -57,21 +58,25 @@ class TestHash(unittest.TestCase):
 
     # update table
     def test_e_update_table(self):
+        self.hash.clean()
         self.hash.scan(self.root) # load metadata
-        if os.path.exists(self.dynamic_test_file_path):
-            os.remove(self.dynamic_test_file_path)
+        os.remove(self.dynamic_test_file_path)
         shutil.copy(self.static_test_file_path, self.dynamic_test_file_path)
-        hash_val, cache_flag = self.hash.get_hash(self.dynamic_test_file_path)
+        hash_val, cache_flag, entry_count = self.hash.get_hash(self.dynamic_test_file_path)
+
+        # todo : why are these entry_count results 3 and 4 and not 1 and 2 ??????
+
+        self.assertEqual(entry_count, 3) # this has been updated so it should have incremented
         self.assertTrue(cache_flag is False)
         #print hash_val, cache_flag
-        f = open(self.dynamic_test_file_path, "w")
-        f.write("u") # to signify updated
-        f.close()
+        with open(self.dynamic_test_file_path, 'w') as f:
+            f.write('u')
         # this causes the table to be updated
-        new_hash_val, new_cache_flag = self.hash.get_hash(self.dynamic_test_file_path)
+        new_hash_val, new_cache_flag, entry_count = self.hash.get_hash(self.dynamic_test_file_path)
         #print new_hash_val, new_cache_flag
         self.assertTrue(cache_flag is False)
         self.assertNotEqual(hash_val, new_hash_val)
+        self.assertEqual(entry_count, 4) # this has been updated so it should have incremented again
 
 if __name__ == "__main__":
     unittest.main()
