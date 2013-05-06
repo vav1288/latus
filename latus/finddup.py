@@ -41,13 +41,17 @@ class finddup:
             file_list = []
             # todo: get this to work if you are executing from one drive and looking for dups on another
             paths = self.hash.get_paths_from_hash(h)
-            if len(paths) > 1:
-                size = os.path.getsize(paths[0])
-                for p in paths:
-                    file_list.append(p)
-                savings = (len(paths) - 1) * size
-                total_savings += savings
-                dups[savings] = file_list
+            paths = util.remove_dirs_from_list(paths)
+            if paths is not None:
+                if len(paths) > 1:
+                    size = 0
+                    if os.path.isfile(paths[0]): # ugly
+                        size = os.path.getsize(paths[0])
+                    for p in paths:
+                        file_list.append(p)
+                    savings = (len(paths) - 1) * size
+                    total_savings += savings
+                    dups[savings] = file_list
 
         # print the result
         found_at_least_one = False
@@ -66,5 +70,6 @@ class finddup:
             print(("total files analyzed :", file_count))
         if not found_at_least_one:
             print ("All files unique")
+        #print("dups", dups)
         return dups
 

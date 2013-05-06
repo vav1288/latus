@@ -9,6 +9,16 @@ import pywintypes
 
 from . import logger
 
+WINDOWS_SEP = "\\"
+LINUX_SEP = '/'
+
+def get_folder_sep():
+    if is_windows():
+        sep = WINDOWS_SEP
+    else:
+        sep = LINUX_SEP
+    return sep[-1]
+
 # @lru_cache()
 def is_windows():
     is_win = False
@@ -17,6 +27,26 @@ def is_windows():
     if plat[0] == 'w':
         is_win = True
     return is_win
+
+def is_a_file_path(p):
+    return not is_a_dir_path(p)
+
+def is_a_dir_path(p):
+    # todo: why doesn't this work????  Both Windows and Linux separators should only be used as separators
+    #if (p[-1] == WINDOWS_SEP) or (p[-1] != LINUX_SEP):
+
+    if (p[-1] == get_folder_sep()):
+        is_a_dir = True
+    else:
+        is_a_dir = False
+    return is_a_dir
+
+def remove_dirs_from_list(paths):
+    new_paths = []
+    for p in paths:
+        if is_a_file_path(p):
+            new_paths.append(p)
+    return new_paths
 
 def get_long_abs_path(in_path):
     # Trick to get around 260 char limit
@@ -28,6 +58,8 @@ def get_long_abs_path(in_path):
         abs_path = long_prefix + os.path.abspath(in_path)
     else:
         abs_path = os.path.abspath(in_path)
+    if os.path.isdir(abs_path):
+        abs_path += get_folder_sep()
     return abs_path
 
 # if this path has a drive specifier (as found in Windows), remove it
@@ -38,7 +70,10 @@ def remove_drive_spec(p):
 
 def get_abs_path_wo_drive(p):
     p = os.path.abspath(p)
+    is_dir = os.path.isdir(p)
     p = remove_drive_spec(p)
+    if is_dir:
+        p += get_folder_sep()
     return p
 
 def del_files(file_list):

@@ -19,29 +19,31 @@ class test_finddup(unittest.TestCase):
 
     def test_a_finddup(self):
         # check we found the right number of files
-        dups_list = self.dup.run()
-        # todo : figure out how to not have these constants of 2 and - 1
-        self.assertEqual(len(dups_list), 2) # 2 different file contents
+        dups = self.dup.run()
+        #print(dups)
+        self.assertEqual(len(dups), 1) # only one file that appears more than once
         # Check for the file that appears the most often. For this input case this works OK since
         # we have one file contents that the vast majority of the files have, and one other that only appears
         # a small number of times.
         n_found = 0
-        for dup in dups_list:
-            n_found = max(n_found, len(dup)) # is there a more Pythonic way to do this?
+        for d in dups:
+            n_found = max(n_found, len(dups[d])) # is there a more Pythonic way to do this?
         t = test_latus.test_latus()
         n_files_written = t.write_files(force=True, write_flag=False)
+        # todo : figure out how to not have this constants of - 1
         self.assertEqual(n_found, n_files_written - 1) # -1 since we have one other contents (different_test_string)
 
     # test that we can do a finddup on another drive (a drive that is not where our cwd is on)
     def test_b_non_exec_drive(self):
         d = test_latus.get_non_execution_test_dir()
-        print (d)
+        #print (d)
         h = hash.hash(d, None)
         h.scan(d)
         finder = finddup.finddup(path=d, metadata_override=None, verbose=True)
         dups_list = finder.run()
         self.assertEqual(len(dups_list), 1) # we only have the 2 files, and they are identical
         dups = dups_list[0]
+        #print (dups)
         # check that we have the correct number of dups and they are the right files
         self.assertEqual(len(dups), len(test_latus.NON_EXECUTION_DRIVE_TEST_FILES))
         for file in dups:

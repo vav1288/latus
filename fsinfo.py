@@ -8,6 +8,10 @@ if __name__ == "__main__":
         path = "."
     else:
         path = sys.argv[1]
+        if path == "-h" or path == '--help':
+            print("usage: fsinfo [path]")
+            print("default path is current folder/directory")
+            exit("")
     path = util.decode_text(path)
     info = fsinfo.fsinfo(path)
     info.run()

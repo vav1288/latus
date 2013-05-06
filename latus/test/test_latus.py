@@ -16,7 +16,8 @@ NON_EXECUTION_DRIVE_TEST_FILES = ["a.txt", "aa.txt"]
 
 # something to give good unicode coverage ...
 N_UNICODE = 63
-TEST_MAX_CODE = 8192
+SMALL_MAX_CODE = 512
+BIG_MAX_CODE = 8192
 
 class test_latus():
 
@@ -50,6 +51,7 @@ class test_latus():
             self.write_to_file(f, test_string, write_flag)
             os.utime(f, (t, t))
 
+        print("files_written:" + str(self.files_written))
         return self.files_written
 
     # note that this makes the required dirs if necessary
@@ -57,6 +59,7 @@ class test_latus():
         # turn off writing to enable us to merely count the files we would have written
         # (we need to know how many files written for testing purposes)
         if write_flag:
+            #print("writing:" + p)
             d = os.path.dirname(p)
             make_dirs(d)
             f = open(p, "w")
@@ -111,7 +114,13 @@ def get_unicode_file_paths(root_dir):
     paths = []
     space = 32 # ' '
     length = N_UNICODE
-    max_code =  TEST_MAX_CODE - space # fairly arbitrary max - perhaps this should be a different value?
+
+    # todo: make these 3 separate tests
+    # PICK ONE:
+    #max_code = space # omit all unicode - this is required since the sqlite database browser can't read some unicode, apparently
+    max_code = SMALL_MAX_CODE - space # small test
+    #max_code = BIG_MAX_CODE - space # big test
+
     for start in range(space, max_code, length):
         # start and end with something always valid
         file_name = 'A' + make_unicode_string(start, length) + '.txt'

@@ -6,6 +6,7 @@ from . import util, logger
 
 def calc_sha512(path, include_attrib):
     start_time = time.time()
+    size = 0
     this_hash = hashlib.sha512()
 
     # execution times on sample 'big file':
@@ -16,6 +17,7 @@ def calc_sha512(path, include_attrib):
 
     if os.path.isfile(path):
         update_digest(path, this_hash, include_attrib)
+        size = os.path.getsize(path)
     elif os.path.isdir(path):
         # this should provide the same hash as DirHash by Mounir IDRASSI (mounir@idrix.fr) (good for testing)
         # todo : a flag to control if we use system and hidden files or not
@@ -26,12 +28,13 @@ def calc_sha512(path, include_attrib):
         paths.sort(key=lambda y: y.lower())
         for path in paths:
             update_digest(path, this_hash, include_attrib)
+            size += os.path.getsize(path)
     sha512_val = this_hash.hexdigest()
 
     elapsed_time = time.time() - start_time
     #print ("calc_hash," + path + "," + str(elapsed_time))
 
-    return sha512_val, elapsed_time
+    return sha512_val, size, elapsed_time
 
 def update_digest(file_path, this_hash, include_attrib):
     attributes = util.get_file_attributes(file_path)

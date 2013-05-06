@@ -56,9 +56,8 @@ class hash():
             sha512_hash, entry_count = self.get_hash_from_db(canon_abs_path_no_drive, mtime, size)
             if sha512_hash is None:
                 # file has changed - update the hash (since file mtime or size has changed, hash is no longer valid)
-                sha512_hash, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib)
+                sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib)
                 mtime = os.path.getmtime(abs_path)
-                size = os.path.getsize(abs_path)
                 self.db.update({self.MTIME_STRING : mtime,
                                 self.SIZE_STRING : size,
                                 self.SHA512_VAL_STRING : "\"" + sha512_hash + "\"", # kluge to put in " so they get changed to ' later - is there a better way?
@@ -70,7 +69,8 @@ class hash():
             else:
                 got_from_cache = True
         else:
-            sha512_hash, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib)
+            # new entry
+            sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib)
             self.db.insert((canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time, 0))
             got_from_cache = False
         return sha512_hash, got_from_cache, entry_count
@@ -79,12 +79,14 @@ class hash():
     def get_hash(self, path):
         #print ("get_hash.db_path", db_path)
         abs_path = util.get_long_abs_path(path) # to get around 260 char limit
+        #if os.path.isfile(abs_path):
         if not os.path.exists(abs_path):
             self.log.error("path does not exist," + abs_path)
             return self.HashTuple(None, None, None)
         # don't allow the calculation or caching of metadata hashes
         if metadata_location.is_metadata_root(os.path.split(path)[0], self.metadata_root):
-            self.log.error("tried to get hash of metadata," + path)
+            self.log.error("tried to get hash of metadata - path:" + path)
+            self.log.error("tried to get hash of metadata - metadata_root:" + self.metadata_root.root)
             return self.HashTuple(None, None, None)
 
         sha512_hash, got_from_cache, entry_count = self.lookup_hash(path)

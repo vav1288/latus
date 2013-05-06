@@ -54,8 +54,8 @@ class fsinfo:
         print(("total_size", self.total_size))
         print(("dir_count", self.dir_count))
         if self.earliest_path is not None:
-            print(("earliest \"" + self.earliest_path + "\"", "\"" + time.asctime(time.localtime(self.earliest_time)) + "\"", self.earliest_time))
+            print(("earliest", self.earliest_path, time.asctime(time.localtime(self.earliest_time)), self.earliest_time))
         if self.latest_path is not None:
-            print(("latest \"" + self.latest_path + "\"", "\"" + time.asctime(time.localtime(self.latest_time)) + "\"", self.latest_time))
+            print(("latest", self.latest_path, time.asctime(time.localtime(self.latest_time)), self.latest_time))
 
 

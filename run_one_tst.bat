@@ -1,1 +1,1 @@
-nosetests latus.latus.test.test_hash:TestHash.test_e_update_table -v -s
+nosetests latus.latus.test.test_finddup:test_finddup.test_a_finddup -v -s
