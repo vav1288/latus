@@ -16,7 +16,7 @@ from . import util
 
 class propmtime():
     def __init__(self, root, process_hidden = False, process_system = False, print_flag = False):
-        self.root = util.decode_text(root)
+        self.root = root
         self.process_hidden = process_hidden
         self.process_system = process_system
         self.print_flag = print_flag

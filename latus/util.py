@@ -104,12 +104,9 @@ def make_hidden(in_path):
 # supplying metadata location is handy for testing
 Metadata = collections.namedtuple('metadata', ['root', 'name'])
 
-# call this for all strings we read in
-# (this was used for Python 2.x and actually did a decode ... may not need to do that anymore)
-def decode_text(in_text):
-    # todo: check that this is UTF-8 and if not convert
-    return in_text
-
+# Unfortunately, cx-freeze does not utilize PYTHONIOENCODING environment variable, so
+# this is useless until I either use a different .exe generator or they fix this issue.
+# In the mean time, use lprint.lprint() .
 def check_text_encoding(do_exit = False, give_help = True):
     # required for printing unicode to console
     # http://daveagp.wordpress.com/2010/10/26/what-a-character/
@@ -121,7 +118,7 @@ def check_text_encoding(do_exit = False, give_help = True):
             print ("desired text encoding:", desired_encoding)
             print ("This can be fixed by setting the PYTHONIOENCODING environment variable.")
             print ("Please do this (e.g. Windows environment variable setup or console):")
-            print ("set PYTHONIOENCODING=utf_8")
+            print ("set PYTHONIOENCODING=UTF-8")
         if do_exit:
             exit("proper text encoding not set up ... exiting")
     return ok

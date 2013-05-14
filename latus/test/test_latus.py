@@ -118,8 +118,8 @@ def get_unicode_file_paths(root_dir):
     # todo: make these 3 separate tests
     # PICK ONE:
     #max_code = space # omit all unicode - this is required since the sqlite database browser can't read some unicode, apparently
-    max_code = SMALL_MAX_CODE - space # small test
-    #max_code = BIG_MAX_CODE - space # big test
+    #max_code = SMALL_MAX_CODE - space # small test
+    max_code = BIG_MAX_CODE - space # big test
 
     for start in range(space, max_code, length):
         # start and end with something always valid

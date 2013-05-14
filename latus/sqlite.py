@@ -129,38 +129,38 @@ class sqlite:
         return self.connect()
 
     def make_str(self, plist, do_quotes = True):
-        lstr = self.lstr('(')
+        lstr = '('
         for elem in plist:
             if len(lstr) > 1:
-                lstr += self.lstr(',')
+                lstr += ','
             if do_quotes:
-                lstr += self.lstr("'")
+                lstr += "'"
             lstr += self.cue(elem)
             if do_quotes:
-                lstr += self.lstr("'")
+                lstr += "'"
         lstr += ')'
         return lstr
 
     def insert(self, vals):
         col_str = self.make_str(self.cols_order)
         val_str = self.make_str(vals)
-        e = self.lstr("INSERT INTO ") + self.table + self.lstr(" ") + col_str + self.lstr(" VALUES ") + val_str
+        e = "INSERT INTO " + self.table + " " + col_str + " VALUES " + val_str
         self.exec_db(e, False)
 
     def update(self, values, where):
         # todo: do something like : c.execute('UPDATE objects SET created=?,modified=? WHERE id=?', (row[0:3])) ?
-        valstr = self.lstr("")
+        valstr = ""
         for key in list(values.keys()):
             if len(valstr) > 0:
-                valstr += self.lstr(',')
+                valstr += ','
             # this expects the value strings to be quoted already (so the numeric values or equations can be unquoted)
-            valstr += self.cue(key) + self.lstr("=") + self.cue(values[key])
-        wherestr = self.lstr("")
+            valstr += self.cue(key) + "=" + self.cue(values[key])
+        wherestr = ""
         for key in list(where.keys()):
             if len(wherestr) > 0:
-                wherestr += self.lstr(' AND ')
+                wherestr += ' AND '
             wherestr += self.cue(key) + "='" + self.cue(where[key]) + "'"
-        e = self.lstr("UPDATE ") + self.table + self.lstr(" SET ") + valstr + self.lstr(" WHERE ") + wherestr
+        e = "UPDATE " + self.table + " SET " + valstr + " WHERE " + wherestr
         #print ("update", e)
         self.exec_db(e, False)
 
@@ -181,22 +181,22 @@ class sqlite:
     # gets a list of entries of a particular column based on spec
     def get(self, qualifiers, col_name, operators = None):
         tolerance = 0.001 # todo: determine if this is really the best value - perhaps store strings instead of floating point?
-        cmd = self.lstr("SELECT ") + self.cue(col_name) + self.lstr(" from ") + self.cue(self.table) + self.lstr(" WHERE ")
+        cmd = "SELECT " + self.cue(col_name) + " from " + self.cue(self.table) + " WHERE "
         subcmd = ""
         if qualifiers is not None:
             for col in list(qualifiers.keys()):
                 if len(subcmd) > 1:
-                    subcmd += self.lstr(" AND ")
+                    subcmd += " AND "
                 if operators is None:
-                    operator = self.lstr("=")
+                    operator = "="
                 else:
                     operator = operators[col] # e.g. LIKE or BETWEEN
                 if operator.lower() == 'between':
                     # todo: assume (actually require) floats to come in as floats, and not convert them here
-                    subcmd += self.cue(col) + self.lstr(" ") + operator + self.lstr(" ") + self.cue(float(qualifiers[col]) - tolerance) + \
+                    subcmd += self.cue(col) + " " + operator + " " + self.cue(float(qualifiers[col]) - tolerance) + \
                               " AND " + self.cue(float(qualifiers[col]) + tolerance)
                 else:
-                    subcmd += self.cue(col) + self.lstr(" ") + operator + self.lstr(" '") + self.cue(qualifiers[col]) + self.lstr("'")
+                    subcmd += self.cue(col) + " " + operator + " '" + self.cue(qualifiers[col]) + "'"
             cmd += subcmd
         #print ("cmd", cmd)
         self.cur.execute(cmd)

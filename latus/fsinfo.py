@@ -10,7 +10,7 @@ from . import logger
 
 class fsinfo:
     def __init__(self, root):
-        self.root = util.decode_text(root)
+        self.root = root
         self.earliest_believable_time = 365 * 24 * 60 * 60 # some (relatively short) time after the epoch
         #print time.asctime(time.localtime(self.earliest_believable_time))
 

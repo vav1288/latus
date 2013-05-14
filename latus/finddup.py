@@ -2,7 +2,7 @@
 import platform
 import collections
 import os
-from . import hash, logger, walker, util
+from . import hash, logger, walker, util, lprint
 
 class finddup:
     def __init__(self, path, metadata_override, verbose = False):
@@ -61,7 +61,7 @@ class finddup:
                 print (len(dups[savings]), "files")
                 print (savings, "bytes of savings")
                 for file in dups[savings]:
-                    print (file)
+                    lprint.lprint (file)
                 found_at_least_one = True
         print("-------------------")
 

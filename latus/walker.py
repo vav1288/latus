@@ -5,7 +5,7 @@ from . import const, util
 
 class walker:
     def __init__(self, root):
-        self.root = util.decode_text(root) # safety net for str root paths that have unicode children
+        self.root = root # safety net for str root paths that have unicode children
 
     def __iter__(self):
         return next(self)

@@ -1,3 +1,7 @@
 
-include t.bat
-include make_*.bat
+include LICENSE
+include .gitignore
+include *.bat
+include *.py
+recursive-include latus *.py
+prune repo_ignore

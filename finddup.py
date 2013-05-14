@@ -7,8 +7,6 @@ from latus import logger, util, finddup
 
 if __name__ == "__main__":
 
-    util.check_text_encoding()
-
     logger.setup()
 
     epilog = """

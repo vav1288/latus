@@ -9,6 +9,7 @@ setup(
     url='www.lat.us',
     license='LICENSE',
     description = "collection of file management utilities",
+    py_modules=['*'],
     executables = [Executable("finddup.py"),
                    Executable("merge.py"),
                    Executable("propmtime.py"),
