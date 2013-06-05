@@ -4,7 +4,8 @@
 import os
 import sys
 import platform
-from . import hash, logger, util, walker
+import collections
+from . import hash, logger, util, walker, metadata_location
 
 
 MODE_UNDEFINED, MODE_ANALYZE, MODE_COPY, MODE_MOVE = tuple(range(4))
@@ -58,9 +59,9 @@ class merge:
         #if self.verbose:
         #    print(("source : metadata_db_path :", self.source.get_metadata_db_path()))
         if dest_root is None:
-            self.dest = None
+            self.dest_hash = None
         else:
-            self.dest = hash.hash(dest_root, metadata_override)
+            self.dest_hash = hash.hash(dest_root, metadata_override)
             #if self.verbose:
             #    print(("dest : metadata_db_path :", self.source.get_metadata_db_path()))
 
@@ -75,11 +76,11 @@ class merge:
 
         self.log.info('"computer","%s"',platform.node())
         self.log.info('"source_root","%s"', source_root)
-        if self.dest is not None:
+        if self.dest_hash is not None:
             self.log.info('"dest_root","%s"', dest_root)
 
-        if self.dest is not None:
-            scan_dest = hash.hash(dest_root, self.dest.metadata_root)
+        if self.dest_hash is not None:
+            scan_dest = hash.hash(dest_root, self.dest_hash.metadata_root)
             scan_dest.scan(dest_root)
 
     def __del__(self):
@@ -95,7 +96,7 @@ class merge:
         dest_path = os.path.join(self.dest_root, partial_path)
         source_hash, src_cache, src_count = self.source.get_hash(source_path)
         if os.path.exists(dest_path):
-            dest_hash, dest_cache, dest_count = self.dest.get_hash(dest_path)
+            dest_hash, dest_cache, dest_count = self.dest_hash.get_hash(dest_path)
         if source_hash == dest_hash:
             result = EXISTS_EXACT
             found_paths = dest_path
@@ -106,7 +107,7 @@ class merge:
             else:
                 # Doesn't exist at dest, but first see if it exists anywhere
                 dest_hash_root = util.get_abs_path_wo_drive(self.dest_root)
-                found_paths = self.dest.get_paths_from_hash(source_hash)
+                found_paths = self.dest_hash.get_paths_from_hash(source_hash)
                 if found_paths is None:
                     result = DOES_NOT_EXIST
                 else:
@@ -136,7 +137,7 @@ class merge:
             print(("Source does not exist :", self.source_root))
             print ("Exiting")
             return False
-        if self.dest is not None:
+        if self.dest_hash is not None:
             if not os.path.exists(self.source_root):
                 print(("Source does not exist :", self.source_root))
                 print ("Exiting")
@@ -150,6 +151,41 @@ class merge:
             for file_path in source_walker:
                 self.merge_file(file_path)
 
+    def find_best_merge_location(self):
+        #source_metadata_root = metadata_location.get_metadata_root(self.source_root, None)
+        #source_walker = walker.walker(self.source_root)
+        #source_hash = hash.hash(self.source_root, util.Metadata(source_metadata_root, self.__module__))
+
+        dest_metadata_root = metadata_location.get_metadata_root(self.dest_root, None)
+        trial_dest_walker = walker.walker(self.dest_root)
+        #dest_hash = hash.hash(self.dest_root, util.Metadata(dest_metadata_root, self.__module__))
+
+        BestMatch = collections.namedtuple('BestMatch', ['paths', 'count'])
+        best_match = BestMatch(None,0)
+
+        for trial_dest_partial_path in trial_dest_walker:
+            trial_dest_full_path = trial_dest_walker.get_path(trial_dest_partial_path)
+            if os.path.isdir(trial_dest_full_path):
+                # print("trial_dest_full_path", trial_dest_full_path)
+                match_value = self.compare_folders(trial_dest_full_path, self.source_root)
+                if match_value > best_match.count:
+                    best_match = BestMatch([trial_dest_full_path], match_value)
+        print (best_match)
+        return best_match
+
+    def compare_folders(self, a, b):
+        # print(a, b)
+        count = 0
+        aw = walker.walker(a)
+        for af in aw:
+            ap = aw.get_path(af)
+            if os.path.isfile(ap):
+                bp = os.path.join(b, af)
+                if os.path.isfile(bp):
+                    # todo: compare contents
+                    count += 1
+        return count
+
     def close(self):
         if self.out_file is not None:
             self.out_file.close()
@@ -157,6 +193,6 @@ class merge:
 
     def clean(self):
         self.source.clean()
-        if self.dest is not None:
-            self.dest.clean()
+        if self.dest_hash is not None:
+            self.dest_hash.clean()
 

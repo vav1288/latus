@@ -1,8 +1,9 @@
 
 import os
+import time
 from collections import namedtuple
 
-from . import sqlite, util, metadata_location, logger, walker, hash_calc
+from . import sqlite, util, metadata_location, logger, walker, hash_calc, lprint
 
 # todo: check the disk space where the cache resides and make sure we don't consume too much space
 #
@@ -96,10 +97,13 @@ class hash():
     def scan(self, path):
         scan_walker = walker.walker(path)
         for partial_path in scan_walker:
+            start_time = time.time()
             full_path = scan_walker.get_path(partial_path)
             attributes = util.get_file_attributes(full_path)
             if not attributes or attributes <= self.include_attrib:
                 self.lookup_hash(full_path)
+            if self.verbose:
+                lprint.lprint(full_path + " , " + str(time.time()-start_time) + " sec")
 
     def get_paths_from_hash(self, this_hash):
         path_desc = {}

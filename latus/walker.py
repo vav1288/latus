@@ -6,6 +6,7 @@ from . import const, util
 class walker:
     def __init__(self, root):
         self.root = root # safety net for str root paths that have unicode children
+        self.keyboard_hit_exit = False
 
     def __iter__(self):
         return next(self)
@@ -28,17 +29,30 @@ class walker:
             if metadata_dir_name in dirnames:
                 # don't visit metadata directories (see os.walk docs - this is a little tricky)
                 dirnames.remove(metadata_dir_name)
+
+            # do the directories/folders first
+            for name in dirnames:
+                # note the separator delineates a folder/directory
+                partial_path = self.create_partial_path(name, dirpath) + util.get_folder_sep()
+                if self.check_exit():
+                    break
+                else:
+                    yield partial_path
+
+            for name in filenames:
+                partial_path = self.create_partial_path(name, dirpath)
+                if self.check_exit():
+                    break
+                else:
+                    yield partial_path # just the part to the right of the 'root'
+
+
+    def check_exit(self):
+        if not self.keyboard_hit_exit:
             if msvcrt.kbhit():
                 print ("keyboard interrupt")
-                break
-            else:
-                for name in filenames:
-                    partial_path = self.create_partial_path(name, dirpath)
-                    yield partial_path # just the part to the right of the 'root'
-                for name in dirnames:
-                    # note the separator delineates a folder/directory
-                    partial_path = self.create_partial_path(name, dirpath) + util.get_folder_sep()
-                    yield partial_path
+                self.keyboard_hit_exit = True
+        return(self.keyboard_hit_exit)
 
     def get_path(self, partial_path):
         #print(partial_path)

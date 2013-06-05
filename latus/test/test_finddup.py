@@ -20,8 +20,8 @@ class test_finddup(unittest.TestCase):
     def test_a_finddup(self):
         # check we found the right number of files
         dups = self.dup.run()
-        #print(dups)
-        self.assertEqual(len(dups), 1) # only one file that appears more than once
+        print("dups", dups)
+        self.assertEqual(len(dups), 2) # there are two files that appear more than once (have contents of 'a' and 'b')
         # Check for the file that appears the most often. For this input case this works OK since
         # we have one file contents that the vast majority of the files have, and one other that only appears
         # a small number of times.
@@ -30,20 +30,22 @@ class test_finddup(unittest.TestCase):
             n_found = max(n_found, len(dups[d])) # is there a more Pythonic way to do this?
         t = test_latus.test_latus()
         n_files_written = t.write_files(force=True, write_flag=False)
-        # todo : figure out how to not have this constants of - 1
-        self.assertEqual(n_found, n_files_written - 1) # -1 since we have one other contents (different_test_string)
+        # todo : figure out how to not have this constants of -5 (count the 'a' and 'b' files)
+        self.assertEqual(n_found, n_files_written - 5) # -5 since we have 5 other files that have 'b' in them
 
     # test that we can do a finddup on another drive (a drive that is not where our cwd is on)
+    # NOTES: IF THIS TEST FAILS, YOU MAKE HAVE TO MANUALLY DELETE c:\.latus\*.db SINCE THIS TEST PROGRAM
+    # DOES NOT INITIALIZE IT.
     def test_b_non_exec_drive(self):
-        d = test_latus.get_non_execution_test_dir()
-        #print (d)
+        d = test_latus.write_non_execution_test_dir_files()
+        print ("d", d)
         h = hash.hash(d, None)
         h.scan(d)
         finder = finddup.finddup(path=d, metadata_override=None, verbose=True)
         dups_list = finder.run()
         self.assertEqual(len(dups_list), 1) # we only have the 2 files, and they are identical
         dups = dups_list[0]
-        #print (dups)
+        print ("dups", dups)
         # check that we have the correct number of dups and they are the right files
         self.assertEqual(len(dups), len(test_latus.NON_EXECUTION_DRIVE_TEST_FILES))
         for file in dups:

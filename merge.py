@@ -40,5 +40,6 @@ Command line example:
     logger.set_log_level(args.loglevel)
     m = merge.merge(source, out_file_path , dest, verbose = args.verbose,
               metadata_override= metadata_override, mode = mode)
-    m.run()
+    #m.run()
+    m.find_best_merge_location()
     m.close()

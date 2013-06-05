@@ -13,4 +13,4 @@ if __name__ == "__main__":
     print ("(does not run the actual tests)")
     test.write_files(force=True)
 
-    test_latus.get_non_execution_test_dir()
+    test_latus.write_non_execution_test_dir_files()

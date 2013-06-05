@@ -26,8 +26,8 @@ class finddup:
         # todo:  should this just be a list instead of a dict?
         for file_path in self.walker:
             full_path = self.walker.get_path(file_path)
-            #if self.verbose:
-            #    print ("finddup", full_path)
+            if self.verbose:
+                lprint.lprint(full_path)
             hash_val, hash_cache_flag, entry_count = self.hash.get_hash(full_path)
             hash_counts[hash_val] += 1
             file_count += 1

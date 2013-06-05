@@ -77,6 +77,13 @@ class test_merge(unittest.TestCase):
             found_it = True
         assert(found_it)
 
+    def test_merge_location(self):
+        # todo: finish this!
+        # 1) write out files that represent a good merge
+        # 2) point this test to those files
+        self.create_merge_object(test_latus.get_simple_root(), test_latus.get_simple_root())
+        self.m.find_best_merge_location()
+
 if __name__ == "__main__":
     unittest.main()
 

@@ -123,3 +123,5 @@ def check_text_encoding(do_exit = False, give_help = True):
             exit("proper text encoding not set up ... exiting")
     return ok
 
+def decode_text(s):
+    return s
