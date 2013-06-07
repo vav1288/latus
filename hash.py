@@ -20,9 +20,9 @@ example:
 
     args = parser.parse_args()
     if args.all:
-        file_attrib = (win32con.FILE_ATTRIBUTE_HIDDEN, win32con.FILE_ATTRIBUTE_SYSTEM)
+        file_attrib = set([win32con.FILE_ATTRIBUTE_HIDDEN, win32con.FILE_ATTRIBUTE_SYSTEM])
     else:
-        file_attrib = []
+        file_attrib = set()
     h = hash.hash(args.path, None, verbose=args.verbose, include_attrib=file_attrib)
     calculated_hash = h.get_hash(args.path)
     # need to dump as a dict to include the names in the namedtuple

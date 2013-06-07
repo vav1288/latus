@@ -19,14 +19,14 @@ def calc_sha512(path, include_attrib):
         update_digest(path, this_hash, include_attrib)
         size = os.path.getsize(path)
     elif os.path.isdir(path):
-        # this should provide the same hash as DirHash by Mounir IDRASSI (mounir@idrix.fr) (good for testing)
-        # todo : a flag to control if we use system and hidden files or not
+        # This should provide the same hash as DirHash by Mounir IDRASSI (mounir@idrix.fr) (good for testing)
+        # HOWEVER, it seems that DirHash and this program don't agree if there is a compressed file (e.g. .zip or .gz)
+        # in the folder anywhere.  Not sure why this is ...
         paths = []
         for root, dirs, files in os.walk(path):
             for names in files:
                 paths.append(os.path.join(root,names))
-        paths.sort(key=lambda y: y.lower())
-        for path in paths:
+        for path in sorted(paths, key=str.lower):
             update_digest(path, this_hash, include_attrib)
             size += os.path.getsize(path)
     sha512_val = this_hash.hexdigest()
@@ -37,8 +37,7 @@ def calc_sha512(path, include_attrib):
     return sha512_val, size, elapsed_time
 
 def update_digest(file_path, this_hash, include_attrib):
-    attributes = util.get_file_attributes(file_path)
-    if not attributes or attributes <= include_attrib:
+    if util.get_file_attributes(file_path) <= include_attrib:
         # it's a lot faster taking a buffer at a time vs 1 byte at a time (2 orders of magnitude faster)
         bucket_size = 4096 # just a guess ...
         try:

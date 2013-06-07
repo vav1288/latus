@@ -17,7 +17,7 @@ class hash():
     Also maintains a hash cache to avoid unnecessary recalculations/
     """
 
-    def __init__(self, root, metadata_root, verbose = False, include_attrib = []):
+    def __init__(self, root, metadata_root, verbose = False, include_attrib = set()):
         self.HASH_TABLE_NAME = "hash"
         self.ABS_PATH_STRING = "abspath"
         self.MTIME_STRING = "mtime"
@@ -85,10 +85,11 @@ class hash():
             self.log.error("path does not exist," + abs_path)
             return self.HashTuple(None, None, None)
         # don't allow the calculation or caching of metadata hashes
-        if metadata_location.is_metadata_root(os.path.split(path)[0], self.metadata_root):
-            self.log.error("tried to get hash of metadata - path:" + path)
-            self.log.error("tried to get hash of metadata - metadata_root:" + self.metadata_root.root)
-            return self.HashTuple(None, None, None)
+        if self.metadata_root is not None:
+            if metadata_location.is_metadata_root(os.path.split(path)[0], self.metadata_root):
+                self.log.error("tried to get hash of metadata - path:" + path)
+                self.log.error("tried to get hash of metadata - metadata_root:" + self.metadata_root)
+                return self.HashTuple(None, None, None)
 
         sha512_hash, got_from_cache, entry_count = self.lookup_hash(path)
         return self.HashTuple(sha512_hash, got_from_cache, entry_count)

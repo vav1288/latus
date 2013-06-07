@@ -83,7 +83,7 @@ def del_files(file_list):
 
 def get_file_attributes(in_path):
     attrib = 0
-    attributes = []
+    attributes = set()
     if is_windows():
         long_abs_path = get_long_abs_path(in_path)
         try:
@@ -92,9 +92,9 @@ def get_file_attributes(in_path):
             #logger.get_log().error()
             logger.get_log().error(long_abs_path)
         if attrib & win32con.FILE_ATTRIBUTE_HIDDEN:
-            attributes.append(win32con.FILE_ATTRIBUTE_HIDDEN)
+            attributes.add(win32con.FILE_ATTRIBUTE_HIDDEN)
         if attrib & win32con.FILE_ATTRIBUTE_SYSTEM:
-            attributes.append(win32con.FILE_ATTRIBUTE_SYSTEM)
+            attributes.add(win32con.FILE_ATTRIBUTE_SYSTEM)
     # todo : Linux version of this
     return attributes
 
