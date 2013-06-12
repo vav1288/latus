@@ -3,8 +3,10 @@ import os
 
 from . import const, logger
 
-def is_metadata_root(file_path, metadata_override):
-    return file_path == get_metadata_root(file_path, metadata_override)
+def is_metadata_root(p, metadata_override):
+    if os.path.isfile(p):
+        p = os.path.split(p)[0] # get folder this file is in
+    return p == get_metadata_root(p, metadata_override)
 
 # from a target file, determine the metadata sqlite file path
 def get_metadata_db_path(file_path, metadata_override):

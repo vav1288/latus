@@ -19,7 +19,7 @@ Command line example:
     parser.add_argument("-p", "--path", help="path to directory/folder to finddup")
     parser.add_argument("-o", "--outfile", help="output file path")
     parser.add_argument("-t", "--test", nargs=1, help="special test parameters (metadata path)", default = None)
-    larg.add_common_arg(parser)
+    larg.common_argparse(parser)
 
     args = parser.parse_args()
     if args.path is None:

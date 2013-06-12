@@ -31,7 +31,7 @@ class test_finddup(unittest.TestCase):
         t = test_latus.test_latus()
         n_files_written = t.write_files(force=True, write_flag=False)
         # todo : figure out how to not have this constants of -5 (count the 'a' and 'b' files)
-        self.assertEqual(n_found, n_files_written - 5) # -5 since we have 5 other files that have 'b' in them
+        self.assertEqual(n_found, n_files_written - 6) # -6 since we have 5 other files that have 'b' in them
 
     # test that we can do a finddup on another drive (a drive that is not where our cwd is on)
     # NOTES: IF THIS TEST FAILS, YOU MAKE HAVE TO MANUALLY DELETE c:\.latus\*.db SINCE THIS TEST PROGRAM

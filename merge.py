@@ -1,6 +1,5 @@
 
 import sys
-import argparse
 import os
 import larg
 from latus import logger, util, merge
@@ -9,21 +8,17 @@ if __name__ == "__main__":
     logger.setup()
     log = logger.get_log()
 
-    epilog = """
-Execute with no arguments to run the GUI version.
+    epi = ["Execute with no arguments to run the GUI version.", "",\
+           "Command line example:",\
+           os.path.split(sys.argv[0])[-1] + " -s my_source -d my_dest"]
 
-Command line example:
-""" + os.path.split(sys.argv[0])[-1] + " -s my_source -d my_dest"
-
-    parser = argparse.ArgumentParser(epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = larg.init("merge a source folder into a destination folder")
     parser.add_argument("-s", "--source", help="path to source directory/folder")
     parser.add_argument("-d", "--dest", default = None, help="path to destination directory/folder")
-    parser.add_argument("-m", "--mode", nargs=1, default = 'm', choices='acm', help="finddup, copy or move")
+    parser.add_argument("-m", "--mode", nargs=1, default = 'm', choices='acm', help="analyze, copy or move")
     parser.add_argument("-o", "--outfile", help="output file path")
     parser.add_argument("-t", "--test", nargs=1, help="special test parameters (metadata path)", default = None)
-    larg.add_common_arg(parser)
-
-    args = parser.parse_args()
+    args = larg.parse_args(parser, epi)
     if args.source is None:
         # stub for GUI version
         sys.exit("-h for help")

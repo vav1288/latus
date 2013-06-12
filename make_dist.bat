@@ -1,1 +1,1 @@
-setup.py sdist
+c:\Python33\python.exe setup.py sdist

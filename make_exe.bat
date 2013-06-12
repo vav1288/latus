@@ -1,1 +1,1 @@
-setup.py bdist_msi
+c:\Python33\python.exe setup.py bdist_msi

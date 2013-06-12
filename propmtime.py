@@ -1,24 +1,26 @@
 
 import argparse
 import os
+import larg
 from latus import propmtime, util
 
 if __name__ == "__main__":
     desc = """Many OSs (including Windows) only change the modification time of a folder/directory based on its
 immediate children.  This code analyzes a folder and all of its children, and propagates (changes) the
 modification times of each folder to be the most recent time of all of its children."""
-    epi = """Examples:
-propmtime.py -p documents          # process all normal files in the 'documents' folder
-propmtime.py -p documents -a h s   # process hidden and system files as well as normal files
-propmtime.py -p documents -a s -v  # process system files as well as normal files, and turn on verbose"""
-    parser = argparse.ArgumentParser(description=desc, epilog=epi, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("-p", "--path", required=True, help="path to folder or directory")
+    epi = [
+'Examples:',
+'propmtime.py -p documents          # process all normal files in the "documents" folder',
+'propmtime.py -p documents -a h s   # process hidden and system files as well as normal files',
+'propmtime.py -p documents -a s -v  # process system files as well as normal files, and turn on verbose'
+]
+    parser = larg.init(desc)
+    parser.add_argument("-p", "--path", help="path to folder or directory")
     parser.add_argument("-a", "--attrib", nargs = "+", default = (''),
                         help="""ATTRIB can be h(idden) and/or s(ystem)to process hidden and/or system files.
 Default is to ignore hidden and system files."""
     )
-    parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
-    args = parser.parse_args()
+    args = larg.parse_args(parser, epi)
 
     process_hidden = False
     process_system = False

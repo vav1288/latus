@@ -17,7 +17,7 @@ class hash():
     Also maintains a hash cache to avoid unnecessary recalculations/
     """
 
-    def __init__(self, root, metadata_root, verbose = False, include_attrib = set()):
+    def __init__(self, root, metadata_root, verbose = False, include_attrib = set(), hoh = True):
         self.HASH_TABLE_NAME = "hash"
         self.ABS_PATH_STRING = "abspath"
         self.MTIME_STRING = "mtime"
@@ -28,6 +28,7 @@ class hash():
         self.metadata_root = metadata_root # should only be None if we're not using metadata
         self.verbose = verbose
         self.include_attrib = include_attrib
+        self.hoh = hoh
         self.HashTuple = namedtuple("hash", ['sha512', 'got_from_cache', 'entry_count'])
         self.log = logger.get_log()
 
@@ -42,7 +43,7 @@ class hash():
     def __del__(self):
         self.db.close()
 
-    def lookup_hash(self, path):
+    def calc_or_lookup_hash(self, path):
         abs_path = util.get_long_abs_path(path) # to get around 260 char limit
         entry_count = None
         try:
@@ -57,7 +58,7 @@ class hash():
             sha512_hash, entry_count = self.get_hash_from_db(canon_abs_path_no_drive, mtime, size)
             if sha512_hash is None:
                 # file has changed - update the hash (since file mtime or size has changed, hash is no longer valid)
-                sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib)
+                sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib, self.hoh)
                 mtime = os.path.getmtime(abs_path)
                 self.db.update({self.MTIME_STRING : mtime,
                                 self.SIZE_STRING : size,
@@ -71,7 +72,7 @@ class hash():
                 got_from_cache = True
         else:
             # new entry
-            sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib)
+            sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib, self.hoh)
             self.db.insert((canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time, 0))
             got_from_cache = False
         return sha512_hash, got_from_cache, entry_count
@@ -86,12 +87,12 @@ class hash():
             return self.HashTuple(None, None, None)
         # don't allow the calculation or caching of metadata hashes
         if self.metadata_root is not None:
-            if metadata_location.is_metadata_root(os.path.split(path)[0], self.metadata_root):
+            if metadata_location.is_metadata_root(path, self.metadata_root):
                 self.log.error("tried to get hash of metadata - path:" + path)
-                self.log.error("tried to get hash of metadata - metadata_root:" + self.metadata_root)
+                self.log.error("tried to get hash of metadata - metadata_root:" + self.metadata_root.root)
                 return self.HashTuple(None, None, None)
 
-        sha512_hash, got_from_cache, entry_count = self.lookup_hash(path)
+        sha512_hash, got_from_cache, entry_count = self.calc_or_lookup_hash(path)
         return self.HashTuple(sha512_hash, got_from_cache, entry_count)
 
     # update the metadata
@@ -102,7 +103,7 @@ class hash():
             full_path = scan_walker.get_path(partial_path)
             attributes = util.get_file_attributes(full_path)
             if not attributes or attributes <= self.include_attrib:
-                self.lookup_hash(full_path)
+                self.calc_or_lookup_hash(full_path)
             if self.verbose:
                 lprint.lprint(full_path + " , " + str(time.time()-start_time) + " sec")
 

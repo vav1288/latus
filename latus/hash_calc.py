@@ -4,8 +4,9 @@ import time
 import os
 from . import util, logger
 
-def calc_sha512(path, include_attrib):
-    start_time = time.time()
+def calc_sha512(path, include_attrib, hoh, time_it = True):
+    if time_it:
+        start_time = time.time()
     size = 0
     this_hash = hashlib.sha512()
 
@@ -27,11 +28,21 @@ def calc_sha512(path, include_attrib):
             for names in files:
                 paths.append(os.path.join(root,names))
         for path in sorted(paths, key=str.lower):
-            update_digest(path, this_hash, include_attrib)
-            size += os.path.getsize(path)
+            if hoh:
+                # hash of hashes (so we can lookup the file hashes in the database)
+                file_hash, file_size, file_time = calc_sha512(path, include_attrib, True, False) # always a file
+                this_hash.update(bytearray.fromhex(file_hash)) # use binary (bytes), not string
+                size += file_size
+            else:
+                # regular (AKA non-hoh)
+                update_digest(path, this_hash, include_attrib)
+                size += os.path.getsize(path)
     sha512_val = this_hash.hexdigest()
 
-    elapsed_time = time.time() - start_time
+    if time_it:
+        elapsed_time = time.time() - start_time
+    else:
+        elapsed_time = None
     #print ("calc_hash," + path + "," + str(elapsed_time))
 
     return sha512_val, size, elapsed_time
@@ -49,3 +60,4 @@ def update_digest(file_path, this_hash, include_attrib):
             f.close()
         except IOError: # , details:
             logger.get_log().warn(file_path)
+

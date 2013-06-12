@@ -63,6 +63,9 @@ class test_latus():
             self.write_to_file(os.path.join(get_merge_root(), DEST, DEST_BEST, a_file_name), a_test_string, write_flag)
             self.write_to_file(os.path.join(get_merge_root(), DEST, DEST_CONFLICT, a_file_name), b_test_string, write_flag)
             self.write_to_file(os.path.join(get_merge_root(), DEST, DEST_CONFLICT, b_file_name), b_test_string, write_flag)
+        if force or not os.path.exists(get_hash_root()):
+            self.write_to_file(os.path.join(get_hash_root(), a_file_name), a_test_string, write_flag)
+            self.write_to_file(os.path.join(get_hash_root(), b_file_name), b_test_string, write_flag)
 
         print("files_written:" + str(self.files_written))
         return self.files_written
@@ -105,6 +108,9 @@ def get_mtime_root():
 
 def get_merge_root():
     return os.path.join(get_root(), "merge")
+
+def get_hash_root():
+    return os.path.join(get_root(), "hash")
 
 # get an mtime back in time
 def get_mtime_time():
