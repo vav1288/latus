@@ -1,7 +1,9 @@
 
 The latus suite is a set of file management applications.
 
-merge.py - merges files from a source folder into a destination folder
+Main URL : www.lat.us
+
+Current Python level is Python 3.3.
 
 Look in the doc folder for additional information.
 
