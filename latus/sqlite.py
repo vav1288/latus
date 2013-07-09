@@ -141,11 +141,13 @@ class sqlite:
         lstr += ')'
         return lstr
 
+    # todo: make using ? general so I can reduce the code size
+    # insert a list of vals into the table - one for each column
     def insert(self, vals):
         col_str = self.make_str(self.cols_order)
-        val_str = self.make_str(vals)
-        e = "INSERT INTO " + self.table + " " + col_str + " VALUES " + val_str
-        self.exec_db(e, False)
+        qs = ''.join(['?,' for _ in vals])[:-1] # make a string like '?,?,?' - one ? for each element in vals
+        e = "INSERT INTO " + self.table + " " + col_str + " VALUES (" + qs + ")"
+        self.exec_db(e, False, vals)
 
     def update(self, values, where):
         # todo: do something like : c.execute('UPDATE objects SET created=?,modified=? WHERE id=?', (row[0:3])) ?
@@ -221,7 +223,7 @@ class sqlite:
     # For performance generally use commit_flag = False (default is True for safety sake)
     # and then follow up with a commit().
     # (avoiding commits every exec can make things ~10x faster)
-    def exec_db(self, command, commit_flag = True):
+    def exec_db(self, command, commit_flag=True, vals=None):
         # for some reason, the database can just disappear for short periods of time
         # so this code tolerates this disappearance
         self.last_command = command # for debug
@@ -232,7 +234,10 @@ class sqlite:
         while not Done:
             TryCount += 1
             try:
-                self.cur.execute(command)
+                if vals is not None:
+                    self.cur.execute(command, vals)
+                else:
+                    self.cur.execute(command)
                 self.ExecCount += 1
                 # since we write out a timestamp, don't wait too long between commits
                 if commit_flag or (self.ExecCount > 1000):
