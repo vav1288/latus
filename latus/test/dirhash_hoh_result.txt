@@ -1,0 +1,12 @@
+
+DirHash by Mounir IDRASSI (mounir@idrix.fr) Copyright 2010
+Recursively compute hash of a given directory content in lexicographical order.
+It can also compute the hash of a single file.
+
+Supported Algorithms : SHA1, SHA256, SHA384, SHA512
+Using OpenSSL
+
+Using SHA512 to compute hash of "hash_test\" ...
+temp\hash_test\a_hash_binary.tmp
+temp\hash_test\b_hash_binary.tmp
+SHA512 (64 bytes) = A40FB6247BF9AA223348EB8C99DCEA9D198694B805AE85BCBFD5FFD33F8EF42C07DD4946FFA68654FD19026EE2723D7ECB2868C3134CE960981156B2120EF62C
