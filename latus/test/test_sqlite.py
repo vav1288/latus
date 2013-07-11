@@ -27,14 +27,14 @@ class TestSQLite(unittest.TestCase):
 
     def write_table(self):
         self.db.connect_to_table(self.table)
-        self.db.insert((self.first_name_key, self.first_name))
-        self.db.insert((self.last_name_key, self.last_name))
+        self.db.insert([self.first_name_key, self.first_name])
+        self.db.insert([self.last_name_key, self.last_name])
         key_val_dict = {}
         key_val_dict[self.key_string] = self.first_name_key
         self.assertEqual(self.first_name, self.db.get(key_val_dict, self.value_string)[0])
         key_val_dict[self.key_string] = self.last_name_key
         self.assertEqual(self.last_name, self.db.get(key_val_dict, self.value_string)[0])
-        self.db.update({self.value_string : "\"JC\""}, {self.key_string : self.first_name_key})
+        self.db.update([self.value_string], [self.key_string], {self.key_string : self.first_name_key})
 
     def close(self):
         self.db.close()

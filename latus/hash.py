@@ -60,11 +60,8 @@ class hash():
                 # file has changed - update the hash (since file mtime or size has changed, hash is no longer valid)
                 sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib, self.hoh)
                 mtime = os.path.getmtime(abs_path)
-                self.db.update({self.MTIME_STRING : mtime,
-                                self.SIZE_STRING : size,
-                                self.SHA512_VAL_STRING : "\"" + sha512_hash + "\"", # kluge to put in " so they get changed to ' later - is there a better way?
-                                self.COUNT_STRING : self.COUNT_STRING + " + 1"},
-                               {self.ABS_PATH_STRING : canon_abs_path_no_drive})
+                self.db.update([self.MTIME_STRING, self.SIZE_STRING, self.SHA512_VAL_STRING], [mtime, size, sha512_hash],
+                               {self.ABS_PATH_STRING : canon_abs_path_no_drive}, count_flag=True)
                 # read back in the count string
                 unused, entry_count = self.get_hash_from_db(canon_abs_path_no_drive, mtime, size)
                 got_from_cache = False
@@ -73,7 +70,7 @@ class hash():
         else:
             # new entry
             sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib, self.hoh)
-            self.db.insert((canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time, 0))
+            self.db.insert([canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time, 0])
             got_from_cache = False
         return sha512_hash, got_from_cache, entry_count
 

@@ -128,6 +128,11 @@ class sqlite:
         self.table = table
         return self.connect()
 
+    # make question marks
+    # make a string like '?,?,?' - one ? for each element in vals
+    def qms(self, vals):
+        return ''.join(['?,' for _ in vals])[:-1]
+
     def make_str(self, plist, do_quotes = True):
         lstr = '('
         for elem in plist:
@@ -145,26 +150,21 @@ class sqlite:
     # insert a list of vals into the table - one for each column
     def insert(self, vals):
         col_str = self.make_str(self.cols_order)
-        qs = ''.join(['?,' for _ in vals])[:-1] # make a string like '?,?,?' - one ? for each element in vals
-        e = "INSERT INTO " + self.table + " " + col_str + " VALUES (" + qs + ")"
-        self.exec_db(e, False, vals)
+        e = "INSERT INTO " + self.table + " " + col_str + " VALUES (" + self.qms(vals) + ")"
+        self.exec_db(e, vals, False)
 
-    def update(self, values, where):
-        # todo: do something like : c.execute('UPDATE objects SET created=?,modified=? WHERE id=?', (row[0:3])) ?
-        valstr = ""
-        for key in list(values.keys()):
-            if len(valstr) > 0:
-                valstr += ','
-            # this expects the value strings to be quoted already (so the numeric values or equations can be unquoted)
-            valstr += self.cue(key) + "=" + self.cue(values[key])
+    def update(self, keys, values, where, count_flag = False):
+        setstr = ''.join([k+'=?,' for k in keys])[:-1]
+        if count_flag:
+            setstr += ", count = count + 1"
         wherestr = ""
         for key in list(where.keys()):
             if len(wherestr) > 0:
                 wherestr += ' AND '
             wherestr += self.cue(key) + "='" + self.cue(where[key]) + "'"
-        e = "UPDATE " + self.table + " SET " + valstr + " WHERE " + wherestr
+        e = "UPDATE " + self.table + " SET " + setstr + " WHERE " + wherestr
         #print ("update", e)
-        self.exec_db(e, False)
+        self.exec_db(e, values, commit_flag=False)
 
     # should call this for string constants
     # todo: just remove this
@@ -223,7 +223,7 @@ class sqlite:
     # For performance generally use commit_flag = False (default is True for safety sake)
     # and then follow up with a commit().
     # (avoiding commits every exec can make things ~10x faster)
-    def exec_db(self, command, commit_flag=True, vals=None):
+    def exec_db(self, command, vals=None, commit_flag=True):
         # for some reason, the database can just disappear for short periods of time
         # so this code tolerates this disappearance
         self.last_command = command # for debug
@@ -234,10 +234,10 @@ class sqlite:
         while not Done:
             TryCount += 1
             try:
-                if vals is not None:
-                    self.cur.execute(command, vals)
-                else:
+                if vals is None:
                     self.cur.execute(command)
+                else:
+                    self.cur.execute(command, vals)
                 self.ExecCount += 1
                 # since we write out a timestamp, don't wait too long between commits
                 if commit_flag or (self.ExecCount > 1000):
