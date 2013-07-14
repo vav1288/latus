@@ -78,7 +78,6 @@ class hash():
     def get_hash(self, path):
         #print ("get_hash.db_path", db_path)
         abs_path = util.get_long_abs_path(path) # to get around 260 char limit
-        #if os.path.isfile(abs_path):
         if not os.path.exists(abs_path):
             self.log.error("path does not exist," + abs_path)
             return self.HashTuple(None, None, None)

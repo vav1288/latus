@@ -131,26 +131,13 @@ class sqlite:
     # make question marks
     # make a string like '?,?,?' - one ? for each element in vals
     def qms(self, vals):
-        return ''.join(['?,' for _ in vals])[:-1]
+        return ','.join(['?' for _ in vals])
 
-    def make_str(self, plist, do_quotes = True):
-        lstr = '('
-        for elem in plist:
-            if len(lstr) > 1:
-                lstr += ','
-            if do_quotes:
-                lstr += "'"
-            lstr += self.cue(elem)
-            if do_quotes:
-                lstr += "'"
-        lstr += ')'
-        return lstr
-
-    # todo: make using ? general so I can reduce the code size
     # insert a list of vals into the table - one for each column
     def insert(self, vals):
-        col_str = self.make_str(self.cols_order)
-        e = "INSERT INTO " + self.table + " " + col_str + " VALUES (" + self.qms(vals) + ")"
+        # make columns list into a string with separating commas, and put that all in parenthesis
+        cols_str = '(' + ','.join([col for col in self.cols_order]) + ')'
+        e = "INSERT INTO " + self.table + " " + cols_str + " VALUES (" + self.qms(vals) + ")"
         self.exec_db(e, vals, False)
 
     def update(self, keys, values, where, count_flag = False):
@@ -161,7 +148,9 @@ class sqlite:
         for key in list(where.keys()):
             if len(wherestr) > 0:
                 wherestr += ' AND '
-            wherestr += self.cue(key) + "='" + self.cue(where[key]) + "'"
+            #wherestr += key + "='" + self.cue(where[key]) + "'"
+            wherestr += key + "=? "
+            values.append(where[key])
         e = "UPDATE " + self.table + " SET " + setstr + " WHERE " + wherestr
         #print ("update", e)
         self.exec_db(e, values, commit_flag=False)
@@ -182,8 +171,9 @@ class sqlite:
 
     # gets a list of entries of a particular column based on spec
     def get(self, qualifiers, col_name, operators = None):
+        vals = []
         tolerance = 0.001 # todo: determine if this is really the best value - perhaps store strings instead of floating point?
-        cmd = "SELECT " + self.cue(col_name) + " from " + self.cue(self.table) + " WHERE "
+        cmd = "SELECT " + col_name + " from " + self.table + " WHERE "
         subcmd = ""
         if qualifiers is not None:
             for col in list(qualifiers.keys()):
@@ -195,13 +185,14 @@ class sqlite:
                     operator = operators[col] # e.g. LIKE or BETWEEN
                 if operator.lower() == 'between':
                     # todo: assume (actually require) floats to come in as floats, and not convert them here
-                    subcmd += self.cue(col) + " " + operator + " " + self.cue(float(qualifiers[col]) - tolerance) + \
-                              " AND " + self.cue(float(qualifiers[col]) + tolerance)
+                    subcmd += col + " BETWEEN " + str(float(qualifiers[col]) - tolerance) + \
+                              " AND " + str(float(qualifiers[col]) + tolerance)
                 else:
-                    subcmd += self.cue(col) + " " + operator + " '" + self.cue(qualifiers[col]) + "'"
+                    subcmd += col + " " + operator + " ? "
+                    vals.append(qualifiers[col])
             cmd += subcmd
         #print ("cmd", cmd)
-        self.cur.execute(cmd)
+        self.cur.execute(cmd, vals)
         all = self.cur.fetchall()
         vals = []
         for one_row in all:
