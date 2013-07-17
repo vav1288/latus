@@ -18,7 +18,7 @@ if __name__ == "__main__":
 'Since pre-computed (cached) hashes can be utilized, this is often a faster option if only some files have changed.'
 ]
 
-    parser = larg.init("get the hash of a folder or file")
+    parser = larg.init("get the hash of a folder or file", True)
     parser.add_argument("-p", "--path", default='.', help="path to source directory/folder")
     parser.add_argument("-c", "--cat", action="store_true", default=False, help="concatenated hash")
     parser.add_argument("-o", "--hoh", action="store_true", default=False, help="hash-of-hash")

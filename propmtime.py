@@ -14,7 +14,7 @@ modification times of each folder to be the most recent time of all of its child
 'propmtime.py -p documents -a h s   # process hidden and system files as well as normal files',
 'propmtime.py -p documents -a s -v  # process system files as well as normal files, and turn on verbose'
 ]
-    parser = larg.init(desc)
+    parser = larg.init(desc, True)
     parser.add_argument("-p", "--path", help="path to folder or directory")
     parser.add_argument("-a", "--attrib", nargs = "+", default = (''),
                         help="""ATTRIB can be h(idden) and/or s(ystem)to process hidden and/or system files.

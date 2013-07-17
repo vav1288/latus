@@ -1,0 +1,17 @@
+I'm going with the term 'settings'.  It could also be 'preferences'.
+
+Reference (this seems as good of a defintion as any):
+
+http://stackoverflow.com/questions/2074384/options-settings-properties-configuration-preferences-when-and-why
+
+Following an approximate lead from Visual Studio and other Microsoft products:
+
+Properties represent the characteristics of a single component or object in the application.
+
+Options alter global ways that the application works. Microsoft products use this to customise the UI toolbar, 
+for example. There's an implication here that you can disable UI elements altogether (e.g. a "Simple" user interface or an "Advanced" user interface).
+
+Settings and Preferences change qualities of how the application works. The implication here is to change, not disable: for example, "Metric measurements" or "British Imperial measurements".
+
+Configuration is often where an application is customised for each user or group.
+

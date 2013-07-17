@@ -12,7 +12,7 @@ if __name__ == "__main__":
            "Command line example:",\
            os.path.split(sys.argv[0])[-1] + " -s my_source -d my_dest"]
 
-    parser = larg.init("merge a source folder into a destination folder")
+    parser = larg.init("merge a source folder into a destination folder", True)
     parser.add_argument("-s", "--source", help="path to source directory/folder")
     parser.add_argument("-d", "--dest", default = None, help="path to destination directory/folder")
     parser.add_argument("-m", "--mode", nargs=1, default = 'm', choices='acm', help="analyze, copy or move")
