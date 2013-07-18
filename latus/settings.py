@@ -1,8 +1,7 @@
 
 import os
-import const
 import configparser
-import time
+from . import const, logger
 
 class Settings:
     def __init__(self, app_data_folder = None):
@@ -12,35 +11,55 @@ class Settings:
             # an external drive on a machine where the internal drive doesn't have sufficient space.
             app_data_folder = os.environ['LOCALAPPDATA']
         self.file_path = os.path.join(app_data_folder, const.SETTINGS_FILE_NAME)
-        self.sect_name = 'user'
-        self.config = configparser.ConfigParser()
+        self.log = logger.get_log()
 
-    def read_settings(self):
-        settings = {}
+    # some simple section and key checking
+    def check(self, section, key):
+        sects_and_keys = {'folder' : ['cloud', 'local']}
+        if section not in sects_and_keys:
+            raise Exception("invalid section: %s" % section)
+        if key not in sects_and_keys[section]:
+            raise Exception("invalid key: %s" % key)
+
+    def read(self):
+        exists = False
+        self.config = configparser.ConfigParser() # start anew each time we read the settings in case the file changed
         if os.path.exists(self.file_path):
             self.config.read(self.file_path)
-            for section in self.config.sections():
-                for option in self.config.options(section):
-                    val = self.config.get(section, option)
-                    settings[option] = val
-        else:
-            if not self.config.has_section(self.sect_name):
-                self.config.add_section(self.sect_name)
+            exists = True
+        return exists
+
+    # read in all entries
+    def get_all(self):
+        self.read()
+        settings = {}
+        for section in self.config.sections():
+            settings[section] = {}
+            for key in self.config.options(section):
+                val = self.config.get(section, key)
+                settings[section][key] = val
         return settings
 
-    def write_settings(self):
-        f = open(self.file_path,'w')
-        self.config.write(f)
-        f.close()
+    # get one section/key entry
+    def get(self, section, key):
+        val = None
+        self.read()
+        if self.config.has_section(section):
+            if self.config.has_option(section, key):
+                val = self.config.get(section, key)
+        if val is None:
+            self.log.warn("invalid : section=%s key=%s" % (section, key))
+        return val
 
-    def set(self, key, value):
-        self.read_settings()
-        self.config.set(self.sect_name, key, value)
-        self.write_settings()
+    def set(self, section, key, value):
+        self.check(section, key)
+        exists = self.read() # need to get current state since we write out entire file after setting one entry
+        if not exists:
+            self.log.info("creating settings file %s" % self.file_path)
+        if not self.config.has_section(section):
+            self.config.add_section(section)
+        self.config.set(section, key, value)
+        with open(self.file_path,'w') as f:
+            self.config.write(f)
 
-my_settings = Settings()
-print(my_settings.file_path)
-print(my_settings.read_settings())
-my_settings.set('csfpath', 'dropbox')
-my_settings.set('lsfpath', 'latus')
-print(my_settings.read_settings())
+
