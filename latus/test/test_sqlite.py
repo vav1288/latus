@@ -9,7 +9,7 @@ class TestSQLite(unittest.TestCase):
 
     def create_table(self):
         md = util.Metadata(test_latus.get_root(), self.__module__)
-        db_name = metadata_location.get_metadata_db_path(None, md)
+        db_name = metadata_location.get_metadata_db_path(md)
         self.table = 'test_table'
         self.key_string = 'key'
         self.value_string = 'value'

@@ -56,14 +56,10 @@ class merge:
         self.verbose = verbose
 
         self.source = hash.hash(source_root, metadata_override)
-        #if self.verbose:
-        #    print(("source : metadata_db_path :", self.source.get_metadata_db_path()))
         if dest_root is None:
             self.dest_hash = None
         else:
             self.dest_hash = hash.hash(dest_root, metadata_override)
-            #if self.verbose:
-            #    print(("dest : metadata_db_path :", self.source.get_metadata_db_path()))
 
         self.out_file = None
         self.out_file_path = out_file_path
@@ -152,13 +148,7 @@ class merge:
                 self.merge_file(file_path)
 
     def find_best_merge_location(self):
-        #source_metadata_root = metadata_location.get_metadata_root(self.source_root, None)
-        #source_walker = walker.walker(self.source_root)
-        #source_hash = hash.hash(self.source_root, util.Metadata(source_metadata_root, self.__module__))
-
-        dest_metadata_root = metadata_location.get_metadata_root(self.dest_root, None)
         trial_dest_walker = walker.walker(self.dest_root)
-        #dest_hash = hash.hash(self.dest_root, util.Metadata(dest_metadata_root, self.__module__))
 
         BestMatch = collections.namedtuple('BestMatch', ['paths', 'count'])
         best_match = BestMatch(None,0)

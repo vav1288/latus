@@ -24,16 +24,15 @@ if __name__ == "__main__":
     args = larg.parse_args(parser, epi)
     logger.set_log_level(args.loglevel)
 
-    settings_section = 'sync'
+    settings_section = 'latus'
     user_settings = settings.Settings(args.override)
 
     if args.set:
         user_settings.set(settings_section, args.set[0], args.set[1])
     if args.dump:
         all_settings = user_settings.get_all()
-        if 'sync' in all_settings:
-            for setting in all_settings[settings_section]:
-                print("%s=%s" % setting)
+        for setting in all_settings[settings_section]:
+            print("%s = %s" % setting) # make it look like the .ini file format
     if args.run:
 
         # *** do some basic settings checks. ***

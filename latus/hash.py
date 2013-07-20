@@ -37,7 +37,7 @@ class hash():
         # In other words, some functions will need it for functionality, and others for speed (only open and
         # close the db once per use of this module).
         self.root = root
-        self.db_path = metadata_location.get_metadata_db_path(root, self.metadata_root)
+        self.db_path = metadata_location.get_metadata_db_path(self.metadata_root, root)
         self.init_db(self.db_path)
 
     def __del__(self):
@@ -115,7 +115,7 @@ class hash():
 
     # mainly for testing purposes
     def clean(self):
-        db = sqlite.sqlite(metadata_location.get_metadata_db_path(None, self.metadata_root))
+        db = sqlite.sqlite(metadata_location.get_metadata_db_path(self.metadata_root))
         db.clean()
         db.close()
 

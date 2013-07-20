@@ -29,7 +29,7 @@ class Settings:
 
     # some simple section and key checking
     def check(self, section, key):
-        sects_and_keys = {'sync' : ['cloud', 'local'], 'node' : ['uuid']}
+        sects_and_keys = {'latus' : ['cloud', 'local', 'uuid']}
         if section not in sects_and_keys:
             raise Exception("bad section: %s" % section)
         if key not in sects_and_keys[section]:
@@ -67,8 +67,8 @@ class Settings:
             self.log.info("creating settings file %s" % self.settings_file_path)
             # http://stackoverflow.com/questions/703035/when-are-you-truly-forced-to-use-uuid-as-part-of-the-design
             node_uuid = uuid.uuid1()
-            self.config.add_section('node')
-            self.config.set('node', 'uuid', node_uuid.hex)
+            self.config.add_section(section)
+            self.config.set(section, 'uuid', node_uuid.hex)
         if not self.config.has_section(section):
             self.config.add_section(section)
         self.config.set(section, key, value)
