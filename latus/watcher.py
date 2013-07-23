@@ -15,10 +15,11 @@ class Watcher():
         size = 64 * 1024
         self.buffer = win32file.AllocateReadBuffer( size )
 
-    # either a directory change or an external "pulse" can trigger this event
-    def create_change_event(self):
+        # either a directory change or an external "pulse" can trigger this event
         self.overlapped = pywintypes.OVERLAPPED()
         self.overlapped.hEvent = win32event.CreateEvent(None, 0, 0, None)
+
+    def get_change_event_handle(self):
         return self.overlapped.hEvent
 
     def wait(self, path_to_watch):

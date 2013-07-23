@@ -46,26 +46,26 @@ class sync():
             print('metadata file : %s' % metadata_location.get_metadata_db_path(self.get_metadata()))
             print('local folder : %s' % self.get_local_folder())
 
-        # This is a little tricky.
-        # We set up a file system watcher, which has an event that it will use to wake up on (see the watcher module).
+        # Set up a file system watcher, which has an event that it will use to wake up on (see the watcher module).
         # This event can be 'triggered' either by a file system change or a keyboard press (via the
         # kbhit module).  If the kbhit thread is still alive (no quit key press yet), then we assume the file system
-        # change event (in the watcher module) was what made us exit so we do a scan.
+        # change event (in the watcher module) was what made us return from watcher.wait() so we do a scan.
 
-        # we'll do a scan at this interval, even if the watcher module hasn't detected a change in the file system
+        # Create the watcher object, so we can pass the event handle to the keyboard hit thread.
+        # We'll do a scan at the watcher_timeout interval, even if the watcher module hasn't detected a change
+        # in the file system, in case the OS doesn't catch all file system changes.
+        # todo: make the watcher_timeout a configuration option (in seconds)
         watcher_timeout = 60 * 60 * 1000 # mS
         fs_watcher = watcher.Watcher(watcher_timeout)
-        watcher_event_handle = fs_watcher.create_change_event()
 
         kbh = kbhit.KBHit()
         # give kbhit the handle of the event to wake up when the 'quit' key is pressed
-        kbh.latus_setup('q', win32event_handles=[watcher_event_handle])
+        kbh.setup('q', win32event_handles=[fs_watcher.get_change_event_handle()])
         kbh.start() # kbhit (quit key detect) runs in a separate thread
 
         while kbh.is_alive():
-            if fs_watcher.wait(self.get_local_folder()):
-                if kbh.is_alive():
-                    self.scan()
+            self.scan() # always scan when program first invoked
+            fs_watcher.wait(self.get_local_folder()) # wait for a change in the file system, timeout or quit
 
     def scan(self):
         if self.verbose:

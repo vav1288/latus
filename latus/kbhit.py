@@ -6,7 +6,7 @@ import threading
 class KBHit(threading.Thread):
 
     # this must be called before run()
-    def latus_setup(self, exit_char = 'q', win32event_handles = [], events = []):
+    def setup(self, exit_char = 'q', win32event_handles = [], events = []):
         # events to awaken when we get a keyboard hit
         self.win32event_handles = win32event_handles # windows style
         self.events = events # python style
