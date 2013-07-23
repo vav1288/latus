@@ -1,8 +1,6 @@
 
-import os
 import msvcrt
-import time
-from latus import settings, const, hash, util, metadata_location
+from latus import settings, const, hash, util, metadata_location, watcher, kbhit
 
 class sync():
     def __init__(self, settings_override_folder = None, verbose = False):
@@ -47,11 +45,31 @@ class sync():
             print('cloud folder : %s' % self.get_cloud_folder())
             print('metadata file : %s' % metadata_location.get_metadata_db_path(self.get_metadata()))
             print('local folder : %s' % self.get_local_folder())
-        while (self.continue_running(True)):
-            self.scan()
-            time.sleep(3)
+
+        # This is a little tricky.
+        # We set up a file system watcher, which has an event that it will use to wake up on (see the watcher module).
+        # This event can be 'triggered' either by a file system change or a keyboard press (via the
+        # kbhit module).  If the kbhit thread is still alive (no quit key press yet), then we assume the file system
+        # change event (in the watcher module) was what made us exit so we do a scan.
+
+        # we'll do a scan at this interval, even if the watcher module hasn't detected a change in the file system
+        watcher_timeout = 60 * 60 * 1000 # mS
+        fs_watcher = watcher.Watcher(watcher_timeout)
+        watcher_event_handle = fs_watcher.create_change_event()
+
+        kbh = kbhit.KBHit()
+        # give kbhit the handle of the event to wake up when the 'quit' key is pressed
+        kbh.latus_setup('q', win32event_handles=[watcher_event_handle])
+        kbh.start() # kbhit (quit key detect) runs in a separate thread
+
+        while kbh.is_alive():
+            if fs_watcher.wait(self.get_local_folder()):
+                if kbh.is_alive():
+                    self.scan()
 
     def scan(self):
+        if self.verbose:
+            print("scanning %s" % self.get_local_folder())
         cloud_folder = self.get_cloud_folder()
         local_folder = self.get_local_folder()
         metadata = self.get_metadata()
