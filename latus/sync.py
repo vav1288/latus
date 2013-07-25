@@ -1,6 +1,6 @@
 
 import msvcrt
-from latus import settings, const, hash, util, metadata_location, watcher, kbhit
+from . import settings, const, hash, util, metadata_location, watcher, exitcontrol
 
 class sync():
     def __init__(self, settings_override_folder = None, verbose = False):
@@ -38,7 +38,8 @@ class sync():
                     self.help(c)
         return continue_running_flag
 
-    def run(self):
+    # can pass in an alternative object (inherit from exitcontrol.ExitControl() ) for testing to emulate the key hit
+    def run(self, exit_control = exitcontrol.KBHit()):
         self.help()
         if (self.verbose):
             print('settings file : %s' % self.settings.get_settings_file_path())
@@ -58,12 +59,11 @@ class sync():
         watcher_timeout = 60 * 60 * 1000 # mS
         fs_watcher = watcher.Watcher(watcher_timeout)
 
-        kbh = kbhit.KBHit()
-        # give kbhit the handle of the event to wake up when the 'quit' key is pressed
-        kbh.setup('q', win32event_handles=[fs_watcher.get_change_event_handle()])
-        kbh.start() # kbhit (quit key detect) runs in a separate thread
+        # give exit_control_thread the handle of the event to wake up
+        exit_control.setup(win32event_handles=[fs_watcher.get_change_event_handle()], exit_criteria='q')
+        exit_control.start() # runs in a separate thread
 
-        while kbh.is_alive():
+        while exit_control.get_exit_control_flag():
             self.scan() # always scan when program first invoked
             fs_watcher.wait(self.get_local_folder()) # wait for a change in the file system, timeout or quit
 

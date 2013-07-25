@@ -16,6 +16,7 @@ DEST_EXISTS_UNDER_DIFFERENT_NAME = "dest_exists_under_different_name"
 DEST_BEST = "dest_best"
 DEST_CONFLICT = "dest_conflict"
 NON_EXECUTION_DRIVE_TEST_FILES = ["a.txt", "aa.txt"]
+SYNC = "sync"
 
 # something to give good unicode coverage ...
 N_UNICODE = 63

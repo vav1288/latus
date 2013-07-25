@@ -51,8 +51,8 @@ if __name__ == "__main__":
             print("creating %s" % local_folder)
             os.makedirs(local_folder)
 
-        sync = sync.sync(args.override, args.verbose)
-        sync.run()
+        do_sync = sync.sync(args.override, args.verbose)
+        do_sync.run()
     elif not args.set and not args.dump:
         print("nothing to do")
         print("-h for help")
