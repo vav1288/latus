@@ -1,12 +1,16 @@
 
 import msvcrt
-from . import settings, const, hash, util, metadata_location, watcher, exitcontrol
+import os
+from . import settings, hash, util, metadata_location, watcher, exitcontrol
 
 class sync():
+    """
+    Synchronize the folders of two latus nodes.
+    """
+
     def __init__(self, settings_override_folder = None, verbose = False):
         self.settings = settings.Settings(settings_override_folder)
         self.verbose = verbose
-        self.settings_section = 'latus'
 
     def help(self, c = None):
         s = "hit 'q' to quit"
@@ -15,13 +19,13 @@ class sync():
         print(s)
 
     def get_cloud_folder(self):
-        return self.settings.get(self.settings_section, 'cloud')
+        return self.settings.get(settings.NODE_SECTION, 'cloud')
 
     def get_local_folder(self):
-        return self.settings.get(self.settings_section, 'local')
+        return self.settings.get(settings.NODE_SECTION, 'local')
 
     def get_uuid(self):
-        return self.settings.get(self.settings_section, 'uuid')
+        return self.settings.get(settings.NODE_SECTION, 'uuid')
 
     def get_metadata(self):
         return util.Metadata(self.get_cloud_folder(), self.get_uuid())
@@ -63,14 +67,20 @@ class sync():
         exit_control.setup(win32event_handles=[fs_watcher.get_change_event_handle()], exit_criteria='q')
         exit_control.start() # runs in a separate thread
 
-        while exit_control.get_exit_control_flag():
+        while not exit_control.get_exit_control_flag():
             self.scan() # always scan when program first invoked
             fs_watcher.wait(self.get_local_folder()) # wait for a change in the file system, timeout or quit
 
     def scan(self):
-        if self.verbose:
-            print("scanning %s" % self.get_local_folder())
+        # read in the settings in case the settings file changes in the middle of this
+        # execution (unlikely, but possible)
         cloud_folder = self.get_cloud_folder()
         local_folder = self.get_local_folder()
         metadata = self.get_metadata()
-
+        if self.verbose:
+            print("scanning %s" % local_folder)
+        if not os.path.exists(cloud_folder):
+            os.makedirs(cloud_folder)
+        # updates the metadata in the cloud storage area
+        node_hash = hash.hash(local_folder, metadata, self.verbose)
+        node_hash.scan(local_folder)

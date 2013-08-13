@@ -3,30 +3,51 @@ import os
 import unittest
 import win32event
 import time
-from .. import sync, logger, settings, exitcontrol
+import collections
+from .. import sync, logger, settings, exitcontrol, const
 from . import test_latus
 
 class TestSync(unittest.TestCase):
     def setUp(self):
         self.log = logger.get_log()
-        self.root = os.path.join(test_latus.get_root(), test_latus.SYNC)
-        self.settings_folder = os.path.join(self.root, 'appdata', 'latus')
-
-        settings_section = 'latus'
-        user_settings = settings.Settings(self.settings_folder)
-        user_settings.set(settings_section, 'cloud', os.path.join(self.root, 'cloud'))
-        local_folder = os.path.join(self.root, 'latus')
-        os.makedirs(local_folder)
-        user_settings.set(settings_section, 'local', local_folder)
+        self.sync_node_info = test_latus.get_sync_node_info()
+        self.NodeConfig = collections.namedtuple('NodeConfig', ['settings_folder', 'local_folder', 'cloud_folder'])
 
     def tearDown(self):
         pass
 
-    def test_sync(self):
-        do_sync = sync.sync(self.settings_folder, True)
-        exit_control = TstExitControl() # use the exit control written just for testing
-        do_sync.run(exit_control)
-        # todo: test the actual sync
+    def make_sync_node(self, root):
+
+        # write to the settings file
+        sync_node_config = self.NodeConfig(os.path.join(root, 'appdata', const.METADATA_DIR_NAME),
+                                           os.path.join(root, const.NAME),
+                                           os.path.join(root, 'cloud')
+                                          )
+        user_settings = settings.Settings(sync_node_config.settings_folder)
+        user_settings.set(settings.NODE_SECTION, 'cloud', sync_node_config.cloud_folder)
+        user_settings.set(settings.NODE_SECTION, 'local', sync_node_config.local_folder)
+
+        # create the sync node
+        sync_node = sync.sync(sync_node_config.settings_folder, verbose=True)
+
+        return sync_node, TstExitControl()
+
+    def test_single(self):
+        root, id = self.sync_node_info[0]
+        node, exit_control = self.make_sync_node(root)
+        node.run(exit_control)
+
+    def test_two(self):
+        nodes = []
+        for root, id in self.sync_node_info:
+            nodes.append(self.make_sync_node(root))
+        for node, exit_control in nodes:
+            node.run(exit_control)
+        # test that the files synced across the nodes
+        p = os.path.join(self.sync_node_info[0][0], "b.txt")
+        self.assertTrue(os.path.exists(p), p)
+        p = os.path.join(self.sync_node_info[1][0], "a.txt")
+        self.assertTrue(os.path.exists(p), p)
 
 class TstExitControl(exitcontrol.ExitControl):
 

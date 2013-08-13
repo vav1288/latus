@@ -4,7 +4,13 @@ import configparser
 import uuid
 from . import const, logger
 
+# at this point, we only have one section
+NODE_SECTION = 'node'
+
 class Settings:
+    """
+    User settings.
+    """
     def __init__(self, settings_folder_override = None):
         self.log = logger.get_log()
         if settings_folder_override:
@@ -29,7 +35,7 @@ class Settings:
 
     # some simple section and key checking
     def check(self, section, key):
-        sects_and_keys = {'latus' : ['cloud', 'local', 'uuid']}
+        sects_and_keys = {NODE_SECTION : ['cloud', 'local', 'uuid']}
         if section not in sects_and_keys:
             raise Exception("bad section: %s" % section)
         if key not in sects_and_keys[section]:

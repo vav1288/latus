@@ -1,0 +1,10 @@
+
+Latus instances, esp. for sync, have the ability to communicate
+with each other.  The question is: what to call these.
+
+We'll call a latus instance a 'node'.  This is fairly generic, but
+seems to fit OK.
+
+Alternatives that were considered were 'peer' and 'client'.
+These were rejected since this is not a pure P2P network nor 
+does it have a pure client/server relationship.

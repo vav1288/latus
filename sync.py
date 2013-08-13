@@ -24,7 +24,7 @@ if __name__ == "__main__":
     args = larg.parse_args(parser, epi)
     logger.set_log_level(args.loglevel)
 
-    settings_section = 'latus'
+    settings_section = settings.NODE_SECTION
     user_settings = settings.Settings(args.override)
 
     if args.set:

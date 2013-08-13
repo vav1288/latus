@@ -16,7 +16,6 @@ DEST_EXISTS_UNDER_DIFFERENT_NAME = "dest_exists_under_different_name"
 DEST_BEST = "dest_best"
 DEST_CONFLICT = "dest_conflict"
 NON_EXECUTION_DRIVE_TEST_FILES = ["a.txt", "aa.txt"]
-SYNC = "sync"
 
 # something to give good unicode coverage ...
 N_UNICODE = 63
@@ -67,6 +66,9 @@ class test_latus():
         if force or not os.path.exists(get_hash_root()):
             self.write_to_file(os.path.join(get_hash_root(), a_file_name), a_test_string, write_flag)
             self.write_to_file(os.path.join(get_hash_root(), b_file_name), b_test_string, write_flag)
+        for sync_root, id in get_sync_node_info():
+            if force or not os.path.exists(sync_root):
+                self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)
 
         print("files_written:" + str(self.files_written))
         return self.files_written
@@ -112,6 +114,15 @@ def get_merge_root():
 
 def get_hash_root():
     return os.path.join(get_root(), "hash")
+
+def get_sync_node_info():
+    def make(root, id):
+        return os.path.join(root, id), id
+    root = os.path.join(get_root(), "sync")
+    paths = []
+    paths.append(make(root, "a"))
+    paths.append(make(root, "b"))
+    return paths
 
 # get an mtime back in time
 def get_mtime_time():
