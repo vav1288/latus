@@ -7,7 +7,6 @@ import win32api
 import win32con
 from . import logger, util
 
-
 class sqlite:
     """ A layer on top of Python's SQLite capability.
     """
@@ -46,15 +45,10 @@ class sqlite:
                 self.log.warn("could not remove %s", self.db_path)
         return ret
 
-    # returns True on successful connection
-    def connect(self, create_flag = False):
-        success_flag = False
+    def connect(self):
         assert(self.db_path is not None)
-        if os.path.exists(self.db_path) or create_flag:
-            self.conn = sqlite3.connect(self.db_path)
-            self.cur = self.conn.cursor()
-            success_flag = True
-        return success_flag
+        self.conn = sqlite3.connect(self.db_path)
+        self.cur = self.conn.cursor()
 
     def close(self):
         self.commit()
@@ -100,8 +94,8 @@ class sqlite:
         self.add_col_integer(name, isnonnull)
 
     def create_table(self, table):
-        self.log.info("creating %s : %s", self.db_path, table)
         self.table = table
+        self.log.info("creating %s : %s", self.db_path, table)
         colstr = ''
         for col in self.cols_order:
             if len(colstr) > 0:
@@ -109,24 +103,20 @@ class sqlite:
             colstr += str(col) + ' ' + self.type[col]
         colstr += "," + self.timestamp_str + ' ' + self.type[self.timestamp_str]
         colstr += "," + self.autoindex_str + ' ' + self.type[self.autoindex_str]
-        cmd = 'CREATE TABLE IF NOT EXISTS ' + self.table + "(" + colstr + ")"
-        self.connect(True)
+        cmd = 'CREATE TABLE IF NOT EXISTS ' + table + "(" + colstr + ")"
+        self.connect()
         #self.log.info(cmd)
         self.exec_db(cmd)
 
-    def create_index(self, key, unique = False):
+    def create_index(self, table, key, unique = False):
         cmd = "CREATE"
         if unique:
             cmd += " UNIQUE"
         cmd += " INDEX"
         cmd += " idx_" + key
-        cmd += " ON " + self.table + "(" + key + ")"
+        cmd += " ON " + table + "(" + key + ")"
         #self.log.info(cmd)
         self.exec_db(cmd)
-
-    def connect_to_table(self, table):
-        self.table = table
-        return self.connect()
 
     # make question marks
     # make a string like '?,?,?' - one ? for each element in vals
@@ -134,13 +124,13 @@ class sqlite:
         return ','.join(['?' for _ in vals])
 
     # insert a list of vals into the table - one for each column
-    def insert(self, vals):
+    def insert(self, table, vals):
         # make columns list into a string with separating commas, and put that all in parenthesis
         cols_str = '(' + ','.join([col for col in self.cols_order]) + ')'
-        e = "INSERT INTO " + self.table + " " + cols_str + " VALUES (" + self.qms(vals) + ")"
+        e = "INSERT INTO " + table + " " + cols_str + " VALUES (" + self.qms(vals) + ")"
         self.exec_db(e, vals, False)
 
-    def update(self, keys, values, where, count_flag = False):
+    def update(self, table, keys, values, where, count_flag = False):
         setstr = ''.join([k+'=?,' for k in keys])[:-1]
         if count_flag:
             setstr += ", count = count + 1"
@@ -151,7 +141,7 @@ class sqlite:
             #wherestr += key + "='" + self.cue(where[key]) + "'"
             wherestr += key + "=? "
             values.append(where[key])
-        e = "UPDATE " + self.table + " SET " + setstr + " WHERE " + wherestr
+        e = "UPDATE " + table + " SET " + setstr + " WHERE " + wherestr
         #print ("update", e)
         self.exec_db(e, values, commit_flag=False)
 
@@ -170,10 +160,10 @@ class sqlite:
         return s
 
     # gets a list of entries of a particular column based on spec
-    def get(self, qualifiers, col_name, operators = None):
+    def get(self, table, qualifiers, col_name, operators = None):
         vals = []
         tolerance = 0.001 # todo: determine if this is really the best value - perhaps store strings instead of floating point?
-        cmd = "SELECT " + col_name + " from " + self.table + " WHERE "
+        cmd = "SELECT " + col_name + " from " + table + " WHERE "
         subcmd = ""
         if qualifiers is not None:
             for col in list(qualifiers.keys()):

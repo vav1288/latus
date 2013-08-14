@@ -19,6 +19,7 @@ class hash():
 
     def __init__(self, root, metadata_root, verbose = False, include_attrib = set(), hoh = True):
         self.HASH_TABLE_NAME = "hash"
+        self.HASH_BASE_TABLE_NAME = "base" # might rename this ...
         self.ABS_PATH_STRING = "abspath"
         self.MTIME_STRING = "mtime"
         self.SIZE_STRING = "size"
@@ -60,7 +61,8 @@ class hash():
                 # file has changed - update the hash (since file mtime or size has changed, hash is no longer valid)
                 sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib, self.hoh)
                 mtime = os.path.getmtime(abs_path)
-                self.db.update([self.MTIME_STRING, self.SIZE_STRING, self.SHA512_VAL_STRING], [mtime, size, sha512_hash],
+                self.db.update(self.HASH_TABLE_NAME,
+                               [self.MTIME_STRING, self.SIZE_STRING, self.SHA512_VAL_STRING], [mtime, size, sha512_hash],
                                {self.ABS_PATH_STRING : canon_abs_path_no_drive}, count_flag=True)
                 # read back in the count string
                 unused, entry_count = self.get_hash_from_db(canon_abs_path_no_drive, mtime, size)
@@ -70,7 +72,7 @@ class hash():
         else:
             # new entry
             sha512_hash, size, sha512_calc_time = hash_calc.calc_sha512(abs_path, self.include_attrib, self.hoh)
-            self.db.insert([canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time, 0])
+            self.db.insert(self.HASH_TABLE_NAME, [canon_abs_path_no_drive, mtime, size, sha512_hash, sha512_calc_time, 0])
             got_from_cache = False
         return sha512_hash, got_from_cache, entry_count
 
@@ -110,7 +112,7 @@ class hash():
         operators[self.SHA512_VAL_STRING] = "="
         path_desc[self.ABS_PATH_STRING] = util.get_abs_path_wo_drive(self.root) + "%"
         operators[self.ABS_PATH_STRING] = "LIKE"
-        paths = self.db.get(path_desc, self.ABS_PATH_STRING, operators)
+        paths = self.db.get(self.HASH_TABLE_NAME, path_desc, self.ABS_PATH_STRING, operators)
         return paths
 
     # mainly for testing purposes
@@ -127,8 +129,9 @@ class hash():
 
         #print ("init_db.db_path", db_path)
         self.db = sqlite.sqlite(db_path)
-        self.db.connect_to_table(self.HASH_TABLE_NAME)
+        self.db.table = self.HASH_TABLE_NAME
         if not self.db.exists():
+            self.db.connect() # will create the db
             self.db.add_col_text(self.ABS_PATH_STRING)
             self.db.add_col_float(self.MTIME_STRING)
             self.db.add_col_integer(self.SIZE_STRING)
@@ -139,9 +142,10 @@ class hash():
             self.db.add_col_auto_index()
             self.db.create_table(self.HASH_TABLE_NAME)
             # use indices to speed access
-            self.db.create_index(self.ABS_PATH_STRING)
-            self.db.create_index(self.SHA512_VAL_STRING)
+            self.db.create_index(self.HASH_TABLE_NAME, self.ABS_PATH_STRING)
+            self.db.create_index(self.HASH_TABLE_NAME, self.SHA512_VAL_STRING)
         else:
+            self.db.connect() # db already exists
             self.db.set_cols([self.ABS_PATH_STRING, self.MTIME_STRING, self.SIZE_STRING, self.SHA512_VAL_STRING,
                               self.SHA512_TIME_STRING, self.COUNT_STRING])
 
@@ -165,8 +169,8 @@ class hash():
         # todo: get hash and count both in one call to db.get()
         this_hash = None
         this_count = None
-        hash_list = self.db.get(file_info, self.SHA512_VAL_STRING, operators)
-        count_list = self.db.get(file_info, self.COUNT_STRING, operators)
+        hash_list = self.db.get(self.HASH_TABLE_NAME, file_info, self.SHA512_VAL_STRING, operators)
+        count_list = self.db.get(self.HASH_TABLE_NAME, file_info, self.COUNT_STRING, operators)
         if hash_list is not None:
             this_hash = hash_list[0]
         if count_list is not None:
@@ -177,5 +181,5 @@ class hash():
     def is_in_table(self, path):
         file_info = {}
         file_info['abspath'] = path
-        return self.db.get(file_info, self.SHA512_VAL_STRING) is not None
+        return self.db.get(self.HASH_TABLE_NAME, file_info, self.SHA512_VAL_STRING) is not None
 
