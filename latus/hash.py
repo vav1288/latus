@@ -122,12 +122,6 @@ class hash():
         db.close()
 
     def init_db(self, db_path):
-        db_dir = os.path.split(db_path)[0]
-        if not os.path.exists(db_dir):
-            os.mkdir(db_dir)
-            util.make_hidden(db_dir)
-
-        #print ("init_db.db_path", db_path)
         self.db = sqlite.sqlite(db_path)
         self.db.table = self.HASH_TABLE_NAME
         if not self.db.exists():
