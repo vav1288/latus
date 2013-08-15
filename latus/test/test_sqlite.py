@@ -23,10 +23,10 @@ class TestSQLite(unittest.TestCase):
 
         print("db_name", db_name)
         self.db = sqlite.sqlite(db_name)
-        self.db.add_col_text(self.key_string, True, True)
-        self.db.add_col_text(self.value_string, True, True)
-        self.db.add_col_auto_index()
-        self.db.add_col_timestamp()
+        self.db.add_col_text(self.table, self.key_string, True, True)
+        self.db.add_col_text(self.table, self.value_string, True, True)
+        self.db.add_col_auto_index(self.table, )
+        self.db.add_col_timestamp(self.table, )
         print("self.table", self.table)
         self.db.create_table(self.table)
 

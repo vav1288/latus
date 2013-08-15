@@ -5,6 +5,7 @@ import os
 import sys
 import win32api
 import win32con
+import collections
 from . import logger, util
 
 class sqlite:
@@ -12,8 +13,8 @@ class sqlite:
     """
     def __init__(self, db_path):
         self.log = logger.get_log()
-        self.type = {}
-        self.cols_order = []
+        self.type = collections.defaultdict(dict)
+        self.cols_order = collections.defaultdict(list)
         self.ExecCount = 0 # of pending execs
         self.db_path = db_path # full path to db file
         self.conn = None
@@ -29,8 +30,8 @@ class sqlite:
             self.log.warning("cur not closed, db : %s, last_command : %s", self.db_path, self.last_command)
             self.close()
 
-    def set_cols(self, cols):
-        self.cols_order = cols
+    def set_cols(self, table, cols):
+        self.cols_order[table] = cols
 
     def clean(self):
         self.close()
@@ -64,45 +65,45 @@ class sqlite:
     def exists(self):
         return os.path.exists(self.db_path)
 
-    def add_col(self, name, type = 'text', isnonnull = False, isunique = False, is_builtin = False):
+    def add_col(self, table, name, col_type = 'text', isnonnull = False, isunique = False, is_builtin = False):
         if not is_builtin:
-            self.cols_order.append(name)
+            self.cols_order[table].append(name)
         if isnonnull:
-            type += ' NOT NULL'
+            col_type += ' NOT NULL'
         if isunique:
-            type += ' UNIQUE'
-        self.type[name] = type
+            col_type += ' UNIQUE'
+        self.type[table][name] = col_type
 
-    def add_col_auto_index(self):
+    def add_col_auto_index(self, table):
         self.autoindex_str = 'autoindex'
-        self.add_col(self.autoindex_str, 'INTEGER PRIMARY KEY AUTOINCREMENT', is_builtin=True)
+        self.add_col(table, self.autoindex_str, 'INTEGER PRIMARY KEY AUTOINCREMENT', is_builtin=True)
 
-    def add_col_timestamp(self):
+    def add_col_timestamp(self, table):
         self.timestamp_str = 'timestamp'
-        self.add_col(self.timestamp_str, 'DEFAULT CURRENT_TIMESTAMP', is_builtin=True)
+        self.add_col(table, self.timestamp_str, 'DEFAULT CURRENT_TIMESTAMP', is_builtin=True)
 
-    def add_col_text(self, name, isnonnull = False, isunique = False):
-        self.add_col(name, 'text', isnonnull, isunique)
+    def add_col_text(self, table, name, isnonnull = False, isunique = False):
+        self.add_col(table, name, 'text', isnonnull, isunique)
 
-    def add_col_integer(self, name, isnonnull = False):
-        self.add_col(name, 'integer', isnonnull)
+    def add_col_integer(self, table, name, isnonnull = False):
+        self.add_col(table, name, 'integer', isnonnull)
 
-    def add_col_float(self, name, isnonnull = False):
-        self.add_col(name, 'float', isnonnull)
+    def add_col_float(self, table, name, isnonnull = False):
+        self.add_col(table, name, 'float', isnonnull)
 
-    def add_col_bool(self, name, isnonnull = False):
-        self.add_col_integer(name, isnonnull)
+    def add_col_bool(self, table, name, isnonnull = False):
+        self.add_col_integer(table, name, isnonnull)
 
     def create_table(self, table):
         self.table = table
         self.log.info("creating %s : %s", self.db_path, table)
         colstr = ''
-        for col in self.cols_order:
+        for col in self.cols_order[table]:
             if len(colstr) > 0:
                 colstr += ','
-            colstr += str(col) + ' ' + self.type[col]
-        colstr += "," + self.timestamp_str + ' ' + self.type[self.timestamp_str]
-        colstr += "," + self.autoindex_str + ' ' + self.type[self.autoindex_str]
+            colstr += str(col) + ' ' + self.type[table][col]
+        colstr += "," + self.timestamp_str + ' ' + self.type[table][self.timestamp_str]
+        colstr += "," + self.autoindex_str + ' ' + self.type[table][self.autoindex_str]
         cmd = 'CREATE TABLE IF NOT EXISTS ' + table + "(" + colstr + ")"
         self.connect()
         #self.log.info(cmd)
@@ -126,7 +127,7 @@ class sqlite:
     # insert a list of vals into the table - one for each column
     def insert(self, table, vals):
         # make columns list into a string with separating commas, and put that all in parenthesis
-        cols_str = '(' + ','.join([col for col in self.cols_order]) + ')'
+        cols_str = '(' + ','.join([col for col in self.cols_order[table]]) + ')'
         e = "INSERT INTO " + table + " " + cols_str + " VALUES (" + self.qms(vals) + ")"
         self.exec_db(e, vals, False)
 
