@@ -123,7 +123,6 @@ class hash():
 
     def init_db(self, db_path):
         self.db = sqlite.sqlite(db_path)
-        self.db.table = self.HASH_TABLE_NAME
         if not self.db.exists():
             self.db.connect() # will create the db
             self.db.add_col_text(self.ABS_PATH_STRING)
