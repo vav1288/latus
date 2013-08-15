@@ -26,6 +26,7 @@ class hash():
         self.SHA512_VAL_STRING = "sha512_val"
         self.SHA512_TIME_STRING = "sha512_time"
         self.COUNT_STRING = "count"
+        self.ROOT_STRING = "root"
         self.KEY_STRING = "key"
         self.VALUE_STRING = "value"
         self.metadata_root = metadata_root # should only be None if we're not using metadata
@@ -34,11 +35,6 @@ class hash():
         self.hoh = hoh
         self.HashTuple = namedtuple("hash", ['sha512', 'got_from_cache', 'entry_count'])
         self.log = logger.get_log()
-
-        # While we shouldn't _necessarily_ need to know the root yet, since
-        # using the database is integral to the operation of most of this module we require it upfront.
-        # In other words, some functions will need it for functionality, and others for speed (only open and
-        # close the db once per use of this module).
         self.root = root
         self.db_path = metadata_location.get_metadata_db_path(self.metadata_root, root)
         self.init_db(self.db_path)
@@ -125,33 +121,29 @@ class hash():
 
     def init_db(self, db_path):
         self.db = sqlite.sqlite(db_path)
-        if not self.db.exists():
-            self.db.connect() # will create the db
-            # create hash root table
-            self.db.add_col_text(self.HASH_BASE_TABLE_NAME, self.KEY_STRING)
-            self.db.add_col_text(self.HASH_BASE_TABLE_NAME, self.VALUE_STRING)
-            self.db.add_col_timestamp(self.HASH_BASE_TABLE_NAME)
-            self.db.add_col_auto_index(self.HASH_BASE_TABLE_NAME)
-            self.db.create_table(self.HASH_BASE_TABLE_NAME)
-            # create hash table
-            self.db.add_col_text(self.HASH_TABLE_NAME, self.ABS_PATH_STRING)
-            self.db.add_col_float(self.HASH_TABLE_NAME, self.MTIME_STRING)
-            self.db.add_col_integer(self.HASH_TABLE_NAME, self.SIZE_STRING)
-            self.db.add_col_text(self.HASH_TABLE_NAME, self.SHA512_VAL_STRING)
-            self.db.add_col_float(self.HASH_TABLE_NAME, self.SHA512_TIME_STRING)
-            self.db.add_col_integer(self.HASH_TABLE_NAME, self.COUNT_STRING)
-            self.db.add_col_timestamp(self.HASH_TABLE_NAME)
-            self.db.add_col_auto_index(self.HASH_TABLE_NAME)
-            self.db.create_table(self.HASH_TABLE_NAME)
-            # use indices to speed access
+        exists = self.db.exists()
+        self.db.connect() # will create the db
+        # base table
+        self.db.add_col_text(self.HASH_BASE_TABLE_NAME, self.KEY_STRING, isunique=True)
+        self.db.add_col_text(self.HASH_BASE_TABLE_NAME, self.VALUE_STRING)
+        self.db.add_col_timestamp(self.HASH_BASE_TABLE_NAME)
+        self.db.add_col_auto_index(self.HASH_BASE_TABLE_NAME)
+        self.db.create_table(self.HASH_BASE_TABLE_NAME)
+        self.db.insert(self.HASH_BASE_TABLE_NAME, [self.ROOT_STRING, self.root], insert_or_replace=True)
+        # hash table
+        self.db.add_col_text(self.HASH_TABLE_NAME, self.ABS_PATH_STRING)
+        self.db.add_col_float(self.HASH_TABLE_NAME, self.MTIME_STRING)
+        self.db.add_col_integer(self.HASH_TABLE_NAME, self.SIZE_STRING)
+        self.db.add_col_text(self.HASH_TABLE_NAME, self.SHA512_VAL_STRING)
+        self.db.add_col_float(self.HASH_TABLE_NAME, self.SHA512_TIME_STRING)
+        self.db.add_col_integer(self.HASH_TABLE_NAME, self.COUNT_STRING)
+        self.db.add_col_timestamp(self.HASH_TABLE_NAME)
+        self.db.add_col_auto_index(self.HASH_TABLE_NAME)
+        self.db.create_table(self.HASH_TABLE_NAME)
+        # use indices to speed access
+        if not exists:
             self.db.create_index(self.HASH_TABLE_NAME, self.ABS_PATH_STRING)
             self.db.create_index(self.HASH_TABLE_NAME, self.SHA512_VAL_STRING)
-        else:
-            self.db.connect() # db already exists
-            self.db.set_cols(self.HASH_TABLE_NAME,
-                             [self.ABS_PATH_STRING, self.MTIME_STRING, self.SIZE_STRING, self.SHA512_VAL_STRING,
-                              self.SHA512_TIME_STRING, self.COUNT_STRING])
-            self.db.set_cols(self.HASH_BASE_TABLE_NAME,[self.KEY_STRING, self.VALUE_STRING])
 
     # Look up the hash from the table, assuming if a file path, mtime and size are the same it's
     # truely the same file and therefore the same hash.

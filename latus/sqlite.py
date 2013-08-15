@@ -30,9 +30,6 @@ class sqlite:
             self.log.warning("cur not closed, db : %s, last_command : %s", self.db_path, self.last_command)
             self.close()
 
-    def set_cols(self, table, cols):
-        self.cols_order[table] = cols
-
     def clean(self):
         self.close()
         ret = False
@@ -125,24 +122,29 @@ class sqlite:
         return ','.join(['?' for _ in vals])
 
     # insert a list of vals into the table - one for each column
-    def insert(self, table, vals):
+    def insert(self, table, vals, insert_or_replace = False):
         # make columns list into a string with separating commas, and put that all in parenthesis
         cols_str = '(' + ','.join([col for col in self.cols_order[table]]) + ')'
-        e = "INSERT INTO " + table + " " + cols_str + " VALUES (" + self.qms(vals) + ")"
+        e = "INSERT "
+        if insert_or_replace:
+            e += "OR REPLACE "
+        e += "INTO " + table + " " + cols_str + " VALUES (" + self.qms(vals) + ")"
         self.exec_db(e, vals, False)
 
-    def update(self, table, keys, values, where, count_flag = False):
+    def update(self, table, keys, values, where = None, count_flag = False):
         setstr = ''.join([k+'=?,' for k in keys])[:-1]
         if count_flag:
             setstr += ", count = count + 1"
-        wherestr = ""
-        for key in list(where.keys()):
-            if len(wherestr) > 0:
-                wherestr += ' AND '
-            #wherestr += key + "='" + self.cue(where[key]) + "'"
-            wherestr += key + "=? "
-            values.append(where[key])
-        e = "UPDATE " + table + " SET " + setstr + " WHERE " + wherestr
+        e = "UPDATE " + table + " SET " + setstr
+        if where is not None:
+            wherestr = ""
+            for key in list(where.keys()):
+                if len(wherestr) > 0:
+                    wherestr += ' AND '
+                #wherestr += key + "='" + self.cue(where[key]) + "'"
+                wherestr += key + "=? "
+                values.append(where[key])
+            e += " WHERE " + wherestr
         #print ("update", e)
         self.exec_db(e, values, commit_flag=False)
 
@@ -209,7 +211,7 @@ class sqlite:
         # for some reason, the database can just disappear for short periods of time
         # so this code tolerates this disappearance
         self.last_command = command # for debug
-        #print "exec_db command", command
+        #print("exec_db command", command)
         Done = False
         TryCount = 0
         MaxTries = 3
