@@ -5,7 +5,7 @@ from . import const, util
 
 class walker:
     def __init__(self, root):
-        self.root = root # safety net for str root paths that have unicode children
+        self.root = root
         self.keyboard_hit_exit = False
 
     def __iter__(self):
@@ -46,13 +46,17 @@ class walker:
                 else:
                     yield partial_path # just the part to the right of the 'root'
 
-
+    # todo: get this working.
+    # For some reason, msvcrt.kbhit() blocks.  It seems like it shouldn't
     def check_exit(self):
-        if not self.keyboard_hit_exit:
-            if msvcrt.kbhit():
-                print ("keyboard interrupt")
-                self.keyboard_hit_exit = True
-        return(self.keyboard_hit_exit)
+        return False # just don't allow forced exit for now ...
+        #print("check_exit_start", self.keyboard_hit_exit)
+        #if not self.keyboard_hit_exit:
+        #    if msvcrt.kbhit():
+        #        print ("keyboard interrupt")
+        #        self.keyboard_hit_exit = True
+        #print("check_exit_end", self.keyboard_hit_exit)
+        #return(self.keyboard_hit_exit)
 
     def get_path(self, partial_path):
         #print(partial_path)

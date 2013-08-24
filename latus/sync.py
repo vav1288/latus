@@ -77,8 +77,6 @@ class sync():
         cloud_folder = self.get_cloud_folder()
         local_folder = self.get_local_folder()
         metadata = self.get_metadata()
-        if self.verbose:
-            print("scanning %s" % local_folder)
         if not os.path.exists(cloud_folder):
             os.makedirs(cloud_folder)
         # updates the metadata in the cloud storage area

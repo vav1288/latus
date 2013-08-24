@@ -3,6 +3,7 @@ import sys
 import win32api
 import platform
 import collections
+import socket
 
 import win32con
 import pywintypes
@@ -125,3 +126,16 @@ def check_text_encoding(do_exit = False, give_help = True):
 
 def decode_text(s):
     return s
+
+def get_plaform_info():
+    prefix = 'platform_'
+    platform_info = {}
+    platform_info[prefix + 'node'] = platform.node()
+    platform_info[prefix + 'machine'] = platform.machine()
+    platform_info[prefix + 'processor'] = platform.processor()
+    platform_info[prefix + 'python_version'] = platform.python_version()
+    platform_info[prefix + 'release'] = platform.release()
+    platform_info[prefix + 'system'] = platform.system()
+    platform_info['local_host'] = socket.gethostname()
+    platform_info['local_ip'] = socket.gethostbyname(socket.gethostname())
+    return platform_info

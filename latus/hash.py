@@ -1,6 +1,7 @@
 
 import os
 import time
+import platform
 from collections import namedtuple
 
 from . import sqlite, util, metadata_location, logger, walker, hash_calc, lprint
@@ -27,6 +28,7 @@ class hash():
         self.SHA512_TIME_STRING = "sha512_time"
         self.COUNT_STRING = "count"
         self.ROOT_STRING = "root"
+        self.ABS_ROOT_STRING = "absroot"
         self.KEY_STRING = "key"
         self.VALUE_STRING = "value"
         self.metadata_root = metadata_root # should only be None if we're not using metadata
@@ -93,6 +95,8 @@ class hash():
 
     # update the metadata
     def scan(self, path):
+        if self.verbose:
+            print("start scanning", path)
         scan_walker = walker.walker(path)
         for partial_path in scan_walker:
             start_time = time.time()
@@ -102,6 +106,8 @@ class hash():
                 self.calc_or_lookup_hash(full_path)
             if self.verbose:
                 lprint.lprint(full_path + " , " + str(time.time()-start_time) + " sec")
+        if self.verbose:
+            print("done scanning", path)
 
     def get_paths_from_hash(self, this_hash):
         path_desc = {}
@@ -122,14 +128,18 @@ class hash():
     def init_db(self, db_path):
         self.db = sqlite.sqlite(db_path)
         exists = self.db.exists()
-        self.db.connect() # will create the db
+        self.db.connect() # will create the db if it doesn't exist
         # base table
         self.db.add_col_text(self.HASH_BASE_TABLE_NAME, self.KEY_STRING, isunique=True)
         self.db.add_col_text(self.HASH_BASE_TABLE_NAME, self.VALUE_STRING)
         self.db.add_col_timestamp(self.HASH_BASE_TABLE_NAME)
         self.db.add_col_auto_index(self.HASH_BASE_TABLE_NAME)
         self.db.create_table(self.HASH_BASE_TABLE_NAME)
-        self.db.insert(self.HASH_BASE_TABLE_NAME, [self.ROOT_STRING, self.root], insert_or_replace=True)
+        self.db.insert(self.HASH_BASE_TABLE_NAME, [self.ROOT_STRING, self.root], replace=True)
+        # provides the entire path, including the drive letter (for Windows)
+        self.db.insert(self.HASH_BASE_TABLE_NAME, [self.ABS_ROOT_STRING, os.path.abspath(self.root)], replace=True)
+        for attrib in util.get_plaform_info():
+            self.db.insert(self.HASH_BASE_TABLE_NAME, [attrib, util.get_plaform_info()[attrib]], replace=True)
         # hash table
         self.db.add_col_text(self.HASH_TABLE_NAME, self.ABS_PATH_STRING)
         self.db.add_col_float(self.HASH_TABLE_NAME, self.MTIME_STRING)

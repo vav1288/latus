@@ -44,6 +44,7 @@ class KBHit(ExitControl):
     def run(self):
         this_char = ''
         while this_char != self.exit_criteria:
+            # print("waiting for", self.exit_criteria)
             msvcrt.kbhit() # waits for the keyboard hit
             this_char = msvcrt.getwch() # eats the character just hit
             if this_char == self.exit_criteria:

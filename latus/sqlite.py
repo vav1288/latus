@@ -122,15 +122,17 @@ class sqlite:
         return ','.join(['?' for _ in vals])
 
     # insert a list of vals into the table - one for each column
-    def insert(self, table, vals, insert_or_replace = False):
+    # todo: read db first and see if the entry already exists - if so, don't bother writing to the db (cut down on unnecessary file changes and thus network traffic for nodes)
+    def insert(self, table, vals, replace = False):
         # make columns list into a string with separating commas, and put that all in parenthesis
         cols_str = '(' + ','.join([col for col in self.cols_order[table]]) + ')'
         e = "INSERT "
-        if insert_or_replace:
+        if replace:
             e += "OR REPLACE "
         e += "INTO " + table + " " + cols_str + " VALUES (" + self.qms(vals) + ")"
         self.exec_db(e, vals, False)
 
+    # todo: read db first and see if the entry already exists - if so, don't bother writing to the db (cut down on unnecessary file changes and thus network traffic for nodes)
     def update(self, table, keys, values, where = None, count_flag = False):
         setstr = ''.join([k+'=?,' for k in keys])[:-1]
         if count_flag:
