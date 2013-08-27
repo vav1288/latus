@@ -9,9 +9,11 @@ def is_metadata_root(p, metadata_root):
     return p == get_metadata_root(metadata_root, p)
 
 # from a target file, determine the metadata sqlite file path
-def get_metadata_db_path(metadata, file_path = None):
+def get_metadata_db_path(metadata, file_path = None, db_name = None):
+    if db_name is None:
+        db_name = const.LFS_DB_NAME
     metadata_dir = get_metadata_root(metadata, file_path)
-    metadata_filename = const.LFS_DB_NAME + const.DB_EXT
+    metadata_filename = db_name + const.DB_EXT
     if metadata is not None:
         if metadata.name is not None:
             metadata_filename = metadata.name + const.DB_EXT

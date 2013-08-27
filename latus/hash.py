@@ -18,7 +18,7 @@ class hash():
     Also maintains a hash cache to avoid unnecessary recalculations/
     """
 
-    def __init__(self, root, metadata_root, verbose = False, include_attrib = set(), hoh = True):
+    def __init__(self, root, metadata_root, verbose = False, include_attrib = set(), hoh = True, id = None):
         self.HASH_TABLE_NAME = "hash"
         self.HASH_BASE_TABLE_NAME = "base" # might rename this ...
         self.ABS_PATH_STRING = "abspath"
@@ -38,7 +38,7 @@ class hash():
         self.HashTuple = namedtuple("hash", ['sha512', 'got_from_cache', 'entry_count'])
         self.log = logger.get_log()
         self.root = root
-        self.db_path = metadata_location.get_metadata_db_path(self.metadata_root, root)
+        self.db_path = metadata_location.get_metadata_db_path(self.metadata_root, root, db_name = id)
         self.init_db(self.db_path)
 
     def __del__(self):

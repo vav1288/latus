@@ -30,6 +30,7 @@ if __name__ == "__main__":
     if args.set:
         user_settings.set(settings_section, args.set[0], args.set[1])
     if args.dump:
+        print("settings file:", user_settings.get_settings_file_path())
         all_settings = user_settings.get_all()
         for setting in all_settings[settings_section]:
             print("%s = %s" % setting) # make it look like the .ini file format
