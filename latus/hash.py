@@ -18,7 +18,7 @@ class hash():
     Also maintains a hash cache to avoid unnecessary recalculations/
     """
 
-    def __init__(self, root, metadata_root, verbose = False, include_attrib = set(), hoh = True, id = None):
+    def __init__(self, root, metadata, verbose = False, include_attrib = set(), hoh = True):
         self.HASH_TABLE_NAME = "hash"
         self.HASH_BASE_TABLE_NAME = "base" # might rename this ...
         self.ABS_PATH_STRING = "abspath"
@@ -29,16 +29,17 @@ class hash():
         self.COUNT_STRING = "count"
         self.ROOT_STRING = "root"
         self.ABS_ROOT_STRING = "absroot"
+        self.UID_STRING = "uid" # unique ID
         self.KEY_STRING = "key"
         self.VALUE_STRING = "value"
-        self.metadata_root = metadata_root # should only be None if we're not using metadata
+        self.metadata = metadata # should only be None if we're not using metadata
         self.verbose = verbose
         self.include_attrib = include_attrib
         self.hoh = hoh
         self.HashTuple = namedtuple("hash", ['sha512', 'got_from_cache', 'entry_count'])
         self.log = logger.get_log()
         self.root = root
-        self.db_path = metadata_location.get_metadata_db_path(self.metadata_root, root, db_name = id)
+        self.db_path = metadata_location.get_metadata_db_path(self.metadata, root)
         self.init_db(self.db_path)
 
     def __del__(self):
@@ -84,10 +85,10 @@ class hash():
             self.log.error("path does not exist," + abs_path)
             return self.HashTuple(None, None, None)
         # don't allow the calculation or caching of metadata hashes
-        if self.metadata_root is not None:
-            if metadata_location.is_metadata_root(path, self.metadata_root):
+        if self.metadata is not None:
+            if metadata_location.is_metadata_root(path, self.metadata):
                 self.log.error("tried to get hash of metadata - path:" + path)
-                self.log.error("tried to get hash of metadata - metadata_root:" + self.metadata_root.root)
+                self.log.error("tried to get hash of metadata - metadata_root:" + self.metadata.root)
                 return self.HashTuple(None, None, None)
 
         sha512_hash, got_from_cache, entry_count = self.calc_or_lookup_hash(path)
@@ -121,7 +122,7 @@ class hash():
 
     # mainly for testing purposes
     def clean(self):
-        db = sqlite.sqlite(metadata_location.get_metadata_db_path(self.metadata_root))
+        db = sqlite.sqlite(metadata_location.get_metadata_db_path(self.metadata))
         db.clean()
         db.close()
 
@@ -140,6 +141,8 @@ class hash():
         self.db.insert(self.HASH_BASE_TABLE_NAME, [self.ABS_ROOT_STRING, os.path.abspath(self.root)], replace=True)
         for attrib in util.get_plaform_info():
             self.db.insert(self.HASH_BASE_TABLE_NAME, [attrib, util.get_plaform_info()[attrib]], replace=True)
+        if self.metadata is not None:
+            self.db.insert(self.HASH_BASE_TABLE_NAME, [self.UID_STRING, self.metadata.name], replace=True)
         # hash table
         self.db.add_col_text(self.HASH_TABLE_NAME, self.ABS_PATH_STRING)
         self.db.add_col_float(self.HASH_TABLE_NAME, self.MTIME_STRING)

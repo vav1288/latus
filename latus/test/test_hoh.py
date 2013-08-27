@@ -41,8 +41,8 @@ class TestHash(unittest.TestCase):
     def test_latus_hoh(self):
         p = test_latus.get_hash_root()
         md = util.Metadata(test_latus.get_root(), self.__module__) # keep the metadata out of the folder with the test files
-        cat_hash = hash.hash(p, metadata_root=md, hoh=False)
-        hoh_hash = hash.hash(p, metadata_root=md)
+        cat_hash = hash.hash(p, metadata=md, hoh=False)
+        hoh_hash = hash.hash(p, metadata=md)
 
         hash_val = cat_hash.get_hash(p)
         print(hash_val)

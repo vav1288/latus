@@ -10,7 +10,7 @@ class test_finddup(unittest.TestCase):
         # Load up metadata from the root (this way we have many duplicate files, so we can make sure
         # we only get the subset in simple we're looking for).
         md = util.Metadata(root, self.__module__)
-        h = hash.hash(root, metadata_root=md)
+        h = hash.hash(root, metadata=md)
         h.scan(root)
         self.dup = finddup.finddup(path=root, metadata_override=md, verbose=True)
 

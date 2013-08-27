@@ -76,7 +76,7 @@ class merge:
             self.log.info('"dest_root","%s"', dest_root)
 
         if self.dest_hash is not None:
-            scan_dest = hash.hash(dest_root, self.dest_hash.metadata_root)
+            scan_dest = hash.hash(dest_root, self.dest_hash.metadata)
             scan_dest.scan(dest_root)
 
     def __del__(self):

@@ -76,9 +76,8 @@ class sync():
         # execution (unlikely, but possible)
         cloud_folder = self.get_cloud_folder()
         local_folder = self.get_local_folder()
-        metadata = self.get_metadata()
         if not os.path.exists(cloud_folder):
             os.makedirs(cloud_folder)
         # updates the metadata in the cloud storage area
-        node_hash = hash.hash(local_folder, metadata, self.verbose)
+        node_hash = hash.hash(local_folder, self.get_metadata(), self.verbose)
         node_hash.scan(local_folder)

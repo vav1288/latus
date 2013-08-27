@@ -17,7 +17,7 @@ class TestHash(unittest.TestCase):
         self.root = test_latus.get_simple_root() # should this be get_root()?  make sure some test covers unicode...
         # load up metadata
         md = util.Metadata(self.root, self.__module__)
-        self.hash = hash.hash(self.root, metadata_root=md)
+        self.hash = hash.hash(self.root, metadata=md)
         self.static_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.SRC, "a.txt")
         self.dynamic_test_file_path = os.path.join(test_latus.get_simple_root(), test_latus.DEST_EXISTS_UNDER_DIFFERENT_NAME, "a_but_different_name.txt")
 
