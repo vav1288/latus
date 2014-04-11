@@ -1,2 +1,2 @@
 echo on
-nosetests -v
+c:\python34\scripts\nosetests -v
