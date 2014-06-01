@@ -55,7 +55,7 @@ def get_merge_root():
 def get_hash_root():
     return os.path.join(get_files_root(), "hash")
 
-def clean(all = False):
+def clean(all):
     """
     clean up the test data
     :param all: True to delete all test files and metadata, False for test files only.
@@ -64,6 +64,7 @@ def clean(all = False):
     path = get_files_root()
     if all:
         path = get_data_root()
+    print("clean", path)
     if os.path.exists(path):
         shutil.rmtree(path)
 

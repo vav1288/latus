@@ -2,17 +2,15 @@
 import pytest
 import test.create_files
 
-nodynamicdatadelete = False # keep data around
+nodynamicdatadelete = None # keep data around
 
 def pytest_addoption(parser):
     parser.addoption("--nodynamicdatadelete", action="store_true", default=False,
         help="keep the dynamically created data around after the test")
 
 def pytest_generate_tests(metafunc):
-    if 'nodynamicdatadelete' in metafunc.fixturenames:
-        global nodynamicdatadelete
-        nodynamicdatadelete = True
-
+    global nodynamicdatadelete
+    nodynamicdatadelete = metafunc.config.getoption('nodynamicdatadelete')
 
 @pytest.fixture(scope="module")
 def setup(request):
@@ -23,7 +21,7 @@ def setup(request):
             test.create_files.clean(all=False)
 
     t = test.create_files.TestFiles()
-    test.create_files.clean()
+    test.create_files.clean(all=True)
     t.write_files()
 
     request.addfinalizer(clean)
