@@ -34,7 +34,7 @@ class DB:
         metadata_path is an instance of the MetadataPath class that has the metadata folder
         id is use to create the mysql database filename
         """
-        self.log = core.logger.get_log()
+        self.log = core.logger.log
         self.root = root
 
         self.sqlite_db_path = 'sqlite:///' + "/".join(metadata_path.db_folder_as_list) + "/" + id + self.DB_EXT

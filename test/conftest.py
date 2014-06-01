@@ -3,8 +3,6 @@ import pytest
 import core.logger
 import test.create_files
 
-log = core.logger.setup_log()
-
 nodynamicdatadelete = None # keep data around
 
 def pytest_addoption(parser):
@@ -23,8 +21,8 @@ def setup(request):
         if nodynamicdatadelete is False:
             test.create_files.clean(all=False)
 
-    core.logger.set_log_level(log, 'info')
-    log.info("nodynamicdatadelete:" + str(nodynamicdatadelete))
+    core.logger.set_log_level('info')
+    core.logger.log.info("nodynamicdatadelete:" + str(nodynamicdatadelete))
     t = test.create_files.TestFiles()
     test.create_files.clean(all=True)
     t.write_files()

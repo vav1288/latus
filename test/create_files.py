@@ -30,8 +30,7 @@ UNICODE_FILE_NAME_LENGTH = 63
 SMALL_MAX_CODE = 512
 BIG_MAX_CODE = 8192
 
-log = core.logger.get_log()
-core.logger.set_log_level(log, 'info')
+core.logger.set_log_level('info')
 
 def get_data_root():
     return os.path.join("test", "data")
@@ -68,7 +67,7 @@ def clean(all):
     path = get_files_root()
     if all:
         path = get_data_root()
-    log.info("cleaning:" + path)
+    core.logger.log.info("cleaning:" + path)
     if os.path.exists(path):
         shutil.rmtree(path)
 
@@ -109,7 +108,7 @@ class TestFiles():
             if force or not os.path.exists(sync_root):
                 self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)
 
-        log.info("files_written:" + str(self.files_written))
+        core.logger.log.info("files_written:" + str(self.files_written))
         return self.files_written
 
     def write_to_file(self, p, contents, write_flag):

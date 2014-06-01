@@ -10,14 +10,14 @@ def print_all_levels(log, msg = ""):
     log.debug('"debug test_latus message %s"', msg)
 
 def test_logger():
-    log = logger.get_log()
+    log = logger.log
 
     print_all_levels(log, "default level")
 
-    logger.set_log_level(log, 'debug')
+    logger.set_log_level('debug')
     print_all_levels(log, "debug level")
 
-    logger.set_log_level(log)
+    logger.set_log_level()
     print_all_levels(log, "back to default level")
 
 if __name__ == '__main__':
