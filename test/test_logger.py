@@ -11,16 +11,14 @@ def print_all_levels(log, msg = ""):
 
 def test_logger():
     log = logger.get_log()
-    log_handlers = logger.setup()
 
-    print_all_levels(log, "default")
+    print_all_levels(log, "default level")
 
-    # print debugging level to the console by setting the global level to DEBUG but file to WARNING
-    log.setLevel(logging.DEBUG)
-    log_handlers['file'].setLevel(logging.WARNING)
-    print_all_levels(log, "console debugging")
+    logger.set_log_level(log, 'debug')
+    print_all_levels(log, "debug level")
 
-    logger.remove_handlers(log_handlers)
+    logger.set_log_level(log)
+    print_all_levels(log, "back to default level")
 
 if __name__ == '__main__':
     test_logger()

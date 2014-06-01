@@ -86,7 +86,6 @@ class DB:
         if rel_path is None:
             self.log.warning("rel_path is None")
         else:
-            print("path", rel_path)
             db_entry = self.session.query(Files).filter(Files.path == rel_path).order_by(-Files.count).first()
             if db_entry is None:
                 self.log.warning('not found in db:' + rel_path)

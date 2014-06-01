@@ -19,17 +19,24 @@ http://en.wikipedia.org/wiki/Log4j
 # which is currently sys.stderr.
 #
 
+handlers = {}
+log = logging.getLogger(const.NAME)
+
 # don't call logging.<level>(msg) directly - use logger.get_log().<level>(msg) instead
 def get_log():
-    return logging.getLogger(const.NAME)
+    return log
 
-def setup(log_file_path = const.LOG_FILE, max_bytes = 1000000, stream_out = sys.stdout):
+def setup_log(log_file_path = const.LOG_FILE, max_bytes = 1000000, stream_out = sys.stdout):
+    """
+    Users of this package should call this exactly once.
+    :param log_file_path: we write the log to this file
+    :param max_bytes: largest file size for the log file
+    :param stream_out: stream to write log to
+    :return:
+    """
     # note that (message) is not pre-quoted, in case there are multiple fields
     console_format_string = '%(message)s'
     file_format_string = '"%(asctime)s","%(name)s","%(levelname)s","module","%(module)s","line","%(lineno)d",%(message)s'
-    handlers = {}
-
-    log = get_log()
 
     log.setLevel(logging.INFO)
 
@@ -48,27 +55,31 @@ def setup(log_file_path = const.LOG_FILE, max_bytes = 1000000, stream_out = sys.
     log.addHandler(file_handler)
     handlers['file'] = file_handler
 
+    return log
+
+def get_handlers():
     return handlers
 
 def remove_handlers(handlers):
     for handler in handlers:
         get_log().removeHandler(handler)
 
-def set_log_level(choice):
-    choice = choice[0].lower()
+def set_log_level(log, choice = 'warning'):
+    choice = choice.lower()
+    choice_char = choice[0]
     level = logging.WARNING
-    if choice[0] == 'd':
+    if choice_char == 'd':
         level = logging.DEBUG
-    elif choice[0] == 'i':
+    elif choice_char == 'i':
         level = logging.INFO
-    elif choice[0] == 'w':
+    elif choice_char == 'w':
         level = logging.WARNING
-    elif choice[0] == 'e':
+    elif choice_char == 'e':
         level = logging.ERROR
-    elif choice[0] == 'f':
+    elif choice_char == 'f':
         level = logging.FATAL
-    get_log().setLevel(level)
-    get_log().info('"level","%s"', level_to_str(level))
+    log.setLevel(level)
+    log.info('"level","%s"', level_to_str(level))
     return level
 
 def level_to_str(level):

@@ -9,7 +9,7 @@ from latus import finddup
 
 if __name__ == "__main__":
 
-    logger.setup()
+    logger.setup_log()
 
     epilog = """
 Execute with no arguments to run the GUI version.
