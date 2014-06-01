@@ -1,8 +1,9 @@
-
 import sys
 import logging
 import logging.handlers
-from . import const
+
+from core import const
+
 
 """ General logging capability.
 

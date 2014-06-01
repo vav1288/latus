@@ -8,7 +8,7 @@ import socket
 import win32con
 import pywintypes
 
-from . import logger
+import core.logger
 
 WINDOWS_SEP = "\\"
 LINUX_SEP = '/'
@@ -20,7 +20,6 @@ def get_folder_sep():
         sep = LINUX_SEP
     return sep[-1]
 
-# @lru_cache()
 def is_windows():
     is_win = False
     plat = platform.system()
@@ -29,25 +28,13 @@ def is_windows():
         is_win = True
     return is_win
 
-def is_a_file_path(p):
-    return not is_a_dir_path(p)
-
-def is_a_dir_path(p):
-    # todo: why doesn't this work????  Both Windows and Linux separators should only be used as separators
-    #if (p[-1] == WINDOWS_SEP) or (p[-1] != LINUX_SEP):
-
-    if (p[-1] == get_folder_sep()):
-        is_a_dir = True
-    else:
-        is_a_dir = False
-    return is_a_dir
-
-def remove_dirs_from_list(paths):
-    new_paths = []
-    for p in paths:
-        if is_a_file_path(p):
-            new_paths.append(p)
-    return new_paths
+def is_linux():
+    is_lin = False
+    plat = platform.system()
+    plat = plat.lower()
+    if plat[0] == 'l':
+        is_lin = True
+    return is_lin
 
 def get_long_abs_path(in_path):
     # Trick to get around 260 char limit
@@ -82,28 +69,41 @@ def del_files(file_list):
         if os.path.exists(f):
             os.remove(f)
 
-def get_file_attributes(in_path):
+def is_hidden(in_path):
+    is_hidden_flag = False
     attrib = 0
-    attributes = set()
     if is_windows():
         long_abs_path = get_long_abs_path(in_path)
         try:
             attrib = win32api.GetFileAttributes(long_abs_path)
         except pywintypes.error:
-            #logger.get_log().error()
             logger.get_log().error(long_abs_path)
-        if attrib & win32con.FILE_ATTRIBUTE_HIDDEN:
-            attributes.add(win32con.FILE_ATTRIBUTE_HIDDEN)
-        if attrib & win32con.FILE_ATTRIBUTE_SYSTEM:
-            attributes.add(win32con.FILE_ATTRIBUTE_SYSTEM)
-    # todo : Linux version of this
-    return attributes
+        is_hidden_flag = attrib & win32con.FILE_ATTRIBUTE_HIDDEN
+    return is_hidden_flag
+
+def is_system(in_path):
+    is_system_flag = False
+    attrib = 0
+    if is_windows():
+        long_abs_path = get_long_abs_path(in_path)
+        try:
+            attrib = win32api.GetFileAttributes(long_abs_path)
+        except pywintypes.error:
+            logger.get_log().error(long_abs_path)
+        is_system_flag = attrib & win32con.FILE_ATTRIBUTE_SYSTEM
+    return is_system_flag
+
+def is_locked(in_path):
+    try:
+        open(in_path, 'r')
+        locked = False
+    except(IOError):
+        locked = True
+    return locked
+
 
 def make_hidden(in_path):
     win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
-
-# supplying metadata location is handy for testing
-Metadata = collections.namedtuple('metadata', ['root', 'name'])
 
 # Unfortunately, cx-freeze does not utilize PYTHONIOENCODING environment variable, so
 # this is useless until I either use a different .exe generator or they fix this issue.

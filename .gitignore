@@ -8,6 +8,8 @@ repo_ignore/
 dist/
 build/
 *.log
+__pycache__
+.latus
 #
 # from PyCharm
 .idea

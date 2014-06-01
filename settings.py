@@ -1,7 +1,9 @@
-
 import sys
 import pprint
-from latus import settings, logger
+
+from latus import logger
+from repo_ignore.old import settings
+
 
 if __name__ == '__main__':
 

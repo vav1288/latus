@@ -1,11 +1,18 @@
 import os
-import msvcrt
 
-from . import const, util
+from . import util
+from core import const
 
-class walker:
-    def __init__(self, root):
+class Walker:
+    def __init__(self, root, do_dirs = False, ignore = []):
+        """
+        root: the directory to start the walk from
+        do_dirs: if True, return directories (as opposed to only files).  This is good if we're doing 'hash-of-hashes'.
+        ignore: a list of folder/directory names to not traverse (e.g. metadata folder names)
+        """
         self.root = root
+        self.do_dirs = do_dirs
+        self.ignore = ignore
         self.keyboard_hit_exit = False
 
     def __iter__(self):
@@ -18,17 +25,17 @@ class walker:
         partial_path = full_abs_path.replace(root_abs_path, "")
         if partial_path[0] == util.get_folder_sep():
             # Generally these strings end up with an extra separator at the start we need to remove.
-            # These should cover both Windows and Linux.
+            # This should cover both Windows and Linux.
             partial_path = partial_path[1:]
         return partial_path
 
     def __next__(self):
+        # provides just the part to the right of the 'root'
         for dirpath, dirnames, filenames in os.walk(self.root):
-            metadata_dir_name = const.METADATA_DIR_NAME
             # todo: also check that it's a hidden directory before we decide to remove it (at least in Windows)
-            if metadata_dir_name in dirnames:
-                # don't visit metadata directories (see os.walk docs - this is a little tricky)
-                dirnames.remove(metadata_dir_name)
+            for folder in self.ignore:
+                if folder in dirnames:
+                    dirnames.remove(folder)
 
             # do the directories/folders first
             for name in dirnames:
@@ -44,7 +51,7 @@ class walker:
                 if self.check_exit():
                     break
                 else:
-                    yield partial_path # just the part to the right of the 'root'
+                    yield partial_path
 
     # todo: get this working.
     # For some reason, msvcrt.kbhit() blocks.  It seems like it shouldn't

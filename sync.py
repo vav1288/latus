@@ -1,8 +1,10 @@
-
 import sys
 import os
+
 import larg
-from latus import logger, settings, sync
+from latus import logger, sync
+from repo_ignore.old import settings
+
 
 if __name__ == "__main__":
     logger.setup()

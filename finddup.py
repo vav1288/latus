@@ -1,9 +1,11 @@
-
 import os
 import sys
 import argparse
+
+from core import logger, util
 import larg
-from latus import logger, util, finddup
+from latus import finddup
+
 
 if __name__ == "__main__":
 
@@ -18,7 +20,7 @@ Command line example:
     parser = argparse.ArgumentParser(epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-p", "--path", help="path to directory/folder to finddup")
     parser.add_argument("-o", "--outfile", help="output file path")
-    parser.add_argument("-t", "--test", nargs=1, help="special test parameters (metadata path)", default = None)
+    parser.add_argument("-t", "--test_latus", nargs=1, help="special test_latus parameters (metadata path)", default = None)
     larg.common_argparse(parser)
 
     args = parser.parse_args()

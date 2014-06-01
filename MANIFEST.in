@@ -3,5 +3,5 @@ include LICENSE
 include .gitignore
 include *.bat
 include *.py
-recursive-include latus *.py
+recursive-include core *.py
 prune repo_ignore

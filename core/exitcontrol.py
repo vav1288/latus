@@ -6,7 +6,7 @@ import threading
 # This exit control is a little tricky.  It's used like this:
 # 1) Code that uses this module must first create events to be triggered up by ExitControl (actually a class derived
 #    from ExitControl).  These can be either win32events or regular Python events.  The idea is that when these
-#    events are triggered, the code that uses this module will test is_alive() and if it's False, the code will exit.
+#    events are triggered, the code that uses this module will test_latus is_alive() and if it's False, the code will exit.
 # 2) An instance of a class derived from ExitControl is created.
 # 3) ExitControl.setup() is called with a list of events to be woken up at end end of ExitControl.run()
 #    ( run() is used since ExitControl is derived from threading.Thread )
@@ -15,7 +15,7 @@ import threading
 # See latus/sync.py for an example.
 
 # Base class for all exit control classes (not usable by itself since it has no run() method)
-# (test code can also derive from this to control program exit)
+# (test_latus code can also derive from this to control program exit)
 class ExitControl(threading.Thread):
 
     # this must be called before run()

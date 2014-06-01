@@ -1,2 +1,2 @@
 echo on
-c:\python34\scripts\nosetests -v
+c:\Python33\Scripts\py.test.exe -v -s
