@@ -29,25 +29,43 @@ UNICODE_FILE_NAME_LENGTH = 63
 SMALL_MAX_CODE = 512
 BIG_MAX_CODE = 8192
 
-def get_root():
-    # must not match nose's regex for test_latus files/directories below the main directory "test_latus",
-    # since nose errors out on the unicode files
+def get_data_root():
     return os.path.join("test", "data")
 
+def get_files_root():
+    return os.path.join(get_data_root(), "files")
+
+def get_metadata_root():
+    # must not match nose's regex for test_latus files/directories below the main directory "test_latus",
+    # since nose errors out on the unicode files
+    return os.path.join(get_data_root(), "metadata")
+
 def get_unicode_root():
-    return os.path.join(get_root(), "unicode")
+    return os.path.join(get_files_root(), "unicode")
 
 def get_simple_root():
-    return os.path.join(get_root(), "simple")
+    return os.path.join(get_files_root(), "simple")
 
 def get_mtime_root():
-    return os.path.join(get_root(), "mtime")
+    return os.path.join(get_files_root(), "mtime")
 
 def get_merge_root():
-    return os.path.join(get_root(), "merge")
+    return os.path.join(get_files_root(), "merge")
 
 def get_hash_root():
-    return os.path.join(get_root(), "hash")
+    return os.path.join(get_files_root(), "hash")
+
+def clean(all = False):
+    """
+    clean up the test data
+    :param all: True to delete all test files and metadata, False for test files only.
+    :return:
+    """
+    path = get_files_root()
+    if all:
+        path = get_data_root()
+    if os.path.exists(path):
+        shutil.rmtree(path)
 
 class TestFiles():
     def __init__(self):
@@ -109,14 +127,10 @@ class TestFiles():
         for file_path in paths:
             self.write_to_file(file_path, test_string, write_flag)
 
-    def clean(self):
-        if os.path.exists(get_root()):
-            shutil.rmtree(get_root())
-
     def get_sync_node_info(self):
         def make(root, id):
             return os.path.join(root, id), id
-        root = os.path.join(get_root(), "sync")
+        root = os.path.join(get_files_root(), "sync")
         paths = []
         paths.append(make(root, "a"))
         paths.append(make(root, "b"))
