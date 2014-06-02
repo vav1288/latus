@@ -103,12 +103,21 @@ class TestFiles():
         if force or not os.path.exists(get_hash_root()):
             self.write_to_file(os.path.join(get_hash_root(), A_FILE_NAME), A_STRING, write_flag)
             self.write_to_file(os.path.join(get_hash_root(), B_FILE_NAME), B_STRING, write_flag)
+            # use +2 so we try more entries than max table rows
+            for big_count in range(0,core.const.MAX_HASH_PERF_VALUES + 2):
+                self.write_big_file(os.path.join(get_hash_root(), "big" + str(big_count) + ".txt"), (2+big_count)*512*1024, write_flag)
         for sync_root, id in self.get_sync_node_info():
             if force or not os.path.exists(sync_root):
                 self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)
 
         core.logger.log.info("files_written:" + str(self.files_written))
         return self.files_written
+
+    def write_big_file(self, path, size, write_flag):
+        if write_flag or not os.path.exists(path):
+            with open(path,'w') as f:
+                f.seek(size-1) # trick to make the write fast
+                f.write('\0')
 
     def write_to_file(self, p, contents, write_flag):
         """

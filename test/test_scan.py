@@ -26,3 +26,7 @@ def test_new_root(setup):
     db.scan()
     db = core.db.DB(test.create_files.get_unicode_root(), core.metadatapath.MetadataPath(test.create_files.get_metadata_root()))
     db.scan()
+
+def test_hash_time(setup):
+    db = core.db.DB(test.create_files.get_hash_root(), core.metadatapath.MetadataPath(os.path.join(test.create_files.get_metadata_root(), 'hashtime')))
+    db.scan()

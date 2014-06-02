@@ -12,11 +12,17 @@ import sqlalchemy.ext.declarative
 Base = sqlalchemy.ext.declarative.declarative_base()
 
 class Common(Base):
+    """
+    Values that are common across other tables (e.g. root path)
+    """
     __tablename__ = 'common'
     key = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
     val = sqlalchemy.Column(sqlalchemy.String)
 
 class Files(Base):
+    """
+    File info.  This is a list of file changes (AKA 'events').
+    """
     __tablename__ = 'files'
     path = sqlalchemy.Column(sqlalchemy.String) # path (off of root) for this file
     sha512 = sqlalchemy.Column(sqlalchemy.String) # sha512 for this file
@@ -24,7 +30,15 @@ class Files(Base):
     mtime = sqlalchemy.Column(sqlalchemy.DateTime) # most recent modification time of this file (UTC)
     hidden = sqlalchemy.Column(sqlalchemy.Boolean) # does this file have the hidden attribute set?
     system = sqlalchemy.Column(sqlalchemy.Boolean) # does this file have the system attribute set?
-    count = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    count = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True) # todo: be careful with this if we do a trim on this table
+
+class HashPerf(Base):
+    """
+    Hash calculation performance.  This is a separate table since we only keep the longest N times.
+    """
+    __tablename__ = 'hashperf'
+    path = sqlalchemy.Column(sqlalchemy.String, primary_key=True) # path to the file (from this we can get its size)
+    time = sqlalchemy.Column(sqlalchemy.Float) # time in seconds to took to calculate the hash
 
 class DB:
     DB_EXT = '.db'
@@ -80,12 +94,10 @@ class DB:
             if db_entry is None or db_entry.size != size or self.is_time_different(db_entry.mtime, mtime):
                 hidden = core.util.is_hidden(full_path)
                 system = core.util.is_system(full_path)
-                is_big = size > 1024 * 1024 # only time big files
+                is_big = size >= core.const.BIG_FILE_SIZE # only time big files
                 sha512, sha512_time = core.hash.calc_sha512(full_path, is_big)
                 if is_big:
-                    # todo: have a table of longest sha512 calc times
-                    print("todo:have a table of longest sha512 calc times", full_path, size, sha512_time)
-
+                    self.set_hash_perf(rel_path, sha512_time)
                 file_info = Files(path = rel_path, sha512 = sha512, size = size, mtime = mtime, hidden = hidden, system = system)
                 self.session.add(file_info)
                 self.commit()
@@ -116,4 +128,13 @@ class DB:
 
     def get_root(self):
         return self.get_common('absroot')
+
+    def set_hash_perf(self, path, time):
+        print("path", path, "time", time)
+        if self.session.query(HashPerf).filter(HashPerf.path == path and HashPerf.time == time).count() == 0:
+            if self.session.query(HashPerf).count() >= core.const.MAX_HASH_PERF_VALUES:
+                # if we're full, delete the entry with the shortest time
+                self.session.delete(self.session.query(HashPerf).order_by(HashPerf.time).first())
+            hash_perf = HashPerf(path = path, time = time)
+            self.session.add(hash_perf)
 
