@@ -30,8 +30,6 @@ UNICODE_FILE_NAME_LENGTH = 63
 SMALL_MAX_CODE = 512
 BIG_MAX_CODE = 8192
 
-core.logger.set_log_level('info')
-
 def get_data_root():
     return os.path.join("test", "data")
 

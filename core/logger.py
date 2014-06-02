@@ -18,20 +18,10 @@ def remove_handlers(handlers):
     for handler in handlers:
         log.removeHandler(handler)
 
-def set_log_level(choice = 'warning'):
-    choice = choice.lower()
-    choice_char = choice[0]
-    level = logging.WARNING
-    if choice_char == 'd':
-        level = logging.DEBUG
-    elif choice_char == 'i':
-        level = logging.INFO
-    elif choice_char == 'w':
-        level = logging.WARNING
-    elif choice_char == 'e':
-        level = logging.ERROR
-    elif choice_char == 'f':
-        level = logging.FATAL
+def set_log_level(level = logging.WARNING):
+    """
+    level is from logging module.  e.g. logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, etc.
+    """
     log.setLevel(level)
     log.info('"level","%s"', level_to_str(level))
     return level
@@ -57,7 +47,7 @@ stream_out = sys.stdout # vs. sys.stderr
 console_format_string = '%(message)s'
 file_format_string = '"%(asctime)s","%(name)s","%(levelname)s","module","%(module)s","line","%(lineno)d",%(message)s'
 
-log.setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
 
 # create console handler
 console_handler = logging.StreamHandler(stream_out)

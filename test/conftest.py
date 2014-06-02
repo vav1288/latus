@@ -1,4 +1,5 @@
 
+import logging
 import pytest
 import core.logger
 import test.create_files
@@ -21,7 +22,7 @@ def setup(request):
         if nodynamicdatadelete is False:
             test.create_files.clean(all=False)
 
-    core.logger.set_log_level('info')
+    core.logger.set_log_level(logging.INFO)
     core.logger.log.info("nodynamicdatadelete:" + str(nodynamicdatadelete))
     t = test.create_files.TestFiles()
     test.create_files.clean(all=True)

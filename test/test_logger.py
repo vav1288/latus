@@ -1,5 +1,5 @@
-import logging
 
+import logging
 from core import logger
 
 
@@ -14,7 +14,7 @@ def test_logger():
 
     print_all_levels(log, "default level")
 
-    logger.set_log_level('debug')
+    logger.set_log_level(logging.DEBUG)
     print_all_levels(log, "debug level")
 
     logger.set_log_level()
