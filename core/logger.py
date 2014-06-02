@@ -5,7 +5,8 @@ import logging.handlers
 from core import const
 
 
-""" General logging capability.
+"""
+Logging capability.
 
 Good rules of thumb on using logging levels:
 http://en.wikipedia.org/wiki/Log4j

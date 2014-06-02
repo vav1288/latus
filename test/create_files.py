@@ -1,5 +1,7 @@
 
-# latus-wide testing routines
+"""
+create the test files
+"""
 
 import os
 import shutil
@@ -16,7 +18,6 @@ DEST_EXISTS_DIFFERENT = "dest_exists_different"
 DEST_EXISTS_UNDER_DIFFERENT_NAME = "dest_exists_under_different_name"
 DEST_BEST = "dest_best"
 DEST_CONFLICT = "dest_conflict"
-NON_EXECUTION_DRIVE_TEST_FILES = ["a.txt", "aa.txt"]
 
 A_STRING = "a"
 B_STRING = "b"
