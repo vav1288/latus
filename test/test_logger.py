@@ -4,10 +4,10 @@ from core import logger
 
 
 def print_all_levels(log, msg = ""):
-    log.error('"error test_latus message %s"', msg)
-    log.warning('"warning test_latus message %s"', msg)
-    log.info('"info test_latus message %s"', msg)
-    log.debug('"debug test_latus message %s"', msg)
+    log.error('error test_latus message %s', msg)
+    log.warning('warning test_latus message %s', msg)
+    log.info('info test_latus message %s', msg)
+    log.debug('debug test_latus message %s', msg)
 
 def test_logger():
     log = logger.log

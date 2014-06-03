@@ -1,5 +1,6 @@
 
 import os
+import platform
 import core.logger
 import core.util
 import core.walker
@@ -63,13 +64,18 @@ class DB:
 
         if self.engine.has_table(Common.__tablename__):
             if self.get_root() != self.absroot:
-                self.log.warning("new root: " + self.absroot + " was:" + self.get_root() + " - dropping all existing tables")
+                self.log.warning('new root:%s (was:%s) - dropping all existing tables', self.absroot, self.get_root())
                 Base.metadata.drop_all(self.engine)
 
         if not self.engine.has_table(Common.__tablename__):
             Base.metadata.create_all(self.engine)
             self.session.add(Common(key = 'absroot', val = self.absroot))
             self.session.add(Common(key = 'updatetime', val = str(datetime.datetime.utcnow())))
+
+             # so the HashPerf makes some kind of sense
+            self.session.add(Common(key = 'processor', val = platform.processor()))
+            self.session.add(Common(key = 'machine', val = platform.machine()))
+
             self.session.commit()
 
     def commit(self):
@@ -130,7 +136,6 @@ class DB:
         return self.get_common('absroot')
 
     def set_hash_perf(self, path, time):
-        print("path", path, "time", time)
         if self.session.query(HashPerf).filter(HashPerf.path == path and HashPerf.time == time).count() == 0:
             if self.session.query(HashPerf).count() >= core.const.MAX_HASH_PERF_VALUES:
                 # if we're full, delete the entry with the shortest time

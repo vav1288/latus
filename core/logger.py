@@ -46,7 +46,7 @@ stream_out = sys.stdout # vs. sys.stderr
 
 # note that (message) is not pre-quoted, in case there are multiple fields
 console_format_string = '%(message)s'
-file_format_string = '"%(asctime)s","%(name)s","%(levelname)s","module","%(module)s","line","%(lineno)d",%(message)s'
+file_format_string = '"%(asctime)s","%(name)s","%(levelname)s","module","%(module)s","line","%(lineno)d","%(message)s"'
 
 log.setLevel(logging.WARNING)
 
