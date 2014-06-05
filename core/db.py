@@ -1,16 +1,25 @@
 
 import os
 import platform
+import hashlib
 import core.logger
 import core.util
 import core.walker
 import core.hash
+import core.const
 import datetime
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.ext.declarative
 
 Base = sqlalchemy.ext.declarative.declarative_base()
+
+class Roots(Base):
+    """
+    Allows the 'files' table to have entries that are from multiple roots
+    """
+    __tablename__ = 'roots'
+    absroot = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
 
 class Common(Base):
     """
@@ -25,6 +34,7 @@ class Files(Base):
     File info.  This is a list of file changes (AKA 'events').
     """
     __tablename__ = 'files'
+    absroot = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("roots.absroot"))
     path = sqlalchemy.Column(sqlalchemy.String) # path (off of root) for this file
     sha512 = sqlalchemy.Column(sqlalchemy.String) # sha512 for this file
     size = sqlalchemy.Column(sqlalchemy.BigInteger) # size of this file
@@ -53,6 +63,10 @@ class DB:
         self.log = core.logger.log
         self.absroot = os.path.abspath(root) # for the metdata, we always need to use the abspath (the full path)
         del root # make sure we don't use this non-absolute ( non-abspath() ) version
+        digest = hashlib.sha512()
+        digest.update(self.absroot.encode())
+        absroot_sha512 = digest.hexdigest()
+
 
         self.sqlite_db_path = 'sqlite:///' + "/".join(metadata_path.db_folder_as_list) + "/" + id + self.DB_EXT
         self.engine = sqlalchemy.create_engine(self.sqlite_db_path)
@@ -69,12 +83,14 @@ class DB:
 
         if not self.engine.has_table(Common.__tablename__):
             Base.metadata.create_all(self.engine)
-            self.session.add(Common(key = 'absroot', val = self.absroot))
-            self.session.add(Common(key = 'updatetime', val = str(datetime.datetime.utcnow())))
 
-             # so the HashPerf makes some kind of sense
-            self.session.add(Common(key = 'processor', val = platform.processor()))
-            self.session.add(Common(key = 'machine', val = platform.machine()))
+            self.session.add(Roots(absroot = self.absroot))
+
+            self.session.add(Common(key='updatetime', val=str(datetime.datetime.utcnow())))
+
+            # meed to know roughly the kind of machine to make use of the HashPerf values
+            self.session.add(Common(key='processor', val=platform.processor()))
+            self.session.add(Common(key='machine', val=platform.machine()))
 
             self.session.commit()
 
@@ -104,7 +120,7 @@ class DB:
                 sha512, sha512_time = core.hash.calc_sha512(full_path, is_big)
                 if is_big:
                     self.set_hash_perf(rel_path, sha512_time)
-                file_info = Files(path = rel_path, sha512 = sha512, size = size, mtime = mtime, hidden = hidden, system = system)
+                file_info = Files(absroot=self.absroot, path=rel_path, sha512=sha512, size=size, mtime=mtime, hidden=hidden, system=system)
                 self.session.add(file_info)
                 self.commit()
 
@@ -133,7 +149,7 @@ class DB:
         return db_entry
 
     def get_root(self):
-        return self.get_common('absroot')
+        return self.session.query(Roots).one().absroot
 
     def set_hash_perf(self, path, time):
         if self.session.query(HashPerf).filter(HashPerf.path == path and HashPerf.time == time).count() == 0:
