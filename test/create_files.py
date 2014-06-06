@@ -8,6 +8,7 @@ import shutil
 
 from core import const
 import core.logger
+import test.const
 import test.util
 
 SRC = "src"
@@ -104,8 +105,9 @@ class TestFiles():
             self.write_to_file(os.path.join(get_hash_root(), A_FILE_NAME), A_STRING, write_flag)
             self.write_to_file(os.path.join(get_hash_root(), B_FILE_NAME), B_STRING, write_flag)
             # use +2 so we try more entries than max table rows
-            for big_count in range(1,core.const.MAX_HASH_PERF_VALUES + 10):
-                self.write_big_file(os.path.join(get_hash_root(), "big" + str(big_count) + ".txt"), big_count*1024*1024, write_flag)
+            for big_count in range(test.const.HASH_TEST_FILE_MIN, test.const.HASH_TEST_FILE_MAX + 1):
+                self.write_big_file(os.path.join(get_hash_root(), test.const.HASH_TEST_FILE_PREFIX + str(big_count) + test.const.HASH_TEST_FILE_SUFFIX),
+                                    big_count*test.const.HASH_TEST_BASE_FILE_SIZE, write_flag)
         for sync_root, id in self.get_sync_node_info():
             if force or not os.path.exists(sync_root):
                 self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)
