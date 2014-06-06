@@ -50,6 +50,7 @@ class HashPerf(Base):
     __tablename__ = 'hashperf'
     absroot = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("roots.absroot"))
     path = sqlalchemy.Column(sqlalchemy.String, primary_key=True) # path to the file (from this we can get its size)
+    size = sqlalchemy.Column(sqlalchemy.BigInteger) # size of this file
     time = sqlalchemy.Column(sqlalchemy.Float) # time in seconds to took to calculate the hash
 
 class DB:
@@ -117,7 +118,7 @@ class DB:
                 is_big = size >= core.const.BIG_FILE_SIZE # only time big files
                 sha512, sha512_time = core.hash.calc_sha512(full_path, is_big)
                 if is_big:
-                    self.set_hash_perf(self.absroot, rel_path, sha512_time)
+                    self.set_hash_perf(self.absroot, rel_path, size, sha512_time)
                 file_info = Files(absroot=self.absroot, path=rel_path, sha512=sha512, size=size, mtime=mtime, hidden=hidden, system=system)
                 self.session.add(file_info)
                 self.commit()
@@ -149,7 +150,7 @@ class DB:
     def get_root(self):
         return self.session.query(Roots).one().absroot
 
-    def set_hash_perf(self, absroot, path, time):
+    def set_hash_perf(self, absroot, path, size, time):
         """
         Potentially update the hash performance with this hash value.  We only keep around the longest values,
          so if this isn't one of those it may not be put into the table.
@@ -163,15 +164,13 @@ class DB:
         full = self.session.query(HashPerf).count() >= core.const.MAX_HASH_PERF_VALUES
         shortest_time_row = self.session.query(HashPerf).order_by(HashPerf.time).first()
         if not full or shortest_time_row is None or time > shortest_time_row.time:
-            # update for this path
-            row_for_this_path = self.session.query(HashPerf).filter(HashPerf.absroot == absroot, HashPerf.path == path)
-            if row_for_this_path.count() > 0:
-                row_for_this_path.delete()
-            elif full:
+            if full:
                 # if we're full, first delete the entry with the shortest time
-                self.session.delete(self.session.query(HashPerf).order_by(HashPerf.time).first())
-            hash_perf = HashPerf(absroot=absroot, path=path, time=time)
+                self.session.delete(shortest_time_row)
+            hash_perf = HashPerf(absroot=absroot, path=path, size=size, time=time)
             self.session.add(hash_perf)
             used = True
         return used
 
+    def get_hash_perf(self):
+        return self.session.query(HashPerf).all()
