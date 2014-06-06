@@ -5,3 +5,4 @@ include *.bat
 include *.py
 recursive-include core *.py
 prune repo_ignore
+prune temp
