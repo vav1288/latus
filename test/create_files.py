@@ -104,8 +104,8 @@ class TestFiles():
             self.write_to_file(os.path.join(get_hash_root(), A_FILE_NAME), A_STRING, write_flag)
             self.write_to_file(os.path.join(get_hash_root(), B_FILE_NAME), B_STRING, write_flag)
             # use +2 so we try more entries than max table rows
-            for big_count in range(0,core.const.MAX_HASH_PERF_VALUES + 2):
-                self.write_big_file(os.path.join(get_hash_root(), "big" + str(big_count) + ".txt"), (2+big_count)*512*1024, write_flag)
+            for big_count in range(1,core.const.MAX_HASH_PERF_VALUES + 10):
+                self.write_big_file(os.path.join(get_hash_root(), "big" + str(big_count) + ".txt"), big_count*1024*1024, write_flag)
         for sync_root, id in self.get_sync_node_info():
             if force or not os.path.exists(sync_root):
                 self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)
