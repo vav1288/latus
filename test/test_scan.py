@@ -1,5 +1,6 @@
 
 import os
+import core.const
 import core.db
 import core.metadatapath
 import test.util
@@ -30,3 +31,11 @@ def test_new_root(setup):
 def test_hash_time(setup):
     db = core.db.DB(test.create_files.get_hash_root(), core.metadatapath.MetadataPath(os.path.join(test.create_files.get_metadata_root(), 'hashtime')))
     db.scan()
+    hash_perfs = db.get_hash_perf()
+    assert(len(hash_perfs) == core.const.MAX_HASH_PERF_VALUES) # make sure the table is full
+    files_in_hash_perf = ['big' + str(i) + '.txt' for i in range(core.const.MAX_HASH_PERF_VALUES,test.const.HASH_TEST_FILE_MAX+1)]
+    # make sure the entries in the table are for the largest files
+    for hash_perf in hash_perfs:
+        assert(hash_perf.path in files_in_hash_perf)
+
+
