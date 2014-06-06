@@ -48,6 +48,7 @@ class HashPerf(Base):
     Hash calculation performance.  This is a separate table since we only keep the longest N times.
     """
     __tablename__ = 'hashperf'
+    absroot = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("roots.absroot"))
     path = sqlalchemy.Column(sqlalchemy.String, primary_key=True) # path to the file (from this we can get its size)
     time = sqlalchemy.Column(sqlalchemy.Float) # time in seconds to took to calculate the hash
 
@@ -76,15 +77,9 @@ class DB:
         if force_drop:
             Base.metadata.drop_all(self.engine)
 
-        if self.engine.has_table(Common.__tablename__):
-            if self.get_root() != self.absroot:
-                self.log.warning('new root:%s (was:%s) - dropping all existing tables', self.absroot, self.get_root())
-                Base.metadata.drop_all(self.engine)
-
+        # if no common table then we have nothing, so create everything
         if not self.engine.has_table(Common.__tablename__):
             Base.metadata.create_all(self.engine)
-
-            self.session.add(Roots(absroot = self.absroot))
 
             self.session.add(Common(key='updatetime', val=str(datetime.datetime.utcnow())))
 
@@ -93,6 +88,9 @@ class DB:
             self.session.add(Common(key='machine', val=platform.machine()))
 
             self.session.commit()
+
+        if self.session.query(Roots).filter(Roots.absroot == self.absroot).count() == 0:
+            self.session.add(Roots(absroot=self.absroot))
 
     def commit(self):
         self.session.query(Common).filter(Common.key == 'updatetime').update({"val" : str(datetime.datetime.utcnow())})
@@ -119,7 +117,7 @@ class DB:
                 is_big = size >= core.const.BIG_FILE_SIZE # only time big files
                 sha512, sha512_time = core.hash.calc_sha512(full_path, is_big)
                 if is_big:
-                    self.set_hash_perf(rel_path, sha512_time)
+                    self.set_hash_perf(self.absroot, rel_path, sha512_time)
                 file_info = Files(absroot=self.absroot, path=rel_path, sha512=sha512, size=size, mtime=mtime, hidden=hidden, system=system)
                 self.session.add(file_info)
                 self.commit()
@@ -151,11 +149,29 @@ class DB:
     def get_root(self):
         return self.session.query(Roots).one().absroot
 
-    def set_hash_perf(self, path, time):
-        if self.session.query(HashPerf).filter(HashPerf.path == path and HashPerf.time == time).count() == 0:
-            if self.session.query(HashPerf).count() >= core.const.MAX_HASH_PERF_VALUES:
-                # if we're full, delete the entry with the shortest time
+    def set_hash_perf(self, absroot, path, time):
+        """
+        Potentially update the hash performance with this hash value.  We only keep around the longest values,
+         so if this isn't one of those it may not be put into the table.
+        :param path:  relative file path
+        :param time: time it took to do the hash (in seconds)
+        :return: True if it was used, False otherwise
+        """
+        used = False
+        # The table holds only the largest values we've seen.  So if this time is shorter than the shortest time in
+        # the table, ignore it.
+        full = self.session.query(HashPerf).count() >= core.const.MAX_HASH_PERF_VALUES
+        shortest_time_row = self.session.query(HashPerf).order_by(HashPerf.time).first()
+        if not full or shortest_time_row is None or time > shortest_time_row.time:
+            # update for this path
+            row_for_this_path = self.session.query(HashPerf).filter(HashPerf.absroot == absroot, HashPerf.path == path)
+            if row_for_this_path.count() > 0:
+                row_for_this_path.delete()
+            elif full:
+                # if we're full, first delete the entry with the shortest time
                 self.session.delete(self.session.query(HashPerf).order_by(HashPerf.time).first())
-            hash_perf = HashPerf(path = path, time = time)
+            hash_perf = HashPerf(absroot=absroot, path=path, time=time)
             self.session.add(hash_perf)
+            used = True
+        return used
 
