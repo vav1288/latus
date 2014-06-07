@@ -55,6 +55,9 @@ def get_mtime_root():
 def get_merge_root():
     return os.path.join(get_files_root(), "merge")
 
+def get_compare_root():
+    return os.path.join(get_files_root(), "compare")
+
 def get_hash_root():
     return os.path.join(get_files_root(), "hash")
 
@@ -108,6 +111,11 @@ class TestFiles():
             for big_count in range(test.const.HASH_TEST_FILE_MIN, test.const.HASH_TEST_FILE_MAX + 1):
                 self.write_big_file(os.path.join(get_hash_root(), test.const.HASH_TEST_FILE_PREFIX + str(big_count) + test.const.HASH_TEST_FILE_SUFFIX),
                                     big_count*test.const.HASH_TEST_BASE_FILE_SIZE, write_flag)
+        if force or not os.path.exists(get_compare_root()):
+            self.write_to_file(os.path.join(get_compare_root(), test.const.X_FOLDER, A_FILE_NAME), A_STRING, write_flag)
+            self.write_to_file(os.path.join(get_compare_root(), test.const.X_FOLDER, B_FILE_NAME), B_STRING, write_flag)
+            self.write_to_file(os.path.join(get_compare_root(), test.const.Y_FOLDER, B_FILE_NAME), B_STRING, write_flag)
+            self.write_to_file(os.path.join(get_compare_root(), test.const.Y_FOLDER, C_FILE_NAME), C_STRING, write_flag)
         for sync_root, id in self.get_sync_node_info():
             if force or not os.path.exists(sync_root):
                 self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)

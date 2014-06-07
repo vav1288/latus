@@ -55,7 +55,7 @@ class HashPerf(Base):
 
 class DB:
     DB_EXT = '.db'
-    def __init__(self, root, metadata_path, id = 'fs', force_drop = False):
+    def __init__(self, root, metadata_path, id='fs', force_drop=False):
         """
         root is the root folder of the filesystem
         metadata_path is an instance of the MetadataPath class that has the metadata folder
@@ -97,6 +97,9 @@ class DB:
         self.session.query(Common).filter(Common.key == 'updatetime').update({"val" : str(datetime.datetime.utcnow())})
         self.session.commit()
 
+    def close(self):
+        self.session.close()
+
     def is_time_different(self, time_a, time_b):
         return abs(time_a - time_b) > datetime.timedelta(seconds=1)
 
@@ -107,7 +110,7 @@ class DB:
             mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(full_path))
             size = os.path.getsize(full_path)
             # get the most recent row for this file
-            db_entry = self.session.query(Files).filter(Files.path == rel_path).order_by(-Files.count).first()
+            db_entry = self.session.query(Files).filter(Files.absroot == self.absroot, Files.path == rel_path).order_by(-Files.count).first()
             # Test to see if the file is new or has been updated.
             # On the same (i.e. local) file system, for a given file path, if the mtime is the same then the contents
             # are assumed to be the same.  Note that there is some debate if file size is necessary here, but I'll
@@ -174,3 +177,14 @@ class DB:
 
     def get_hash_perf(self):
         return self.session.query(HashPerf).all()
+
+    def compare(self, root_a, root_b):
+        """
+        does a comparison between the contents of folder a and folder b
+        :param root_a: folder a
+        :param root_b: folder b
+        :return: a 3-tuple: files in a that are not in b, files in b that are not in a, intersection of a and b
+        """
+        a_files = set([f.path for f in self.session.query(Files).filter(Files.absroot == os.path.abspath(root_a)).all()])
+        b_files = set([f.path for f in self.session.query(Files).filter(Files.absroot == os.path.abspath(root_b)).all()])
+        return a_files - b_files, b_files - a_files, a_files.intersection(b_files)
