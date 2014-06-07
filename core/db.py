@@ -178,13 +178,29 @@ class DB:
     def get_hash_perf(self):
         return self.session.query(HashPerf).all()
 
-    def compare(self, root_a, root_b):
+    def create_filter(self, root, hidden, system):
+        filter_items = self.session.query(Files).filter_by(absroot = os.path.abspath(root))
+        if not hidden:
+            filter_items = filter_items.filter_by(hidden = False)
+        if not system:
+            filter_items = filter_items.filter_by(system = False)
+        return filter_items
+
+    def compare(self, root_a, root_b, hidden=False, system=False, do_intersection=True):
         """
         does a comparison between the contents of folder a and folder b
         :param root_a: folder a
         :param root_b: folder b
+        :param ignore_hidden: ignore hidden files
+        :param ignore_system: ignore system files
+        :param do_intersection: set to False to avoid doing the intersection (to save time, for example for a merge)
         :return: a 3-tuple: files in a that are not in b, files in b that are not in a, intersection of a and b
         """
-        a_files = set([f.path for f in self.session.query(Files).filter(Files.absroot == os.path.abspath(root_a)).all()])
-        b_files = set([f.path for f in self.session.query(Files).filter(Files.absroot == os.path.abspath(root_b)).all()])
-        return a_files - b_files, b_files - a_files, a_files.intersection(b_files)
+        filter_items_a = self.create_filter(root_a, hidden, system)
+        filter_items_b = self.create_filter(root_b, hidden, system)
+        a_files = set([f.path for f in filter_items_a.all()])
+        b_files = set([f.path for f in filter_items_b.all()])
+        intersection = None
+        if do_intersection:
+            intersection = a_files.intersection(b_files)
+        return a_files - b_files, b_files - a_files, intersection

@@ -21,5 +21,7 @@ def test_scan_compare(setup):
     assert(a_minus_b == {test.create_files.A_FILE_NAME})
     assert(b_minus_a == {test.create_files.C_FILE_NAME})
     assert(intersection == {test.create_files.B_FILE_NAME})
+    # call it with the ignore_* True to test those code paths
+    a_minus_b, b_minus_a, intersection = dbx.compare(x_folder, y_folder, hidden=True, system=True)
     dbx.close()
     dby.close()
