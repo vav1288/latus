@@ -12,7 +12,7 @@ def calc_sha512(path, time_it = False):
         start_time = 0
 
     if not os.path.exists(path):
-        logger.get_log().error('does not exist:' + path)
+        logger.log.error('does not exist:' + path)
         return None, None
 
     this_hash = hashlib.sha512()
@@ -33,7 +33,7 @@ def calc_sha512(path, time_it = False):
             val = f.read(bucket_size)
         f.close()
     except IOError:
-        logger.get_log().warn(path)
+        logger.log.warn(path)
 
     sha512_val = this_hash.hexdigest()
 
