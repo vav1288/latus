@@ -192,15 +192,14 @@ class DB:
                 self.log.info(os.path.join(file.absroot, file.path))
         return filtered.first().path
 
-    def compare(self, root_a, root_b, hidden=False, system=False, do_intersection=True):
+    def diff(self, root_a, root_b, hidden=False, system=False):
         """
         does a comparison between the contents of folder a and folder b
         :param root_a: folder a
         :param root_b: folder b
         :param ignore_hidden: ignore hidden files
         :param ignore_system: ignore system files
-        :param do_intersection: set to False to avoid doing the intersection (to save time, for example for a merge)
-        :return: a tuple: files in a that are not in b and (optionally) the intersection of a and b
+        :return: files in a that are not in b
         """
         absroot_a = os.path.abspath(root_a)
         absroot_b = os.path.abspath(root_b)
@@ -209,8 +208,25 @@ class DB:
         # todo: this is only based on hashes ... allow comparisons based on size and mod time, in case we don't have the hashes calculated
         a_hashes = set(f.sha512 for f in filter_items_a.all())
         b_hashes = set(f.sha512 for f in filter_items_b.all())
-        intersection = None
-        if do_intersection:
-            intersection = [self.get_path_from_hash(absroot_b, hash) for hash in a_hashes.intersection(b_hashes)]
         a_minus_b = [self.get_path_from_hash(absroot_a, h) for h in a_hashes - b_hashes]
-        return a_minus_b, intersection
+        return a_minus_b
+
+    def intersection(self, root_a, root_b, hidden=False, system=False):
+        """
+        does a comparison between the contents of folder a and folder b
+        :param root_a: folder a
+        :param root_b: folder b
+        :param ignore_hidden: ignore hidden files
+        :param ignore_system: ignore system files
+        :return: files that are the intersection of a and b
+        """
+        absroot_a = os.path.abspath(root_a)
+        absroot_b = os.path.abspath(root_b)
+        filter_items_a = self.create_filter(absroot_a, hidden, system)
+        filter_items_b = self.create_filter(absroot_b, hidden, system)
+        # todo: this is only based on hashes ... allow comparisons based on size and mod time, in case we don't have the hashes calculated
+        a_hashes = set(f.sha512 for f in filter_items_a.all())
+        b_hashes = set(f.sha512 for f in filter_items_b.all())
+        intersection = [self.get_path_from_hash(absroot_b, h) for h in a_hashes.intersection(b_hashes)]
+        return intersection
+
