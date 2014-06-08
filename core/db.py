@@ -58,7 +58,7 @@ class HashPerf(Base):
 
 class DB:
     DB_EXT = '.db'
-    def __init__(self, root, metadata_path, id='fs', force_drop=False):
+    def __init__(self, metadata_path, id='fs', force_drop=False):
         """
         root is the root folder of the filesystem
         metadata_path is an instance of the MetadataPath class that has the metadata folder
@@ -66,8 +66,6 @@ class DB:
         force_drop forces any existing tables to be dropped (good for testing, manual nuking of the db, etc.)
         """
         self.log = core.logger.log
-        self.absroot = os.path.abspath(root) # for the metdata, we always need to use the abspath (the full path)
-        del root # make sure we don't use this non-absolute ( non-abspath() ) version
 
         self.sqlite_db_path = 'sqlite:///' + "/".join(metadata_path.db_folder_as_list) + "/" + id + self.DB_EXT
         self.engine = sqlalchemy.create_engine(self.sqlite_db_path)
@@ -89,9 +87,6 @@ class DB:
 
             self.session.commit()
 
-        if self.session.query(Roots).filter(Roots.absroot == self.absroot).count() == 0:
-            self.session.add(Roots(absroot=self.absroot))
-
     def commit(self):
         self.session.query(Common).filter(Common.key == 'updatetime').update({"val" : str(datetime.datetime.utcnow())})
         self.session.commit()
@@ -102,14 +97,19 @@ class DB:
     def is_time_different(self, time_a, time_b):
         return abs(time_a - time_b) > datetime.timedelta(seconds=1)
 
-    def put_file_info(self, rel_path):
-        full_path = os.path.join(self.absroot, rel_path)
+    def put_file_info(self, root, rel_path):
+        absroot = os.path.abspath(root)
+        del root # make sure we don't use the non-abs version of root
+        if self.session.query(Roots).filter(Roots.absroot == absroot).count() == 0:
+            self.session.add(Roots(absroot=absroot))
+
+        full_path = os.path.join(absroot, rel_path)
         # todo: handle when file deleted
         if not core.util.is_locked(full_path):
             mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(full_path))
             size = os.path.getsize(full_path)
             # get the most recent row for this file
-            db_entry = self.session.query(Files).filter(Files.absroot == self.absroot, Files.path == rel_path).order_by(-Files.count).first()
+            db_entry = self.session.query(Files).filter(Files.absroot == absroot, Files.path == rel_path).order_by(-Files.count).first()
             # Test to see if the file is new or has been updated.
             # On the same (i.e. local) file system, for a given file path, if the mtime is the same then the contents
             # are assumed to be the same.  Note that there is some debate if file size is necessary here, but I'll
@@ -120,8 +120,8 @@ class DB:
                 is_big = size >= core.const.BIG_FILE_SIZE # only time big files
                 sha512, sha512_time = core.hash.calc_sha512(full_path, is_big)
                 if is_big:
-                    self.set_hash_perf(self.absroot, rel_path, size, sha512_time)
-                file_info = Files(absroot=self.absroot, path=rel_path, sha512=sha512, size=size, mtime=mtime, hidden=hidden, system=system)
+                    self.set_hash_perf(absroot, rel_path, size, sha512_time)
+                file_info = Files(absroot=absroot, path=rel_path, sha512=sha512, size=size, mtime=mtime, hidden=hidden, system=system)
                 self.session.add(file_info)
                 self.commit()
 
@@ -135,10 +135,10 @@ class DB:
                 self.log.warning('not found in db:' + rel_path)
         return db_entry
 
-    def scan(self):
-        source_walker = core.walker.Walker(self.absroot)
+    def scan(self, absroot):
+        source_walker = core.walker.Walker(absroot)
         for file_path in source_walker:
-            self.put_file_info(file_path)
+            self.put_file_info(absroot, file_path)
 
     def get_common(self, key):
         """
@@ -148,9 +148,6 @@ class DB:
         """
         db_entry = self.session.query(Common).filter(Common.key == key).one().val
         return db_entry
-
-    def get_root(self):
-        return self.session.query(Roots).one().absroot
 
     def set_hash_perf(self, absroot, path, size, time):
         """
