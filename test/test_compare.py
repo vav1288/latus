@@ -17,11 +17,11 @@ def test_scan_compare(setup):
     dbx.scan()
     dby = core.db.DB(y_folder, core.metadatapath.MetadataPath(metadata_path))
     dby.scan()
-    a_minus_b, b_minus_a, intersection = dbx.compare(x_folder, y_folder)
-    assert(a_minus_b == {test.create_files.A_FILE_NAME})
-    assert(b_minus_a == {test.create_files.C_FILE_NAME})
-    assert(intersection == {test.create_files.B_FILE_NAME})
-    # call it with the ignore_* True to test those code paths
-    a_minus_b, b_minus_a, intersection = dbx.compare(x_folder, y_folder, hidden=True, system=True)
+    a_minus_b, intersection = dbx.compare(x_folder, y_folder)
+    assert(a_minus_b == [test.create_files.A_FILE_NAME])
+    assert(intersection == [test.create_files.B_FILE_NAME])
+    # call it with the ignore_* True just to test those code paths
+    dbx.compare(x_folder, y_folder, hidden=True, system=True)
+    # for some reason we need to close the db so the next test can run
     dbx.close()
     dby.close()

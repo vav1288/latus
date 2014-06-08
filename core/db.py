@@ -53,6 +53,9 @@ class HashPerf(Base):
     size = sqlalchemy.Column(sqlalchemy.BigInteger) # size of this file
     time = sqlalchemy.Column(sqlalchemy.Float) # time in seconds to took to calculate the hash
 
+# todo: make 'hidden' and 'system' use or ignore directives part of the class invocation (not a function param)\
+# or perhaps create a 'query class' that holds these, but the DB class would not hold 'root'
+
 class DB:
     DB_EXT = '.db'
     def __init__(self, root, metadata_path, id='fs', force_drop=False):
@@ -65,10 +68,6 @@ class DB:
         self.log = core.logger.log
         self.absroot = os.path.abspath(root) # for the metdata, we always need to use the abspath (the full path)
         del root # make sure we don't use this non-absolute ( non-abspath() ) version
-        digest = hashlib.sha512()
-        digest.update(self.absroot.encode())
-        absroot_sha512 = digest.hexdigest()
-
 
         self.sqlite_db_path = 'sqlite:///' + "/".join(metadata_path.db_folder_as_list) + "/" + id + self.DB_EXT
         self.engine = sqlalchemy.create_engine(self.sqlite_db_path)
@@ -161,6 +160,7 @@ class DB:
         :param time: time it took to do the hash (in seconds)
         :return: True if it was used, False otherwise
         """
+        # print("hash_perf", absroot, path, size, time)
         used = False
         # The table holds only the largest values we've seen.  So if this time is shorter than the shortest time in
         # the table, ignore it.
@@ -186,6 +186,15 @@ class DB:
             filter_items = filter_items.filter_by(system = False)
         return filter_items
 
+    def get_path_from_hash(self, absroot, sha512):
+        filtered = self.session.query(Files).filter_by(absroot=absroot, sha512=sha512)
+        all_files = filtered.all()
+        if len(all_files) > 1:
+            self.log.warning("file contents appear in more than one file")
+            for file in all_files:
+                self.log.info(os.path.join(file.absroot, file.path))
+        return filtered.first().path
+
     def compare(self, root_a, root_b, hidden=False, system=False, do_intersection=True):
         """
         does a comparison between the contents of folder a and folder b
@@ -194,13 +203,17 @@ class DB:
         :param ignore_hidden: ignore hidden files
         :param ignore_system: ignore system files
         :param do_intersection: set to False to avoid doing the intersection (to save time, for example for a merge)
-        :return: a 3-tuple: files in a that are not in b, files in b that are not in a, intersection of a and b
+        :return: a tuple: files in a that are not in b and (optionally) the intersection of a and b
         """
-        filter_items_a = self.create_filter(root_a, hidden, system)
-        filter_items_b = self.create_filter(root_b, hidden, system)
-        a_files = set([f.path for f in filter_items_a.all()])
-        b_files = set([f.path for f in filter_items_b.all()])
+        absroot_a = os.path.abspath(root_a)
+        absroot_b = os.path.abspath(root_b)
+        filter_items_a = self.create_filter(absroot_a, hidden, system)
+        filter_items_b = self.create_filter(absroot_b, hidden, system)
+        # todo: this is only based on hashes ... allow comparisons based on size and mod time, in case we don't have the hashes calculated
+        a_hashes = set(f.sha512 for f in filter_items_a.all())
+        b_hashes = set(f.sha512 for f in filter_items_b.all())
         intersection = None
         if do_intersection:
-            intersection = a_files.intersection(b_files)
-        return a_files - b_files, b_files - a_files, intersection
+            intersection = [self.get_path_from_hash(absroot_b, hash) for hash in a_hashes.intersection(b_hashes)]
+        a_minus_b = [self.get_path_from_hash(absroot_a, h) for h in a_hashes - b_hashes]
+        return a_minus_b, intersection
