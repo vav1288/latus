@@ -175,58 +175,61 @@ class DB:
     def get_hash_perf(self):
         return self.session.query(HashPerf).all()
 
-    def create_filter(self, root, hidden, system):
+    def get_paths_from_hash(self, absroot, sha512):
+        return [f.path for f in self.session.query(Files).filter_by(absroot=absroot, sha512=sha512).all()]
+
+    def get_hashes(self, root, hidden=False, system=False):
         filter_items = self.session.query(Files).filter_by(absroot = os.path.abspath(root))
         if not hidden:
             filter_items = filter_items.filter_by(hidden = False)
         if not system:
             filter_items = filter_items.filter_by(system = False)
-        return filter_items
+        # todo: this is only based on hashes ... allow comparisons based on size and mod time, in case we don't have the hashes calculated
+        return set(f.sha512 for f in filter_items.all())
 
-    def get_path_from_hash(self, absroot, sha512):
-        filtered = self.session.query(Files).filter_by(absroot=absroot, sha512=sha512)
-        all_files = filtered.all()
-        if len(all_files) > 1:
-            self.log.warning("file contents appear in more than one file")
-            for file in all_files:
-                self.log.info(os.path.join(file.absroot, file.path))
-        return filtered.first().path
-
-    def diff(self, root_a, root_b, hidden=False, system=False):
+    def difference(self, root_a, root_b, hidden=False, system=False):
         """
-        does a comparison between the contents of folder a and folder b
+        Files in a that are not in b (based on contents).  This is the set '-' operator (AKA difference).
+
+        Can be used for merging - a is the source and b is the destination.  Then what this function returns
+        can be used as a list of files to move into b, then the new b will be the union of a and original b.
+
         :param root_a: folder a
         :param root_b: folder b
         :param ignore_hidden: ignore hidden files
         :param ignore_system: ignore system files
         :return: files in a that are not in b
         """
-        absroot_a = os.path.abspath(root_a)
-        absroot_b = os.path.abspath(root_b)
-        filter_items_a = self.create_filter(absroot_a, hidden, system)
-        filter_items_b = self.create_filter(absroot_b, hidden, system)
-        # todo: this is only based on hashes ... allow comparisons based on size and mod time, in case we don't have the hashes calculated
-        a_hashes = set(f.sha512 for f in filter_items_a.all())
-        b_hashes = set(f.sha512 for f in filter_items_b.all())
-        a_minus_b = [self.get_path_from_hash(absroot_a, h) for h in a_hashes - b_hashes]
+        a_hashes = self.get_hashes(root_a)
+        b_hashes = self.get_hashes(root_b)
+        # the below just provides one of the files with the correct hash
+        a_minus_b = [self.get_paths_from_hash(os.path.abspath(root_a), h)[0] for h in a_hashes - b_hashes]
         return a_minus_b
 
     def intersection(self, root_a, root_b, hidden=False, system=False):
         """
-        does a comparison between the contents of folder a and folder b
+        Files that are in a or in b.  This is the set '&' operator (AKA intersection).
         :param root_a: folder a
         :param root_b: folder b
         :param ignore_hidden: ignore hidden files
         :param ignore_system: ignore system files
         :return: files that are the intersection of a and b
         """
-        absroot_a = os.path.abspath(root_a)
-        absroot_b = os.path.abspath(root_b)
-        filter_items_a = self.create_filter(absroot_a, hidden, system)
-        filter_items_b = self.create_filter(absroot_b, hidden, system)
-        # todo: this is only based on hashes ... allow comparisons based on size and mod time, in case we don't have the hashes calculated
-        a_hashes = set(f.sha512 for f in filter_items_a.all())
-        b_hashes = set(f.sha512 for f in filter_items_b.all())
-        intersection = [self.get_path_from_hash(absroot_b, h) for h in a_hashes.intersection(b_hashes)]
+        a_hashes = self.get_hashes(root_a)
+        b_hashes = self.get_hashes(root_b)
+        intersection = [self.get_paths_from_hash(os.path.abspath(root_b), h)[0] for h in a_hashes & b_hashes]
         return intersection
 
+    def non_uniques(self, root):
+        """
+        returns a list of files that occur more than once in a folder (based on contents)
+        :param root:
+        :return:
+        """
+        non_unique_files = {}
+        absroot = os.path.abspath(root)
+        for h in self.get_hashes(absroot):
+            f = self.get_paths_from_hash(absroot, h)
+            if len(f) > 1:
+                non_unique_files[h] = f
+        return non_unique_files

@@ -32,6 +32,8 @@ UNICODE_FILE_NAME_LENGTH = 63
 SMALL_MAX_CODE = 512
 BIG_MAX_CODE = 8192
 
+y_folder_files = None
+
 def get_data_root():
     return os.path.join("test", "data")
 
@@ -114,8 +116,12 @@ class TestFiles():
         if force or not os.path.exists(get_compare_root()):
             self.write_to_file(os.path.join(get_compare_root(), test.const.X_FOLDER, A_FILE_NAME), A_STRING, write_flag)
             self.write_to_file(os.path.join(get_compare_root(), test.const.X_FOLDER, B_FILE_NAME), B_STRING, write_flag)
+
+            global y_folder_files
             self.write_to_file(os.path.join(get_compare_root(), test.const.Y_FOLDER, B_FILE_NAME), B_STRING, write_flag)
+            y_folder_files = [os.path.join(test.const.Y_FOLDER, B_FILE_NAME)] # keep a list of files in y folder
             self.write_to_file(os.path.join(get_compare_root(), test.const.Y_FOLDER, C_FILE_NAME), C_STRING, write_flag)
+            y_folder_files.append(os.path.join(test.const.Y_FOLDER, C_FILE_NAME))
         for sync_root, id in self.get_sync_node_info():
             if force or not os.path.exists(sync_root):
                 self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)
