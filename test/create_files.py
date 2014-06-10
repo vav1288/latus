@@ -5,6 +5,7 @@ create the test files
 
 import os
 import shutil
+import random
 
 from core import const
 import core.logger
@@ -62,6 +63,10 @@ def get_compare_root():
 
 def get_hash_root():
     return os.path.join(get_files_root(), "hash")
+
+def get_random_roots():
+    root = os.path.join(get_files_root(), "random")
+    return os.path.join(root, 'a'), os.path.join(root, 'b')
 
 def clean(all):
     """
@@ -122,6 +127,9 @@ class TestFiles():
             y_folder_files = [os.path.join(test.const.Y_FOLDER, B_FILE_NAME)] # keep a list of files in y folder
             self.write_to_file(os.path.join(get_compare_root(), test.const.Y_FOLDER, C_FILE_NAME), C_STRING, write_flag)
             y_folder_files.append(os.path.join(test.const.Y_FOLDER, C_FILE_NAME))
+        if force or not os.path.exists(get_random_roots()[0]):
+            self.write_pseudo_random_files(write_flag)
+
         for sync_root, id in self.get_sync_node_info():
             if force or not os.path.exists(sync_root):
                 self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)
@@ -191,6 +199,39 @@ class TestFiles():
             file_name = 'A' + self.make_unicode_string(start, UNICODE_FILE_NAME_LENGTH) + '.txt'
             paths.append(os.path.join(root_dir, file_name))
         return paths
+
+    def write_pseudo_random_files(self, write_flag):
+
+        def one_entry_in_both(xs, ys):
+            found = False
+            for xk in xs.keys():
+                for yk in ys.keys():
+                    if xk == yk and xs[xk] == ys[yk]:
+                        # done if there is one entry in both x and y
+                        found = True
+            return found
+
+        def write_files(root, contents):
+            for level_0 in contents.keys():
+                for level_1 in contents[level_0].keys():
+                    path = os.path.join(root, level_0, level_1 + '.txt')
+                    self.write_to_file(path, contents[level_0][level_1], write_flag)
+
+
+        random.seed(0) # make this deterministic
+        base_ord = ord('a')
+        span = 3 # larger span causes larger number of files
+        c_range = range(base_ord, base_ord + span)
+        choices = [chr(c) + chr(c2) for c in c_range for c2 in c_range]
+
+        a = {}
+        b = {}
+        while not one_entry_in_both(a,b):
+            a[random.choice(choices)] = { random.choice(choices) : random.choice(choices) }
+            b[random.choice(choices)] = { random.choice(choices) : random.choice(choices) }
+        a_folder, b_folder = get_random_roots()
+        write_files(a_folder, a)
+        write_files(b_folder, b)
 
 
 

@@ -35,10 +35,15 @@ def test_scan_compare(setup):
 
     simple_root = test.create_files.get_simple_root()
     dbx.scan(simple_root)
-    non_uniques_dict = dbx.non_uniques(simple_root)
-    non_uniques = [non_uniques_dict[h] for h in non_uniques_dict.keys()]
-    assert(len(non_uniques) == 1) # only one content appears more than once
-    assert(len(non_uniques[0]) == 3) # there are 3 different files in "simple" that have just 'a' in them
+    non_uniques = dbx.non_uniques(simple_root) # only one item is returned
+    _, paths = non_uniques.popitem() # now pop that one item
+    assert(len(non_uniques) == 0) # check that only one content ('a') appeared more than once
+    assert(len(paths) == 3) # there are 3 different files in "simple" that have just 'a' in them
+
+    random_root_a, random_root_b = test.create_files.get_random_roots()
+    dbx.scan(random_root_a)
+    dbx.scan(random_root_b)
+    print("intersection", dbx.intersection(random_root_a, random_root_b))
 
     # for some reason we need to close the db so the next test can run
     dbx.close()

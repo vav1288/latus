@@ -222,14 +222,14 @@ class DB:
 
     def non_uniques(self, root):
         """
-        returns a list of files that occur more than once in a folder (based on contents)
+        returns a dict of hash : path that occur more than once in a folder (based on contents)
         :param root:
         :return:
         """
         non_unique_files = {}
         absroot = os.path.abspath(root)
         for h in self.get_hashes(absroot):
-            f = self.get_paths_from_hash(absroot, h)
-            if len(f) > 1:
-                non_unique_files[h] = f
+            paths = self.get_paths_from_hash(absroot, h)
+            if len(paths) > 1:
+                non_unique_files[h] = paths
         return non_unique_files
