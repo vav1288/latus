@@ -22,13 +22,13 @@ def test_scan_compare(setup):
 
     # test difference
     x_minus_y = dbx.difference(x_folder, y_folder)
-    assert(x_minus_y == [test.create_files.A_FILE_NAME])
+    assert(x_minus_y[0][1] == test.create_files.A_FILE_NAME)
     # call difference with the ignore_* True just to test those code paths
     dbx.difference(x_folder, y_folder, hidden=True, system=True)
 
     # test intersection
     intersection = dbx.intersection(x_folder, y_folder)
-    assert(intersection == [test.create_files.B_FILE_NAME])
+    assert(intersection[0][1] == test.create_files.B_FILE_NAME)
 
     # this is like a merge, where x is merged into y and the result is all the files
     assert(len(x_minus_y + test.create_files.y_folder_files) == 3)
@@ -43,7 +43,15 @@ def test_scan_compare(setup):
     random_root_a, random_root_b = test.create_files.get_random_roots()
     dbx.scan(random_root_a)
     dbx.scan(random_root_b)
-    print("intersection", dbx.intersection(random_root_a, random_root_b))
+    # we happen to know there are 5 files in the intersection
+    #for f in dbx.intersection(random_root_a, random_root_b):
+    #    print(f)
+    assert(len(dbx.intersection(random_root_a, random_root_b)) == 5)
+    a_minus_b = dbx.difference(random_root_a, random_root_b)
+    b_minus_a = dbx.difference(random_root_b, random_root_a)
+    print('a_minus_b', a_minus_b)
+    print('b_minus_a', b_minus_a)
+    # todo: do an assert on the above paths
 
     # for some reason we need to close the db so the next test can run
     dbx.close()

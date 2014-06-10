@@ -176,7 +176,7 @@ class DB:
         return self.session.query(HashPerf).all()
 
     def get_paths_from_hash(self, absroot, sha512):
-        return [f.path for f in self.session.query(Files).filter_by(absroot=absroot, sha512=sha512).all()]
+        return [(f.absroot, f.path) for f in self.session.query(Files).filter_by(absroot=absroot, sha512=sha512).all()]
 
     def get_hashes(self, root, hidden=False, system=False):
         filter_items = self.session.query(Files).filter_by(absroot = os.path.abspath(root))
