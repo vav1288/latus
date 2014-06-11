@@ -192,7 +192,7 @@ class DB:
         Files in a that are not in b (based on contents).  This is the set '-' operator (AKA difference).
 
         Can be used for merging - a is the source and b is the destination.  Then what this function returns
-        can be used as a list of files to move into b, then the new b will be the union of a and original b.
+        can be used as a list of files to move into b, then the new b will be the union of original b and original a.
 
         :param root_a: folder a
         :param root_b: folder b
