@@ -11,5 +11,5 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")
     args = parser.parse_args()
 
-    db = core.db.DB(args.path, core.metadatapath.MetadataPath(args.metadata))
-    db.scan()
+    db = core.db.DB(core.metadatapath.MetadataPath(args.metadata))
+    db.scan(args.path)
