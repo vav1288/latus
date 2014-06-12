@@ -48,8 +48,7 @@ class HashPerf(Base):
     Hash calculation performance.  This is a separate table since we only keep the longest N times.
     """
     __tablename__ = 'hashperf'
-    absroot = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("roots.absroot"))
-    path = sqlalchemy.Column(sqlalchemy.String, primary_key=True) # path to the file (from this we can get its size)
+    abspath = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
     size = sqlalchemy.Column(sqlalchemy.BigInteger) # size of this file
     time = sqlalchemy.Column(sqlalchemy.Float) # time in seconds to took to calculate the hash
 
@@ -85,7 +84,7 @@ class DB:
             self.session.add(Common(key='processor', val=platform.processor()))
             self.session.add(Common(key='machine', val=platform.machine()))
 
-            self.session.commit()
+        self.commit()
 
     def commit(self):
         self.session.query(Common).filter(Common.key == 'updatetime').update({"val" : str(datetime.datetime.utcnow())})
@@ -102,6 +101,7 @@ class DB:
         del root # make sure we don't use the non-abs version of root
         if self.session.query(Roots).filter(Roots.absroot == absroot).count() == 0:
             self.session.add(Roots(absroot=absroot))
+            self.commit()
 
         full_path = os.path.join(absroot, rel_path)
         # todo: handle when file deleted
@@ -167,8 +167,9 @@ class DB:
             if full:
                 # if we're full, first delete the entry with the shortest time
                 self.session.delete(shortest_time_row)
-            hash_perf = HashPerf(absroot=absroot, path=path, size=size, time=time)
+            hash_perf = HashPerf(abspath=os.path.join(absroot, path), size=size, time=time)
             self.session.add(hash_perf)
+            self.commit()
             used = True
         return used
 
