@@ -2,7 +2,6 @@ import os
 import sys
 import win32api
 import platform
-import collections
 import socket
 
 import win32con
@@ -77,8 +76,8 @@ def is_hidden(in_path):
         try:
             attrib = win32api.GetFileAttributes(long_abs_path)
         except pywintypes.error:
-            logger.get_log().error(long_abs_path)
-        is_hidden_flag = attrib & win32con.FILE_ATTRIBUTE_HIDDEN
+            core.logger.get_log().error(long_abs_path)
+        is_hidden_flag = (attrib & win32con.FILE_ATTRIBUTE_HIDDEN > 0)
     return is_hidden_flag
 
 def is_system(in_path):
@@ -89,8 +88,8 @@ def is_system(in_path):
         try:
             attrib = win32api.GetFileAttributes(long_abs_path)
         except pywintypes.error:
-            logger.get_log().error(long_abs_path)
-        is_system_flag = attrib & win32con.FILE_ATTRIBUTE_SYSTEM
+            core.logger.get_log().error(long_abs_path)
+        is_system_flag = (attrib & win32con.FILE_ATTRIBUTE_SYSTEM > 0)
     return is_system_flag
 
 def is_locked(in_path):
