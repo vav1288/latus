@@ -10,9 +10,7 @@ setup(
     license='LICENSE',
     description = "collection of file management utilities",
     py_modules=['*'],
-    executables = [Executable("finddup.py"),
+    executables = [Executable("scan.py"),
                    Executable("merge.py"),
-                   Executable("propmtime.py"),
-                   Executable("fsinfo.py"),
-                   Executable("hash.py")]
+                   Executable("sync.py")]
 )
