@@ -43,6 +43,13 @@ class Files(Base):
     system = sqlalchemy.Column(sqlalchemy.Boolean) # does this file have the system attribute set?
     count = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True) # todo: be careful with this if we do a trim on this table
 
+    @property
+    def abspath(self):
+        """
+        :return: full absolute path
+        """
+        return os.path.join(self.absroot, self.path)
+
 class HashPerf(Base):
     """
     Hash calculation performance.  This is a separate table since we only keep the longest N times.
@@ -51,6 +58,21 @@ class HashPerf(Base):
     abspath = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
     size = sqlalchemy.Column(sqlalchemy.BigInteger) # size of this file
     time = sqlalchemy.Column(sqlalchemy.Float) # time in seconds to took to calculate the hash
+
+class FilePath:
+    """
+    Convenience class for absroot and path pairs
+    """
+    def __init__(self, absroot, path):
+        self.absroot = absroot
+        self.path = path
+
+    @property
+    def abspath(self):
+        """
+        :return: full absolute path
+        """
+        return os.path.join(self.absroot, self.path)
 
 # todo: make 'hidden' and 'system' use or ignore directives part of the class invocation (not a function param)\
 # or perhaps create a 'query class' that holds these, but the DB class would not hold 'root'
@@ -94,6 +116,12 @@ class DB:
         self.session.close()
 
     def is_time_different(self, time_a, time_b):
+        """
+        test to see if we consider these two times different (not equivalent)
+        :param time_a: one time
+        :param time_b: other time
+        :return: true if these are considered different times
+        """
         return abs(time_a - time_b) > datetime.timedelta(seconds=1)
 
     def put_file_info(self, root, rel_path):
@@ -135,7 +163,27 @@ class DB:
                 self.log.warning('not found in db:' + rel_path)
         return db_entry
 
+    def __iter__(self):
+        """
+        iterator for all files in this database
+        :return: Files class instance with file info
+        """
+        # find all the file paths (there has to be a way to just directly query the DB, but this works for now ...)
+        file_paths = []
+        for db_files in self.session.query(Files).all():
+            file_path = FilePath(db_files.absroot, db_files.path)
+            if file_path not in file_paths:
+                file_paths.append(file_path)
+        for file_path in file_paths:
+            # return the most recent entry
+            yield self.session.query(Files).filter(Files.absroot == file_path.absroot, Files.path == file_path.path).\
+                order_by(-Files.count).first()
+
     def scan(self, absroot):
+        """
+        Scan folder/directory absroot into DB.
+        :param absroot: folder path
+        """
         source_walker = core.walker.Walker(absroot)
         for file_path in source_walker:
             self.put_file_info(absroot, file_path)
@@ -174,10 +222,19 @@ class DB:
         return used
 
     def get_hash_perf(self):
+        """
+        :return: all of the hash performance entries
+        """
         return self.session.query(HashPerf).all()
 
     def get_paths_from_hash(self, absroot, sha512):
-        return [(f.absroot, f.path) for f in self.session.query(Files).filter_by(absroot=absroot, sha512=sha512).all()]
+        """
+        get all of the paths in folder absroot that have a certain hash value
+        :param absroot: root folder to search into
+        :param sha512: hash value (string)
+        :return: list of paths to files than have the provided hash value
+        """
+        return [FilePath(f.absroot, f.path) for f in self.session.query(Files).filter_by(absroot=absroot, sha512=sha512).all()]
 
     def get_hashes(self, root, hidden=False, system=False):
         filter_items = self.session.query(Files).filter_by(absroot = os.path.abspath(root))
