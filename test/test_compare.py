@@ -43,15 +43,19 @@ def test_scan_compare(setup):
     random_root_a, random_root_b = test.create_files.get_random_roots()
     dbx.scan(random_root_a)
     dbx.scan(random_root_b)
-    # we happen to know there are 5 files in the intersection
-    #for f in dbx.intersection(random_root_a, random_root_b):
-    #    print(f)
+
+    # test the intersection method
+    # we happen to know there are 5 files in the intersection ... a little white box testing ....
     assert(len(dbx.intersection(random_root_a, random_root_b)) == 5)
+
+    # test the difference method
     a_minus_b = dbx.difference(random_root_a, random_root_b)
     b_minus_a = dbx.difference(random_root_b, random_root_a)
-    print('a_minus_b', a_minus_b)
-    print('b_minus_a', b_minus_a)
-    # todo: do an assert on the above paths
+    # We also happen to know the answer here ... more white box testing ...
+    assert(len(a_minus_b) == 1)
+    assert(a_minus_b[0][1] == 'ab\\aa.txt')
+    assert(len(b_minus_a) == 1)
+    assert(b_minus_a[0][1] == 'bb\\cc.txt')
 
     # for some reason we need to close the db so the next test can run
     dbx.close()
