@@ -125,6 +125,14 @@ class DB:
         return abs(time_a - time_b) > datetime.timedelta(seconds=1)
 
     def put_file_info(self, root, rel_path):
+        """
+        Write a single file's information to the database
+        :param root: path to the root folder for the file
+        :param rel_path: relative path of the file
+        (a join of the root and rel_path is the abspath of the file)
+        :return: True if database modified
+        """
+        modified = False
         absroot = os.path.abspath(root)
         del root # make sure we don't use the non-abs version of root
         if self.session.query(Roots).filter(Roots.absroot == absroot).count() == 0:
@@ -152,8 +160,15 @@ class DB:
                 file_info = Files(absroot=absroot, path=rel_path, sha512=sha512, size=size, mtime=mtime, hidden=hidden, system=system)
                 self.session.add(file_info)
                 self.commit()
+                modified = True
+        return modified
 
     def get_file_info(self, rel_path):
+        """
+        Get a single file's info from the database
+        :param rel_path:
+        :return:
+        """
         db_entry = None
         if rel_path is None:
             self.log.warning("rel_path is None")
@@ -237,6 +252,16 @@ class DB:
         return [FilePath(f.absroot, f.path) for f in self.session.query(Files).filter_by(absroot=absroot, sha512=sha512).all()]
 
     def get_hashes(self, root, hidden=False, system=False):
+        """
+        Return a set that has all the hashes in a particular folder as specified by the "root" parameter
+        :param root: folder
+        :param hidden: set to True to return hashes for "hidden" files
+        :param system: set to True to return hashes for "system" files
+        :return:
+        """
+        # todo: should we filter to get only the most recent hashes for each path?
+        #  We should probably use this class's iterator to get to each path, then return all the hashes for
+        #  all of the most recent files.
         filter_items = self.session.query(Files).filter_by(absroot = os.path.abspath(root))
         if not hidden:
             filter_items = filter_items.filter_by(hidden = False)
