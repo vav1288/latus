@@ -68,6 +68,12 @@ def get_random_roots():
     root = os.path.join(get_files_root(), "random")
     return os.path.join(root, 'a'), os.path.join(root, 'b')
 
+def get_sync_node_info():
+    def make(root, id):
+        return os.path.join(root, id), id
+    root = os.path.join(get_files_root(), "sync")
+    return [make(root, "a"), make(root, "b")]
+
 def clean(all):
     """
     clean up the test data
@@ -114,10 +120,10 @@ class TestFiles():
         if force or not os.path.exists(get_hash_root()):
             self.write_to_file(os.path.join(get_hash_root(), A_FILE_NAME), A_STRING, write_flag)
             self.write_to_file(os.path.join(get_hash_root(), B_FILE_NAME), B_STRING, write_flag)
-            # use +2 so we try more entries than max table rows
             for big_count in range(test.const.HASH_TEST_FILE_MIN, test.const.HASH_TEST_FILE_MAX + 1):
+                # use an exponentially increasing size so we have a large difference in hash times (since time is often imprecise)
                 self.write_big_file(os.path.join(get_hash_root(), test.const.HASH_TEST_FILE_PREFIX + str(big_count) + test.const.HASH_TEST_FILE_SUFFIX),
-                                    big_count*test.const.HASH_TEST_BASE_FILE_SIZE, write_flag)
+                                    pow(1.3, big_count)*test.const.HASH_TEST_BASE_FILE_SIZE, write_flag)
         if force or not os.path.exists(get_compare_root()):
             self.write_to_file(os.path.join(get_compare_root(), test.const.X_FOLDER, A_FILE_NAME), A_STRING, write_flag)
             self.write_to_file(os.path.join(get_compare_root(), test.const.X_FOLDER, B_FILE_NAME), B_STRING, write_flag)
@@ -130,7 +136,7 @@ class TestFiles():
         if force or not os.path.exists(get_random_roots()[0]):
             self.write_pseudo_random_files(write_flag)
 
-        for sync_root, id in self.get_sync_node_info():
+        for sync_root, id in get_sync_node_info():
             if force or not os.path.exists(sync_root):
                 self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)
 
@@ -162,15 +168,6 @@ class TestFiles():
         paths = self.get_unicode_file_paths(root_dir)
         for file_path in paths:
             self.write_to_file(file_path, test_string, write_flag)
-
-    def get_sync_node_info(self):
-        def make(root, id):
-            return os.path.join(root, id), id
-        root = os.path.join(get_files_root(), "sync")
-        paths = []
-        paths.append(make(root, "a"))
-        paths.append(make(root, "b"))
-        return paths
 
     def make_unicode_string(self, start, length, inc = 1):
         out_string = ''
