@@ -22,13 +22,13 @@ def test_scan_compare(setup):
 
     # test difference
     x_minus_y = dbx.difference(x_folder, y_folder)
-    assert(x_minus_y[0][1] == test.create_files.A_FILE_NAME)
+    assert(x_minus_y[0].path == test.create_files.A_FILE_NAME)
     # call difference with the ignore_* True just to test those code paths
     dbx.difference(x_folder, y_folder, hidden=True, system=True)
 
     # test intersection
     intersection = dbx.intersection(x_folder, y_folder)
-    assert(intersection[0][1] == test.create_files.B_FILE_NAME)
+    assert(intersection[0].path == test.create_files.B_FILE_NAME)
 
     # this is like a merge, where x is merged into y and the result is all the files
     assert(len(x_minus_y + test.create_files.y_folder_files) == 3)
@@ -53,9 +53,9 @@ def test_scan_compare(setup):
     b_minus_a = dbx.difference(random_root_b, random_root_a)
     # We also happen to know the answer here ... more white box testing ...
     assert(len(a_minus_b) == 1)
-    assert(a_minus_b[0][1] == 'ab\\aa.txt')
+    assert(a_minus_b[0].path == 'ab\\aa.txt')
     assert(len(b_minus_a) == 1)
-    assert(b_minus_a[0][1] == 'bb\\cc.txt')
+    assert(b_minus_a[0].path == 'bb\\cc.txt')
 
     # for some reason we need to close the db so the next test can run
     dbx.close()
