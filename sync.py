@@ -15,10 +15,6 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")
     args = parser.parse_args()
 
-    m = core.metadatapath.MetadataPath(args.metadata)
-    ldb = core.db.DB(m, args.id)
-    ldb.scan(args.local)
-    sdb = core.db.DB(m, 's') # sync
-    cdb = core.db.DB(m, 'c') # cloud
-    sync = core.sync.Sync(ldb, sdb, cdb)
+    sync = core.sync.Sync(args.metadata, args.id)
+    sync.scan()
     sync.sync()
