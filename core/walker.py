@@ -65,11 +65,3 @@ class Walker:
         #print("check_exit_end", self.keyboard_hit_exit)
         #return(self.keyboard_hit_exit)
 
-    def get_path(self, partial_path):
-        #print(partial_path)
-        p = os.path.join(self.root, partial_path)
-        if partial_path[:-1] == util.get_folder_sep():
-            # folder/directory
-            p += util.get_folder_sep()
-        #print(p)
-        return p
