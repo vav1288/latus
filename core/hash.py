@@ -11,10 +11,6 @@ def calc_sha512(path, time_it = False):
     else:
         start_time = 0
 
-    if not os.path.exists(path):
-        logger.log.error('does not exist:' + path)
-        return None, None
-
     this_hash = hashlib.sha512()
 
     # execution times on sample 'big file':
