@@ -1,7 +1,7 @@
 
 import os
-import pprint
 
+import core.logger
 import core.db
 import core.const
 import core.metadatapath
@@ -22,7 +22,10 @@ class Sync():
         self.ldb = core.db.DB(core.metadatapath.MetadataPath(appdata_folder), 'l')
         # sync
         self.sdb = core.db.DB(core.metadatapath.MetadataPath(appdata_folder), 's')
-        pprint.pprint(["db folders", self.cdb.sqlite_db_path, self.ldb.sqlite_db_path, self.sdb.sqlite_db_path])
+
+        core.logger.log.info("%s:%s", "cloud", self.cdb.sqlite_db_path)
+        core.logger.log.info("%s:%s", "local", self.ldb.sqlite_db_path)
+        core.logger.log.info("%s:%s", "sync", self.sdb.sqlite_db_path)
 
     def scan(self):
         self.ldb.scan(self.local_folder) # scan the local folder

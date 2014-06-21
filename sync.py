@@ -1,6 +1,8 @@
 
 import argparse
+import logging
 
+import core.logger
 import core.db
 import core.sync
 import core.metadatapath
@@ -14,6 +16,8 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")
     args = parser.parse_args()
 
+    if args.verbose:
+        core.logger.set_log_level(logging.INFO)
     sync = core.sync.Sync(args.metadata, args.local, args.id)
     sync.scan()
     sync.sync()
