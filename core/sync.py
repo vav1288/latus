@@ -1,5 +1,6 @@
 
 import os
+import pprint
 
 import core.db
 import core.const
@@ -9,20 +10,19 @@ class Sync():
     """
     Determines what needs to be done to sync local to cloud.
     """
-    def __init__(self, cloud_metadata_folder, local_folder, node_id, local_and_sync_metadata_folder = None):
+    def __init__(self, cloud_metadata_folder, local_folder, node_id, appdata_folder = None):
         self.local_folder = local_folder
-        if local_and_sync_metadata_folder is None:
+        if appdata_folder is None:
             # I'd like to use winpaths.get_local_appdata() but it doesn't seem to work with Python 3, so I'll
             # rely on the environment variable.
-            appdata = os.environ['APPDATA']
-            local_and_sync_metadata_folder = os.path.join(appdata, core.const.NAME)
-        print("local_and_sync_metadata_folder", local_and_sync_metadata_folder)
+            appdata_folder = os.environ['APPDATA']
         # cloud
-        self.cdb = core.db.DB(core.metadatapath.MetadataPath(cloud_metadata_folder), 'c', force_drop=True)
+        self.cdb = core.db.DB(core.metadatapath.MetadataPath(cloud_metadata_folder, core.metadatapath.CLOUD), 'c')
         # local
-        self.ldb = core.db.DB(core.metadatapath.MetadataPath(local_and_sync_metadata_folder), node_id, force_drop=True)
+        self.ldb = core.db.DB(core.metadatapath.MetadataPath(appdata_folder), 'l')
         # sync
-        self.sdb = core.db.DB(core.metadatapath.MetadataPath(local_and_sync_metadata_folder), 's', force_drop=True)
+        self.sdb = core.db.DB(core.metadatapath.MetadataPath(appdata_folder), 's')
+        pprint.pprint(["db folders", self.cdb.sqlite_db_path, self.ldb.sqlite_db_path, self.sdb.sqlite_db_path])
 
     def scan(self):
         self.ldb.scan(self.local_folder) # scan the local folder
