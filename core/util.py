@@ -138,3 +138,6 @@ def get_plaform_info():
     platform_info['local_host'] = socket.gethostname()
     platform_info['local_ip'] = socket.gethostbyname(socket.gethostname())
     return platform_info
+
+def get_appdata_folder():
+    return os.environ['APPDATA']
