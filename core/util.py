@@ -141,3 +141,12 @@ def get_plaform_info():
 
 def get_appdata_folder():
     return os.environ['APPDATA']
+
+def make_dirs(path):
+    """
+    Make a directory as specified by path.  If it already exists, simply return (don't raise an error).
+
+    :param path: path of directories/folders to create
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)

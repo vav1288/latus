@@ -59,6 +59,19 @@ class HashPerf(Base):
     size = sqlalchemy.Column(sqlalchemy.BigInteger) # size of this file
     time = sqlalchemy.Column(sqlalchemy.Float) # time in seconds to took to calculate the hash
 
+class Request(Base):
+    """
+    When a node needs a file, the request is put in this table (and removed by the requesting node when fulfilled).
+    """
+    __tablename__ = 'request'
+
+    path = sqlalchemy.Column(sqlalchemy.String, primary_key=True) # path (off of the root) for this file
+    nodeid = sqlalchemy.Column(sqlalchemy.String) # node id of requesting node
+
+    # Timestamp is used to evict entries.  Evictions can happen, for example, if a node requests a
+    # file but never comes back online to retrieve it and therefore never delete the request entry.
+    timestamp = sqlalchemy.Column(sqlalchemy.DateTime) # timestamp of when this request was made
+
 class FilePath:
     """
     Convenience class for absroot and path pairs
@@ -124,7 +137,7 @@ class DB:
         """
         return abs(time_a - time_b) > datetime.timedelta(seconds=1)
 
-    def put_file_info(self, root, rel_path):
+    def put_file_info(self, rel_path, root):
         """
         Write a single file's information to the database
         :param root: path to the root folder for the file
@@ -201,7 +214,7 @@ class DB:
         """
         source_walker = core.walker.Walker(absroot)
         for file_path in source_walker:
-            self.put_file_info(absroot, file_path)
+            self.put_file_info(file_path, absroot)
 
     def get_common(self, key):
         """
@@ -316,3 +329,13 @@ class DB:
             if len(paths) > 1:
                 non_unique_files[h] = paths
         return non_unique_files
+
+    def add_request(self, path, nodeid):
+        print("requesting", path, nodeid)
+        hash_perf = Request(path=path, nodeid=nodeid, timestamp=datetime.datetime.now())
+        self.session.add(hash_perf)
+        self.commit()
+
+    def delete_request(self):
+        # todo: remove request from db!
+        pass
