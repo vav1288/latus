@@ -29,7 +29,8 @@ def calc_sha512(path, time_it = False):
             val = f.read(bucket_size)
         f.close()
     except IOError:
-        logger.log.warn(path)
+        logger.log.warn('hash: could not read "%s"', path)
+        return None, None
 
     sha512_val = this_hash.hexdigest()
 
