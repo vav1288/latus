@@ -7,48 +7,63 @@ import core.metadatapath
 import test.create_files
 from test.conftest import setup
 
-cloud_folder_name = 'cloud'  # folder name for cloud storage provider
 
-# todo: return a list of the paths with their relative path from root_path, not just merely the file names
-def get_file_names(root_path):
-    """
-    Get a sorted list of all file names (but NOT their path) in path.
-    :param root_path: folder/directory to look in
-    :return: sorted list of files
-    """
-    files = []
-    for r, _, fns in os.walk(root_path):
-        for fn in fns:
-            files.append(fn)
-    files.sort()
-    return files
-
-def copy_metadata(src, dest):
-    # fake out cloud sync of the db file
-    metadata_src = core.metadatapath.MetadataPath(os.path.join(src, cloud_folder_name),
-                                                  folder_type=core.metadatapath.CLOUD)
-    metadata_dest = core.metadatapath.MetadataPath(os.path.join(dest, cloud_folder_name),
-                                                  folder_type=core.metadatapath.CLOUD)
-    print("copying", metadata_src.metadata_dir_path, ' to ', metadata_dest.metadata_dir_path)
-    # todo: I'd really like a copy that copies each file but where I don't have to wipe out the dest tree first
-    shutil.rmtree(metadata_dest.metadata_dir_path)
-    shutil.copytree(metadata_src.metadata_dir_path, metadata_dest.metadata_dir_path)
+def emulate_cloud_sync(a, b):
+    # one direction ...
+    for r, _, fs in os.walk(a):
+        for f in fs:
+            src = os.path.join(r, f)
+            # a kludge, but works for this particular case
+            dest = src.replace('\\a\\', '\\b\\')
+            if not os.path.exists(dest):
+                d = os.path.split(dest)[0]
+                if not os.path.exists(d):
+                    os.makedirs(d)
+                shutil.copyfile(src, dest)
+    # now the other direction ...
+    for r, _, fs in os.walk(b):
+        for f in fs:
+            src = os.path.join(r, f)
+            dest = src.replace('\\b\\', '\\a\\')
+            if not os.path.exists(dest):
+                d = os.path.split(dest)[0]
+                if not os.path.exists(d):
+                    os.makedirs(d)
+                shutil.copyfile(src, dest)
 
 def test_sync(setup):
-    (node_a_root, node_a_id), (node_b_root, node_b_id) = test.create_files.get_sync_node_info()
+    sync_nodes_test_info = test.create_files.SyncNodesTestInfo()
+    sync = {}
 
-    def do_sync(node_root, node_id):
-        sync = core.sync.Sync(os.path.join(node_root, cloud_folder_name), os.path.join(node_root, core.const.NAME),
-                              node_id, appdata_folder=os.path.join(node_root, 'appdata'))
-        sync.scan()
-        sync.sync()
-        sync.close()
+    # get the cloud folders
+    nodes = sync_nodes_test_info.nodes
+    cloud_folder_0 = sync_nodes_test_info.get_cloud_folder(nodes[0])
+    cloud_folder_1 = sync_nodes_test_info.get_cloud_folder(nodes[1])
 
-    do_sync(node_a_root, node_a_id)
-    copy_metadata(node_a_root, node_b_root)  # emulate cloud sync of the db file
-    do_sync(node_b_root, node_b_id)
-    copy_metadata(node_b_root, node_a_root)  # emulate cloud sync of the db file
-    do_sync(node_a_root, node_a_id)
+    for node in sync_nodes_test_info.nodes:
+        sync[node] = core.sync.Sync(sync_nodes_test_info.get_cloud_folder(node),
+                                    sync_nodes_test_info.get_local_folder(node), verbose=True)
+        sync[node].sync()
 
-    # Test that we've sync'd the files across the two nodes
-    assert get_file_names(os.path.join(node_a_root, core.const.NAME)) == get_file_names(os.path.join(node_b_root, core.const.NAME))
+        # do what the cloud service sync would normally do
+        emulate_cloud_sync(cloud_folder_0, cloud_folder_1)
+
+    for node in sync_nodes_test_info.nodes:
+        sync[node].sync()
+
+    for node in sync_nodes_test_info.nodes:
+        # shutil.rmtree(os.path.join(sync_nodes.get_cloud_folder(node))) # remove what sync creates
+        pass
+
+    local_folders = []
+    file_names = []
+    for node in sync_nodes_test_info.nodes:
+        local_folders.append(sync_nodes_test_info.get_local_folder(node))
+        file_names.append(sync_nodes_test_info.get_file_name(node))
+    b_to_a = os.path.join(local_folders[0], file_names[1])
+    print('b_to_a', b_to_a)
+    assert(os.path.exists(b_to_a))
+    a_to_b = os.path.join(local_folders[1], file_names[0])
+    print('a_to_b', a_to_b)
+    assert(os.path.exists(a_to_b))
+    return

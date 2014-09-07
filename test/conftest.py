@@ -20,12 +20,12 @@ def setup(request):
     def clean():
         global nodynamicdatadelete
         if nodynamicdatadelete is False:
-            test.create_files.clean(all=False)
+            test.create_files.clean(do_all=False)
 
     core.logger.set_log_level(logging.INFO)
     core.logger.log.info("nodynamicdatadelete:" + str(nodynamicdatadelete))
     t = test.create_files.TestFiles()
-    test.create_files.clean(all=True)
+    test.create_files.clean(do_all=True)
     t.write_files()
 
     request.addfinalizer(clean)

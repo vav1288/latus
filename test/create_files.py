@@ -35,61 +35,88 @@ BIG_MAX_CODE = 8192
 
 y_folder_files = None
 
+
 def get_data_root():
     return os.path.join("test", "data")
 
+
 def get_files_root():
     return os.path.join(get_data_root(), "files")
+
 
 def get_metadata_root():
     # must not match nose's regex for test_latus files/directories below the main directory "test_latus",
     # since nose errors out on the unicode files
     return os.path.join(get_data_root(), "metadata")
 
+
 def get_unicode_root():
     return os.path.join(get_files_root(), "unicode")
+
 
 def get_simple_root():
     return os.path.join(get_files_root(), "simple")
 
+
 def get_mtime_root():
     return os.path.join(get_files_root(), "mtime")
+
 
 def get_merge_root():
     return os.path.join(get_files_root(), "merge")
 
+
 def get_compare_root():
     return os.path.join(get_files_root(), "compare")
 
+
 def get_hash_root():
     return os.path.join(get_files_root(), "hash")
+
 
 def get_random_roots():
     root = os.path.join(get_files_root(), "random")
     return os.path.join(root, 'a'), os.path.join(root, 'b')
 
-def get_sync_node_info():
-    def make(root, id):
-        return os.path.join(root, id), id
-    root = os.path.join(get_files_root(), "sync")
-    return [make(root, "a"), make(root, "b")]
 
-def clean(all):
+class SyncNodesTestInfo():
+    nodes = ['a', 'b']
+    folder_names = ['latus', 'dropbox']
+    def __init__(self):
+        self.sync_root = os.path.join(get_files_root(), "sync")
+
+    def write(self):
+        for node in self.nodes:
+            for folder_name in self.folder_names:
+                os.makedirs(os.path.join(self.sync_root, node, folder_name))
+
+    def get_local_folder(self, node):
+        return os.path.join(self.sync_root, node, self.folder_names[0])
+
+    def get_cloud_folder(self, node):
+        return os.path.join(self.sync_root, node, self.folder_names[1])
+
+    def get_file_name(self, node):
+        return node + '.txt'
+
+
+def clean(do_all):
     """
     clean up the test data
-    :param all: True to delete all test files and metadata, False for test files only.
+    :param do_all: True to delete all test files and metadata, False for test files only.
     :return:
     """
     path = get_files_root()
-    if all:
+    if do_all:
         path = get_data_root()
     core.logger.log.info("cleaning:" + path)
     if os.path.exists(path):
         shutil.rmtree(path)
 
+
 class TestFiles():
     def __init__(self):
-        pass
+        self.files_written = 0
 
     # This writes various input files.  The goal is to not have to package up test_latus files in the repo, if we
     # can avoid it.  Also, this way we can readily re-initialize and fully clean up test_latus files.
@@ -136,9 +163,10 @@ class TestFiles():
         if force or not os.path.exists(get_random_roots()[0]):
             self.write_pseudo_random_files(write_flag)
 
-        for sync_root, id in get_sync_node_info():
-            if force or not os.path.exists(sync_root):
-                self.write_to_file(os.path.join(sync_root, const.NAME, id + ".txt"), id, write_flag)
+        sync_nodes = SyncNodesTestInfo()
+        if force or not os.path.exists(sync_nodes.sync_root):
+            for node in sync_nodes.nodes:
+                self.write_to_file(os.path.join(sync_nodes.get_local_folder(node), sync_nodes.get_file_name(node)), node, write_flag)
 
         core.logger.log.info("files_written:" + str(self.files_written))
         return self.files_written
@@ -213,7 +241,6 @@ class TestFiles():
                 for level_1 in contents[level_0].keys():
                     path = os.path.join(root, level_0, level_1 + '.txt')
                     self.write_to_file(path, contents[level_0][level_1], write_flag)
-
 
         random.seed(0) # make this deterministic
         base_ord = ord('a')
