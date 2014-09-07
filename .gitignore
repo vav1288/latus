@@ -5,8 +5,8 @@ domerge.bat
 temp.*
 temp/
 repo_ignore/
-dist/
 build/
+dist/*.zip
 *.log
 __pycache__
 .latus
