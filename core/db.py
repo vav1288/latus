@@ -36,9 +36,9 @@ class Files(Base):
     __tablename__ = 'files'
     absroot = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("roots.absroot"))
     path = sqlalchemy.Column(sqlalchemy.String) # path (off of root) for this file
-    sha512 = sqlalchemy.Column(sqlalchemy.String) # sha512 for this file
-    size = sqlalchemy.Column(sqlalchemy.BigInteger) # size of this file
-    mtime = sqlalchemy.Column(sqlalchemy.DateTime) # most recent modification time of this file (UTC)
+    sha512 = sqlalchemy.Column(sqlalchemy.String) # sha512 for this file - None if deleted
+    size = sqlalchemy.Column(sqlalchemy.BigInteger) # size of this file - None if delete
+    mtime = sqlalchemy.Column(sqlalchemy.DateTime) # most recent modification time of this file (UTC) - None if deleted
     hidden = sqlalchemy.Column(sqlalchemy.Boolean) # does this file have the hidden attribute set?
     system = sqlalchemy.Column(sqlalchemy.Boolean) # does this file have the system attribute set?
     count = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True) # todo: be careful with this if we do a trim on this table
@@ -212,6 +212,17 @@ class DB:
         Scan folder/directory absroot into DB.
         :param absroot: folder path
         """
+
+        # check for deletions
+        for file_record in self.session.query(Files).filter(Files.absroot == absroot).order_by(-Files.count):
+            if not os.path.exist(file_record.abspath):
+                # todo: I don't like having the db access in this function - make a new one, I think, so it
+                # looks like the loop below.
+                file_info = Files(absroot=absroot, path=file_record.relpath, sha512=None, size=None, mtime=None)
+                self.session.add(file_info)
+                self.commit()
+
+        # scan file system
         source_walker = core.walker.Walker(absroot)
         for file_path in source_walker:
             self.put_file_info(file_path, absroot)
