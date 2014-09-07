@@ -15,7 +15,8 @@ class Sync():
     Determines what needs to be done to sync local to cloud.
     """
     DATABASE_FILE_NAME = '.' + core.const.NAME + '_sync_db' + '.json' # reserved
-    def __init__(self, cloud_root, latus_folder, appdata_folder = None, verbose = False):
+    def __init__(self, password, latus_folder, cloud_root, appdata_folder = None, verbose = False):
+        self.password = password
         self.cloud_root = cloud_root
         self.latus_folder = latus_folder
         self.verbose = verbose
@@ -23,8 +24,6 @@ class Sync():
             print('local_folder', self.latus_folder)
             print('cloud_root', self.cloud_root)
             print('cloud_folder', self.get_cloud_folder())
-
-        self.password = 'xyzzy' # todo: make a real one
 
         core.util.make_dirs(self.latus_folder)
 

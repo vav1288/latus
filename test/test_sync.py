@@ -41,8 +41,8 @@ def test_sync(setup):
     cloud_folder_1 = sync_nodes_test_info.get_cloud_folder(nodes[1])
 
     for node in sync_nodes_test_info.nodes:
-        sync[node] = core.sync.Sync(sync_nodes_test_info.get_cloud_folder(node),
-                                    sync_nodes_test_info.get_local_folder(node), verbose=True)
+        sync[node] = core.sync.Sync('xyzzy', sync_nodes_test_info.get_local_folder(node),
+                                    sync_nodes_test_info.get_cloud_folder(node), verbose=True)
         sync[node].sync()
 
         # do what the cloud service sync would normally do
