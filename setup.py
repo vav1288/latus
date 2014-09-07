@@ -1,16 +1,22 @@
 
-from cx_Freeze import setup, Executable
+import distutils
+import py2exe
 
-setup(
-    name = "latus",
-    version = "0.0",
+distutils.core.setup(
+    console=['sync.py'],
+
+    name="latus sync",
+    version="0.0",
     author='James Abel',
     author_email='j@abel.co',
     url='www.lat.us',
-    license='LICENSE',
-    description = "collection of file management utilities",
-    py_modules=['*'],
-    executables = [Executable("scan.py"),
-                   Executable("merge.py"),
-                   Executable("sync.py")]
+    license='LICENSE', # points to the actual file
+    description="secure sync",
+
+    # make a single executable
+    # PyQt version:
+    # options = {'py2exe': {'bundle_files': 1, 'compressed': True, "includes" : ["sip", "PyQt5.QtGui", "PyQt5.QtCore"]}},
+    options={'py2exe': {'bundle_files': 1, 'compressed': True, }},
+
+    zipfile = None,
 )
