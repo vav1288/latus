@@ -7,7 +7,7 @@ class Walker:
     def __init__(self, root, do_dirs = False, ignore = []):
         """
         root: the directory to start the walk from
-        do_dirs: if True, return directories (as opposed to only files).  This is good if we're doing 'hash-of-hashes'.
+        do_dirs: if True, return directories (as opposed to only files).
         ignore: a list of folder/directory names to not traverse (e.g. metadata folder names)
         """
         self.root = root
@@ -52,6 +52,9 @@ class Walker:
                     break
                 else:
                     yield partial_path
+
+    def full_path(self, partial_path):
+        return os.path.join(self.root, partial_path)
 
     # todo: get this working.
     # For some reason, msvcrt.kbhit() blocks.  It seems like it shouldn't
