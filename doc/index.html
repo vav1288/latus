@@ -5,7 +5,41 @@
     <title>lat.us</title>
   </head>
   <body>
-    <p><a href="latus.html">latus</a><br>
-    </p>
+    <h1>Latus (<a href="http://www.lat.us">lat.us</a>) - Making Cloud Storage
+      Services Secure for Personal Files</h1>
+    <h2>Motivation</h2>
+    Many people use cloud storage services such as Dropbox, iCloud, Microsoft's
+    One Drive, etc. for their personal file syncing needs.&nbsp; While these
+    services are quite convenient, there is still the risk of having your files
+    'exposed' if there would happen to be a security flaw or hack.&nbsp; Many
+    personal files are 'sensitive' in nature, such as financial records.&nbsp;
+    Even though these services claim to be secure, there have certainly been
+    many data 'breaches', especially recently.&nbsp; Even large corporations
+    have fallen prey to these attacks and it seems that no entity is
+    immune.&nbsp; Also, 'phishing' attacks can expose data in an otherwise
+    secure system.&nbsp; An additional level of security is needed to ensure it
+    is safe to use these cloud storage and syncing services for your sensitive
+    files.<br>
+    <h2>Technique</h2>
+    Latus encrypts your files before sending them to the syncing folders that
+    are used by your cloud storage provider.&nbsp; A parallel latus folder is
+    created where your files are stored in their normal (unencrypted)
+    state.&nbsp; The latus application monitors the latus folder.&nbsp; When a
+    new or modified file is detected it is encrypted and copied to a special
+    .latus cache folder (that users generally do not use) in the cloud storage
+    folder.&nbsp; The diagram below shows this:<br>
+    <br>
+    <img style="font-family: monospace; width: 435px; height: 291px;" title="Latus Diagram"
+      alt="" src="images/latus_sync_diagram.png"><br>
+    <br>
+    <h2>Implementation</h2>
+    Latus is an open source Python application that encrypts your files before
+    they are sent to your cloud storage provider.&nbsp; It is available at <a href="https://github.com/latusrepo/latus">https://github.com/latusrepo/latus</a>
+    .<br>
+    <h2>Competitors and Related Work</h2>
+    Keepass is an open source password management application.&nbsp; It encrypts
+    passwords before storing them in a local database file.&nbsp; It only does
+    password (and associated comments), however.<br>
+    <br>
   </body>
 </html>
