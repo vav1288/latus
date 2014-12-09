@@ -29,13 +29,15 @@ class Sync(threading.Thread):
     """
     DATABASE_FILE_NAME = '.' + core.const.NAME + '_sync_db' + '.json' # reserved
 
-    def __init__(self, password, latus_folder, cloud_root, exit_event_handle = None, appdata_folder = None, verbose = False):
+    def __init__(self, token, latus_folder, cloud_root, exit_event_handle = None, appdata_folder = None, verbose = False):
         threading.Thread.__init__(self)
-        self.password = password
+        self.token = token
         self.cloud_root = cloud_root
         self.exit_event_handle = exit_event_handle
         self.latus_folder = latus_folder
         self.verbose = verbose
+        self.fernet_extension = 'fer'
+
         if self.verbose:
             print('local_folder', self.latus_folder)
             print('cloud_root', self.cloud_root)
@@ -109,7 +111,7 @@ class Sync(threading.Thread):
         # new or updated local files
         local_walker = core.walker.Walker(self.latus_folder)
         for partial_path in local_walker:
-            # this is where we use the local _file_ name to create the cloud _folder_ where the .zips and metadata reside
+            # this is where we use the local _file_ name to create the cloud _folder_ where the fernet and metadata reside
             full_path = local_walker.full_path(partial_path)
             file_as_cloud_folder = os.path.join(self.get_cloud_folder(), partial_path)
             if not os.path.exists(file_as_cloud_folder):
@@ -118,14 +120,14 @@ class Sync(threading.Thread):
                     print('new local', partial_path)
             hash, _ = core.hash.calc_sha512(full_path)
             if hash is not None:
-                cloud_zip_file = os.path.join(file_as_cloud_folder, hash + '.zip')
-                if not os.path.exists(cloud_zip_file):
+                cloud_fernet_file = os.path.join(file_as_cloud_folder, hash + self.fernet_extension)
+                if not os.path.exists(cloud_fernet_file):
                     if self.verbose:
-                        print('writing', partial_path, '(', cloud_zip_file, ')')
-                    compressor = core.compression.Compression(self.password, self.verbose)
+                        print('writing', partial_path, '(', cloud_fernet_file, ')')
+                    compressor = core.compression.Compression(self.token, self.verbose)
                     # Input to archive program (7z) is relative to the latus folder.  Note that we have to explicitly
                     # give the full abs path of the archive itself since it's in a different folder.
-                    compressor.compress(self.latus_folder, partial_path, os.path.abspath(cloud_zip_file))
+                    compressor.compress(self.latus_folder, partial_path, os.path.abspath(cloud_fernet_file))
                     mtime = os.path.getmtime(full_path)
                     size = os.path.getsize(full_path)
                     self.update_database(partial_path, file_as_cloud_folder, hash, mtime, size)
@@ -146,9 +148,9 @@ class Sync(threading.Thread):
                 dest_path = os.path.join(self.latus_folder, file_path)
                 if not os.path.exists(dest_path):
                     print('extracting', dest_path)
-                    extractor = core.compression.Compression(self.password, self.verbose)
-                    cloud_zip_file = os.path.join(file_as_cloud_folder, hash + '.zip')
-                    extractor.expand(self.latus_folder, os.path.abspath(cloud_zip_file))
+                    extractor = core.compression.Compression(self.token, self.verbose)
+                    cloud_fernet_file = os.path.join(file_as_cloud_folder, hash + self.fernet_extension)
+                    extractor.expand(self.latus_folder, os.path.abspath(cloud_fernet_file), dest_path)
 
     def update_database(self, partial_path, file_as_cloud_folder, hash, mtime, size):
         db_file_path = os.path.join(file_as_cloud_folder, self.DATABASE_FILE_NAME)

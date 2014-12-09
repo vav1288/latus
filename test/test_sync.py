@@ -4,6 +4,7 @@ import shutil
 import win32event
 import subprocess
 import time
+from cryptography.fernet import Fernet
 import core.const
 import core.sync
 import core.metadatapath
@@ -37,6 +38,9 @@ def test_sync_simple(setup):
     """
     test a simple sync of 2 files across 2 nodes
     """
+
+    key = Fernet.generate_key()
+
     sync_nodes_test_info = test.create_files.SyncNodesTestInfo()
     sync = {}
 
@@ -48,7 +52,7 @@ def test_sync_simple(setup):
     exit_event = win32event.CreateEvent(None, 0, 0, None)
 
     for node in sync_nodes_test_info.nodes:
-        sync[node] = core.sync.Sync('xyzzy', sync_nodes_test_info.get_local_folder(node),
+        sync[node] = core.sync.Sync(key, sync_nodes_test_info.get_local_folder(node),
                                     sync_nodes_test_info.get_cloud_folder(node), verbose=True)
         sync[node].sync()
 
@@ -83,7 +87,7 @@ def test_sync_cli_invocation(setup):
     python_exe = os.path.join('c:', '/', 'python33', 'python.exe')
     print('python_exe', python_exe)
     cmd = [python_exe, 'sync.py']
-    cmd += ['-p',  'xyzzy']
+    cmd += ['-p',  'xyzzy']   # todo: migrate password to fermant token ... right now this is meaningless
     cmd += ['-l', os.path.join(sync_folder, 'latus')]
     cmd += ['-c', os.path.join(sync_folder, 'dropbox')]
     cmd += ['-v']
