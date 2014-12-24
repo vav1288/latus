@@ -88,6 +88,7 @@ def test_sync_cli_invocation(setup):
     cmd = [python_exe, 'latus.py']
     cmd += ['-l', os.path.join(sync_folder, 'latus')]
     cmd += ['-c', os.path.join(sync_folder, 'dropbox')]
+    cmd += ['-cli']
     cmd += ['-v']
     print('cmd', cmd)
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
