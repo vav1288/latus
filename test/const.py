@@ -1,5 +1,5 @@
 
-import core.const
+import latus.const
 
 QUICK_TEST = True # set to False for full test (takes longer)
 HASH_TEST_FILE_PREFIX = 'big'
@@ -10,7 +10,7 @@ if QUICK_TEST:
     HASH_TEST_FILE_MAX = 3
 else:
     # careful with this - files can get big
-    HASH_TEST_FILE_MAX = core.const.MAX_HASH_PERF_VALUES + 2
+    HASH_TEST_FILE_MAX = latus.const.MAX_HASH_PERF_VALUES + 2
 
 X_FOLDER = 'x'
 Y_FOLDER = 'y'

@@ -1,6 +1,6 @@
 
 import logging
-from core import logger
+from latus import logger
 
 
 def print_all_levels(log, msg = ""):

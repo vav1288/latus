@@ -11,7 +11,7 @@ distutils.core.setup(
     author_email='j@abel.co',
     url='www.lat.us',
     license='LICENSE', # points to the actual file
-    description="secure sync",
+    description="secure file sync with low impact to cloud storage",
 
     # make a single executable
     # PyQt version:

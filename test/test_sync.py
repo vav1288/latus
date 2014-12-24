@@ -5,9 +5,8 @@ import win32event
 import subprocess
 import time
 from cryptography.fernet import Fernet
-import core.const
-import core.sync
-import core.metadatapath
+import latus.const
+import latus.sync
 import test.create_files
 from test.conftest import setup
 
@@ -49,11 +48,11 @@ def test_sync_simple(setup):
     cloud_folder_0 = sync_nodes_test_info.get_cloud_folder(nodes[0])
     cloud_folder_1 = sync_nodes_test_info.get_cloud_folder(nodes[1])
 
-    exit_event = win32event.CreateEvent(None, 0, 0, None)
+    # exit_event = win32event.CreateEvent(None, 0, 0, None)
 
     for node in sync_nodes_test_info.nodes:
-        sync[node] = core.sync.Sync(key, sync_nodes_test_info.get_local_folder(node),
-                                    sync_nodes_test_info.get_cloud_folder(node), verbose=True)
+        sync[node] = latus.sync.Sync(key, sync_nodes_test_info.get_local_folder(node),
+                                      sync_nodes_test_info.get_cloud_folder(node), verbose=True)
         sync[node].sync()
 
         # do what the cloud service sync would normally do
@@ -84,10 +83,9 @@ def test_sync_cli_invocation(setup):
     Just test that the CLI version can be run at all.
     """
     sync_folder = os.path.join('test', 'data', 'files', 'sync', 'a')
-    python_exe = os.path.join('c:', '/', 'python33', 'python.exe')
+    python_exe = os.path.join('c:', '/', 'python34', 'python.exe')
     print('python_exe', python_exe)
-    cmd = [python_exe, 'sync.py']
-    cmd += ['-p',  'xyzzy']   # todo: migrate password to fermant token ... right now this is meaningless
+    cmd = [python_exe, 'latus.py']
     cmd += ['-l', os.path.join(sync_folder, 'latus')]
     cmd += ['-c', os.path.join(sync_folder, 'dropbox')]
     cmd += ['-v']

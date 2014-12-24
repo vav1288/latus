@@ -1,7 +1,7 @@
 
 import logging
 import pytest
-import core.logger
+import latus.logger
 import test.create_files
 
 nodynamicdatadelete = None # keep data around
@@ -22,8 +22,8 @@ def setup(request):
         if nodynamicdatadelete is False:
             test.create_files.clean(do_all=False)
 
-    core.logger.set_log_level(logging.INFO)
-    core.logger.log.info("nodynamicdatadelete:" + str(nodynamicdatadelete))
+    latus.logger.set_log_level(logging.INFO)
+    latus.logger.log.info("nodynamicdatadelete:" + str(nodynamicdatadelete))
     t = test.create_files.TestFiles()
     test.create_files.clean(do_all=True)
     t.write_files()

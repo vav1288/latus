@@ -7,8 +7,8 @@ import os
 import shutil
 import random
 
-from core import const
-import core.logger
+from latus import const
+import latus.logger
 import test.const
 import test.util
 
@@ -62,18 +62,6 @@ def get_mtime_root():
     return os.path.join(get_files_root(), "mtime")
 
 
-def get_merge_root():
-    return os.path.join(get_files_root(), "merge")
-
-
-def get_compare_root():
-    return os.path.join(get_files_root(), "compare")
-
-
-def get_hash_root():
-    return os.path.join(get_files_root(), "hash")
-
-
 def get_random_roots():
     root = os.path.join(get_files_root(), "random")
     return os.path.join(root, 'a'), os.path.join(root, 'b')
@@ -81,7 +69,7 @@ def get_random_roots():
 
 class SyncNodesTestInfo():
     nodes = ['a', 'b']
-    folder_names = ['latus', 'dropbox']
+
     def __init__(self):
         self.sync_root = os.path.join(get_files_root(), "sync")
 
@@ -91,10 +79,13 @@ class SyncNodesTestInfo():
                 os.makedirs(os.path.join(self.sync_root, node, folder_name))
 
     def get_local_folder(self, node):
-        return os.path.join(self.sync_root, node, self.folder_names[0])
+        return os.path.join(self.sync_root, node, 'latus')
 
     def get_cloud_folder(self, node):
-        return os.path.join(self.sync_root, node, self.folder_names[1])
+        return os.path.join(self.sync_root, node, 'dropbox')
+
+    def get_appdata_folder(self, node):
+        return os.path.join(self.sync_root, node, 'appdata')
 
     def get_file_name(self, node):
         return node + '.txt'
@@ -109,7 +100,7 @@ def clean(do_all):
     path = get_files_root()
     if do_all:
         path = get_data_root()
-    core.logger.log.info("cleaning:" + path)
+    latus.logger.log.info("cleaning:" + path)
     if os.path.exists(path):
         shutil.rmtree(path)
 
@@ -124,51 +115,12 @@ class TestFiles():
 
         self.files_written = 0
 
-        if force or not os.path.exists(get_simple_root()):
-            self.write_to_file(os.path.join(get_simple_root(), SRC, A_FILE_NAME), A_STRING, write_flag)
-            test.util.make_dirs(os.path.join(get_simple_root(), DEST_EMPTY))
-            self.write_to_file(os.path.join(get_simple_root(), DEST_EXISTS_EXACT, A_FILE_NAME), A_STRING, write_flag)
-            self.write_to_file(os.path.join(get_simple_root(), DEST_EXISTS_DIFFERENT, A_FILE_NAME), B_STRING, write_flag)
-            self.write_to_file(os.path.join(get_simple_root(), DEST_EXISTS_UNDER_DIFFERENT_NAME, "a_but_different_name.txt"), A_STRING, write_flag)
-        if force or not os.path.exists(get_unicode_root()):
-            self.write_unicode_files(get_unicode_root(), A_STRING, write_flag)
-        if force or not os.path.exists(get_mtime_root()):
-            f = os.path.join(get_mtime_root(), A_FILE_NAME)
-            t = test.util.get_mtime_time()
-            self.write_to_file(f, A_STRING, write_flag)
-            os.utime(f, (t, t))
-        if force or not os.path.exists(get_merge_root()):
-            self.write_to_file(os.path.join(get_merge_root(), SRC, A_FILE_NAME), A_STRING, write_flag)
-            self.write_to_file(os.path.join(get_merge_root(), SRC, B_FILE_NAME), B_STRING, write_flag)
-            self.write_to_file(os.path.join(get_merge_root(), SRC, C_FILE_NAME), C_STRING, write_flag)
-            self.write_to_file(os.path.join(get_merge_root(), DEST, DEST_BEST, A_FILE_NAME), A_STRING, write_flag)
-            self.write_to_file(os.path.join(get_merge_root(), DEST, DEST_CONFLICT, A_FILE_NAME), B_STRING, write_flag)
-            self.write_to_file(os.path.join(get_merge_root(), DEST, DEST_CONFLICT, B_FILE_NAME), B_STRING, write_flag)
-        if force or not os.path.exists(get_hash_root()):
-            self.write_to_file(os.path.join(get_hash_root(), A_FILE_NAME), A_STRING, write_flag)
-            self.write_to_file(os.path.join(get_hash_root(), B_FILE_NAME), B_STRING, write_flag)
-            for big_count in range(test.const.HASH_TEST_FILE_MIN, test.const.HASH_TEST_FILE_MAX + 1):
-                # use an exponentially increasing size so we have a large difference in hash times (since time is often imprecise)
-                self.write_big_file(os.path.join(get_hash_root(), test.const.HASH_TEST_FILE_PREFIX + str(big_count) + test.const.HASH_TEST_FILE_SUFFIX),
-                                    pow(1.3, big_count)*test.const.HASH_TEST_BASE_FILE_SIZE, write_flag)
-        if force or not os.path.exists(get_compare_root()):
-            self.write_to_file(os.path.join(get_compare_root(), test.const.X_FOLDER, A_FILE_NAME), A_STRING, write_flag)
-            self.write_to_file(os.path.join(get_compare_root(), test.const.X_FOLDER, B_FILE_NAME), B_STRING, write_flag)
-
-            global y_folder_files
-            self.write_to_file(os.path.join(get_compare_root(), test.const.Y_FOLDER, B_FILE_NAME), B_STRING, write_flag)
-            y_folder_files = [os.path.join(test.const.Y_FOLDER, B_FILE_NAME)] # keep a list of files in y folder
-            self.write_to_file(os.path.join(get_compare_root(), test.const.Y_FOLDER, C_FILE_NAME), C_STRING, write_flag)
-            y_folder_files.append(os.path.join(test.const.Y_FOLDER, C_FILE_NAME))
-        if force or not os.path.exists(get_random_roots()[0]):
-            self.write_pseudo_random_files(write_flag)
-
         sync_nodes = SyncNodesTestInfo()
         if force or not os.path.exists(sync_nodes.sync_root):
             for node in sync_nodes.nodes:
                 self.write_to_file(os.path.join(sync_nodes.get_local_folder(node), sync_nodes.get_file_name(node)), node, write_flag)
 
-        core.logger.log.info("files_written:" + str(self.files_written))
+        latus.logger.log.info("files_written:" + str(self.files_written))
         return self.files_written
 
     def write_big_file(self, path, size, write_flag):
