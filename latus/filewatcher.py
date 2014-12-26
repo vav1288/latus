@@ -5,16 +5,13 @@ import win32file, win32con, win32event
 
 class FileWatcher(threading.Thread):
 
-    def __init__(self, folder, do_sync):
+    def __init__(self, folder, sync_method):
         threading.Thread.__init__(self)
         self.exit_flag = False
         self.folder = folder
-        self.do_sync = do_sync  # call this upon detecting a file change
+        self.sync_method = sync_method  # call this upon detecting a file change
         self.file_change_event = threading.Event()  # this is set to inform the user of this class of a file change
         self.exit_request_event_handle = win32event.CreateEvent(None, 0, 0, None)
-
-    def get_event(self):
-        return self.file_change_event
 
     def request_exit(self):
         """
@@ -45,7 +42,7 @@ class FileWatcher(threading.Thread):
             if result == win32con.WAIT_OBJECT_0:
                 self.exit_flag = True
             elif result == win32con.WAIT_OBJECT_0 + 1:
-                self.sync()
+                self.sync_method()
                 win32file.FindNextChangeNotification(change_handle)
                 # todo: use win32file.ReadDirectoryChangesW() to provide the particular files/folders that changed
         win32file.FindCloseChangeNotification(change_handle)

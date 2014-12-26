@@ -7,8 +7,6 @@ import latus.const
 import latus.walker
 import latus.hash
 import latus.crypto
-import latus.config
-import latus.exitcontrol
 import latus.filewatcher
 
 
@@ -26,11 +24,10 @@ class Sync():
         self.verbose = verbose
         self.fernet_extension = 'fer'
 
-        if self.verbose:
-            print('local_folder', self.latus_folder)
-            print('cloud_root', self.cloud_root)
-            print('cloud_folder', self.get_cloud_folder())
-            print('crypto_key', self.crypto_key)
+        latus.logger.log.info('local_folder : %s' % self.latus_folder)
+        latus.logger.log.info('cloud_root : %s' % self.cloud_root)
+        latus.logger.log.info('cloud_folder : %s' % self.get_cloud_folder())
+        latus.logger.log.info('crypto_key : %s' % self.crypto_key)
 
         latus.util.make_dirs(self.latus_folder)
 
@@ -38,6 +35,7 @@ class Sync():
         return os.path.join(self.cloud_root, '.' + latus.const.NAME)
 
     def start(self):
+        self.sync()
         self.file_watcher = latus.filewatcher.FileWatcher(self.latus_folder, self.sync)
         self.file_watcher.start()
 
@@ -48,6 +46,8 @@ class Sync():
         """
         Sync new or updated files (both local and cloud).
         """
+
+        latus.logger.log.info('scanning : %s' % self.latus_folder)
 
         crypto = latus.crypto.Crypto(self.crypto_key, self.verbose)
 
@@ -80,7 +80,6 @@ class Sync():
         for partial_path in cloud_walker:
             full_path = cloud_walker.full_path(partial_path)
             if os.path.isdir(full_path):
-                print('checking for new cloud files', 'full_path', full_path)
                 file_as_cloud_folder = os.path.join(self.get_cloud_folder(), partial_path)
                 db = self.read_database(file_as_cloud_folder)
                 file_path = db['path']

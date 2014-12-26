@@ -3,12 +3,14 @@ import os
 import datetime
 
 import sqlalchemy
+import sqlalchemy.orm
 import sqlalchemy.ext.declarative
 
 import latus.util
 import latus.const
 
 Base = sqlalchemy.ext.declarative.declarative_base()
+
 
 class ConfigTable(Base):
     __tablename__ = 'config'
@@ -17,18 +19,18 @@ class ConfigTable(Base):
     value = sqlalchemy.Column(sqlalchemy.String())
     datetime = sqlalchemy.Column(sqlalchemy.DateTime())
 
+
 class Config:
-    def __init__(self, appdata_folder):
+    def __init__(self, latus_appdata_folder):
 
         self.__key_string = 'cryptokey'
         self.__cloud_root_string = 'cloudroot'
         self.__latus_folder_string = 'latusfolder'
         self.__verbose_string = 'verbose'
 
-        folder = appdata_folder
-        if not os.path.exists(folder):
-            latus.util.make_dirs(folder)
-        sqlite_path = 'sqlite:///' + os.path.abspath(os.path.join(folder, 'config.db'))
+        if not os.path.exists(latus_appdata_folder):
+            latus.util.make_dirs(latus_appdata_folder)
+        sqlite_path = 'sqlite:///' + os.path.abspath(os.path.join(latus_appdata_folder, 'config.db'))
         self.__db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
         Base.metadata.create_all(self.__db_engine)
         self.__Session = sqlalchemy.orm.sessionmaker(bind=self.__db_engine)

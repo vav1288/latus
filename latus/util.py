@@ -1,23 +1,14 @@
 import os
-import sys
-import win32api
 import platform
-import socket
 
 import win32con
 import pywintypes
 
 import latus.logger
+import latus.const
 
 WINDOWS_SEP = "\\"
 LINUX_SEP = '/'
-
-def get_folder_sep():
-    if is_windows():
-        sep = WINDOWS_SEP
-    else:
-        sep = LINUX_SEP
-    return sep[-1]
 
 
 def is_windows():
@@ -36,6 +27,18 @@ def is_linux():
     if plat[0] == 'l':
         is_lin = True
     return is_lin
+
+
+if is_windows():
+    import win32api
+
+
+def get_folder_sep():
+    if is_windows():
+        sep = WINDOWS_SEP
+    else:
+        sep = LINUX_SEP
+    return sep[-1]
 
 
 def get_long_abs_path(in_path):
@@ -114,7 +117,13 @@ def make_hidden(in_path):
     win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
 
 
-def get_appdata_folder():
+def get_latus_appdata_folder():
+    """
+    :return: the latus appdata folder
+    """
+    return os.path.join(get_os_appdata_folder(), latus.const.NAME)
+
+def get_os_appdata_folder():
     # I'd like to use winpaths.get_local_appdata() but it doesn't seem to work with Python 3, so I'll
     # rely on the environment variable.
     return os.environ['APPDATA']

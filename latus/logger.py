@@ -1,66 +1,47 @@
-import sys
+
 import logging
 import logging.handlers
 
-from latus import const
+LOG_FILE_NAME = 'latus.log'
+LOGGER_NAME_BASE = 'latus'
+
+fh = None
+ch = None
+log = None
 
 
-"""
-Logging capability.
+def init():
+    global fh, ch, log
 
-Good rules of thumb on using logging levels:
-http://en.wikipedia.org/wiki/Log4j
-"""
+    logger_name = LOGGER_NAME_BASE
+    log = logging.getLogger(logger_name)
+    
+    log.setLevel(logging.DEBUG)
 
-handlers = {}
-log = logging.getLogger(const.NAME)
+    # todo: put these logs in the program data area
 
-def remove_handlers(handlers):
-    for handler in handlers:
-        log.removeHandler(handler)
+    # create file handler
+    # RotatingFileHandler didn't work ... it was tried on Win8 - perhaps that's an issue?  Or syncplicity?
+    fh = logging.handlers.RotatingFileHandler(LOG_FILE_NAME, maxBytes=20*1E6, backupCount=3)
+    #fh = logging.FileHandler(LOG_FILE_NAME)
+    fh.setLevel(logging.INFO)
 
-def set_log_level(level = logging.WARNING):
-    """
-    level is from logging module.  e.g. logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, etc.
-    """
-    log.setLevel(level)
-    log.info('"level","%s"', level_to_str(level))
-    return level
+    # create console handler
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
 
-def level_to_str(level):
-    s = { logging.DEBUG : 'DEBUG',
-          logging.INFO : 'INFO',
-          logging.WARNING : 'WARNING',
-          logging.ERROR : 'ERROR',
-          logging.FATAL : 'FATAL'
-    }
-    return s[level]
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    # add the handlers to the logger
+    log.addHandler(fh)
+    log.addHandler(ch)
 
-"""
-setup log stuff
-"""
 
-log_file_path = const.LOG_FILE
-max_bytes = 1000000
-stream_out = sys.stdout # vs. sys.stderr
+def set_file_log_level(new_level):
+    fh.setLevel(new_level)
 
-# note that (message) is not pre-quoted, in case there are multiple fields
-console_format_string = '%(message)s'
-file_format_string = '"%(asctime)s","%(name)s","%(levelname)s","module","%(module)s","line","%(lineno)d","%(message)s"'
 
-log.setLevel(logging.WARNING)
-
-# create console handler
-console_handler = logging.StreamHandler(stream_out)
-console_formatter = logging.Formatter(console_format_string)
-console_handler.setFormatter(console_formatter)
-console_handler.setLevel(logging.WARN)
-log.addHandler(console_handler)
-handlers['console'] = console_handler
-
-# create file handler
-file_handler = logging.handlers.RotatingFileHandler(log_file_path, maxBytes=max_bytes)
-file_formatter = logging.Formatter(file_format_string)
-file_handler.setFormatter(file_formatter)
-log.addHandler(file_handler)
-handlers['file'] = file_handler
+def set_console_log_level(new_level):
+    ch.setLevel(new_level)
