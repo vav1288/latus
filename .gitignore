@@ -4,6 +4,7 @@ temp.*
 temp/
 log/
 logs/
+data/
 repo_ignore/
 build/
 dist/*.zip
