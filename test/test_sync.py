@@ -52,7 +52,7 @@ def test_sync_simple(setup):
 
     for node in sync_nodes_test_info.nodes:
         sync[node] = latus.sync.Sync(key, sync_nodes_test_info.get_local_folder(node),
-                                      sync_nodes_test_info.get_cloud_folder(node), verbose=True)
+                                     sync_nodes_test_info.get_cloud_folder(node), verbose=True)
         sync[node].sync()
 
         # do what the cloud service sync would normally do
@@ -88,6 +88,7 @@ def test_sync_cli_invocation(setup):
     cmd = [python_exe, 'latus.py']
     cmd += ['-l', os.path.join(sync_folder, 'latus')]
     cmd += ['-c', os.path.join(sync_folder, 'dropbox')]
+    cmd += ['-a', os.path.join(sync_folder, 'appdata')]
     cmd += ['-cli']
     cmd += ['-v']
     print('cmd', cmd)

@@ -1,10 +1,6 @@
 
 import os
 import json
-import threading
-import win32file
-import win32event
-import win32con
 import latus.logger
 import latus.util
 import latus.const
@@ -13,21 +9,20 @@ import latus.hash
 import latus.crypto
 import latus.config
 import latus.exitcontrol
+import latus.filewatcher
 
 
-class Sync(threading.Thread):
+class Sync():
     """
     Determines what needs to be done to sync local to cloud.
     """
 
     DATABASE_FILE_NAME = '.' + latus.const.NAME + '_sync_db' + '.json' # reserved
 
-    def __init__(self, crypto_key, latus_folder, cloud_root, exit_event_handle=None, verbose=False):
-        threading.Thread.__init__(self)
+    def __init__(self, crypto_key, latus_folder, cloud_root, verbose=False):
         self.crypto_key = crypto_key
         self.latus_folder = latus_folder
         self.cloud_root = cloud_root
-        self.exit_event_handle = exit_event_handle
         self.verbose = verbose
         self.fernet_extension = 'fer'
 
@@ -39,61 +34,17 @@ class Sync(threading.Thread):
 
         latus.util.make_dirs(self.latus_folder)
 
-
     def get_cloud_folder(self):
         return os.path.join(self.cloud_root, '.' + latus.const.NAME)
 
-    def local_folder_contents(self):
-        return dict([(f, None) for f in os.listdir (self.latus_folder)])
+    def start(self):
+        self.file_watcher = latus.filewatcher.FileWatcher(self.latus_folder, self.sync)
+        self.file_watcher.start()
 
-    def run(self):
-        #
-        # FindFirstChangeNotification sets up a handle for watching
-        #  file changes. The first parameter is the path to be
-        #  watched; the second is a boolean indicating whether the
-        #  directories underneath the one specified are to be watched;
-        #  the third is a list of flags as to what kind of changes to
-        #  watch for. We're just looking at file additions / deletions.
-        #
-        change_handle = win32file.FindFirstChangeNotification(self.latus_folder, 0,
-                                                              win32con.FILE_NOTIFY_CHANGE_FILE_NAME)
+    def request_exit(self):
+        self.file_watcher.request_exit()
 
-        # This order is important.  If multiple events are triggered, only the lowest index is
-        # indicated.  So, the exit event must be the lowest index or else we could miss
-        # the exit event if it happens as the same time as a file system change.
-        wait_objects = [change_handle]
-        if self.exit_event_handle is not None:
-            wait_objects.insert(0, self.exit_event_handle) # prepend
-
-        #
-        # Loop forever, listing any file changes. The WaitFor... will
-        #  time out every half a second allowing for keyboard interrupts
-        #  to terminate the loop.
-        #
-        exit_flag = False
-        try:
-            old_path_contents = self.local_folder_contents()
-            while not exit_flag:
-                result = win32event.WaitForMultipleObjects(wait_objects, 0, 10 * 1000)
-
-                #
-                # If the WaitFor... returned because of a notification (as
-                #  opposed to timing out or some error) then look for the
-                #  changes in the directory contents.
-                #
-                if result == win32con.WAIT_OBJECT_0:
-                    exit_flag = True
-                elif result == win32con.WAIT_OBJECT_0 + 1:
-                    new_path_contents = self.local_folder_contents()
-                    added = [f for f in new_path_contents if not f in old_path_contents]
-                    deleted = [f for f in old_path_contents if not f in new_path_contents]
-                    self.sync(added, deleted)
-                    old_path_contents = new_path_contents
-                    win32file.FindNextChangeNotification(change_handle)
-        finally:
-            win32file.FindCloseChangeNotification(change_handle)
-
-    def sync(self, added = None, deleted = None):
+    def sync(self):
         """
         Sync new or updated files (both local and cloud).
         """

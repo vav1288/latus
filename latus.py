@@ -26,6 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description="efficient and secure cloud-based folder sync")
     parser.add_argument('-l', '--latus', metavar='path', help="latus folder")
     parser.add_argument('-c', '--cloud', metavar='path', help="cloud folder")
+    parser.add_argument('-a', '--appdata', metavar='path', help="OS's appdata folder")
     parser.add_argument('-cli', action='store_true', help="use command line interface (not GUI)")
     parser.add_argument('-w', '--wizard', action='store_true', help="run configuration wizard")
     parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")

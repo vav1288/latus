@@ -23,6 +23,7 @@ class Config:
         self.__key_string = 'cryptokey'
         self.__cloud_root_string = 'cloudroot'
         self.__latus_folder_string = 'latusfolder'
+        self.__verbose_string = 'verbose'
 
         folder = appdata_folder
         if not os.path.exists(folder):
@@ -40,6 +41,7 @@ class Config:
             session.delete(q)
         session.add(config_table)
         session.commit()
+        session.close()
 
     def __config_get(self, key):
         session = self.__Session()
@@ -48,6 +50,7 @@ class Config:
             value = row.value
         else:
             value = None
+        session.close()
         return value
 
     def crypto_set(self, key):
@@ -67,6 +70,12 @@ class Config:
 
     def latus_folder_get(self):
         return self.__config_get(self.__latus_folder_string)
+
+    def verbose_set(self, value):
+        self.__config_set(self.__verbose_string, str(value))
+
+    def verbose_get(self):
+        return bool(self.__config_get(self.__verbose_string))
 
     def init(self):
         Base.metadata.drop_all(self.__db_engine)

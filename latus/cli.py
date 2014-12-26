@@ -18,14 +18,16 @@ def main(args):
     if args.wizard:
         wizard(args)
 
-    # controls exit for CLI
-    keyboard_event_handle = win32event.CreateEvent(None, 0, 0, None)
-
     # determine appdata folder
-    latus_appdata_folder = os.path.join(latus.util.get_appdata_folder(), latus.const.NAME)
+    if args.appdata:
+        # for testing purposes
+        appdata = os.path.join(args.appdata)
+    else:
+        appdata = latus.util.get_appdata_folder()
+    latus_appdata_folder = os.path.join(appdata, latus.const.NAME)
+    config = latus.config.Config(latus_appdata_folder)
     if args.verbose:
         print('latus_appdata_folder', latus_appdata_folder)
-    config = latus.config.Config(latus_appdata_folder)
 
     # determine crypto key
     key = config.crypto_get()
@@ -50,7 +52,7 @@ def main(args):
     if not latus_folder:
         exit('No latus folder set - please initialize with the --latus option.')
 
-    sync = latus.sync.Sync(key, latus_folder, cloud_root, exit_event_handle=keyboard_event_handle, verbose=args.verbose)
+    sync = latus.sync.Sync(key, latus_folder, cloud_root, verbose=args.verbose)
     sync.start()
     input('Hit enter to exit.')
-    win32event.PulseEvent(keyboard_event_handle)
+    sync.request_exit()
