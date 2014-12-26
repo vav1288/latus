@@ -1,9 +1,9 @@
 #
-# our output files
-domerge.bat
 # the usual things to not put in the repo
 temp.*
 temp/
+log/
+logs/
 repo_ignore/
 build/
 dist/*.zip
