@@ -1,6 +1,9 @@
 
+import os
 import logging
 import logging.handlers
+
+import latus.util
 
 LOG_FILE_NAME = 'latus.log'
 LOGGER_NAME_BASE = 'latus'
@@ -10,8 +13,13 @@ ch = None
 log = None
 
 
-def init():
+def init(log_folder = None):
     global fh, ch, log
+
+    if not log_folder:
+        log_folder = latus.util.get_latus_log_folder()
+
+    latus.util.make_dirs(log_folder)
 
     logger_name = LOGGER_NAME_BASE
     log = logging.getLogger(logger_name)
@@ -21,8 +29,8 @@ def init():
     # todo: put these logs in the program data area
 
     # create file handler
-    # RotatingFileHandler didn't work ... it was tried on Win8 - perhaps that's an issue?  Or syncplicity?
-    fh = logging.handlers.RotatingFileHandler(LOG_FILE_NAME, maxBytes=20*1E6, backupCount=3)
+    fh = logging.handlers.RotatingFileHandler(os.path.join(log_folder, LOG_FILE_NAME),
+                                              maxBytes=20*1E6, backupCount=3)
     #fh = logging.FileHandler(LOG_FILE_NAME)
     fh.setLevel(logging.INFO)
 
