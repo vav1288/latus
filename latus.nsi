@@ -3,13 +3,13 @@
 
 !include EnvVarUpdate.nsh
 
-Name "latus_sync_cli"
+Name "latus"
 
 ; The file to write
-OutFile "dist\install_latus_sync_cli.exe"
+OutFile "dist\install_latus.exe"
 
 !define SUITENAME "latus"
-!define APPNAME "latus_sync_cli"
+!define APPNAME "latus"
 !define APPEXE "${APPNAME}.exe"
 
 ; The default installation directory
@@ -32,7 +32,8 @@ Section "Install"
   File "dist\${APPEXE}"
 
   ; for PyQt
-  ;File "dist\*.dll"
+  File /r "dist\*.dll"
+  File /r "dist\*.ico"
   ;File "dist\platforms\*.dll"
 
   writeUninstaller "$INSTDIR\uninstall.exe"
@@ -50,6 +51,9 @@ Section "Uninstall"
 	rmDir "$SMPROGRAMS\${SUITENAME}"
 
 	# Remove files
+	delete $INSTDIR\platforms\*.dll
+	rmDir  $INSTDIR\platforms
+	delete $INSTDIR\*.dll
 	delete $INSTDIR\${APPEXE}
 
 	# Always delete uninstaller as the last action

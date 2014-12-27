@@ -5,7 +5,7 @@ import py2exe
 distutils.core.setup(
     console=['latus.py'],
 
-    name="latus sync",
+    name="latus",
     version="0.0",
     author='James Abel',
     author_email='j@abel.co',
@@ -15,9 +15,10 @@ distutils.core.setup(
 
     # make a single executable
     # PyQt version:
-    # options = {'py2exe': {'bundle_files': 1, 'compressed': True, "includes" : ["sip", "PyQt5.QtGui", "PyQt5.QtCore"]}},
+    options = {'py2exe': {'bundle_files': 1, 'compressed': True,
+                          "includes" : ["sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography.fernet"]}},
     # CLI version:
-    options={'py2exe': {'bundle_files': 1, 'compressed': True, }},
+    #options={'py2exe': {'bundle_files': 1, 'compressed': True, }},
 
     zipfile=None,
 )
