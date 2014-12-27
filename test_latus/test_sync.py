@@ -7,8 +7,8 @@ import time
 from cryptography.fernet import Fernet
 import latus.const
 import latus.sync
-import test.create_files
-from test.conftest import setup
+import test_latus.create_files
+from test_latus.conftest import setup
 
 def emulate_cloud_sync(a, b):
     # one direction ...
@@ -40,7 +40,7 @@ def test_sync_simple(setup):
 
     key = Fernet.generate_key()
 
-    sync_nodes_test_info = test.create_files.SyncNodesTestInfo()
+    sync_nodes_test_info = test_latus.create_files.SyncNodesTestInfo()
     sync = {}
 
     # get the cloud folders
@@ -82,7 +82,7 @@ def test_sync_cli_invocation(setup):
     """
     Just test that the CLI version can be run at all.
     """
-    sync_folder = os.path.join('test', 'data', 'files', 'sync', 'a')
+    sync_folder = os.path.join(test_latus.create_files.get_sync_root(), 'a')
     python_exe = os.path.join('c:', '/', 'python34', 'python.exe')
     print('python_exe', python_exe)
     cmd = [python_exe, 'latus.py']

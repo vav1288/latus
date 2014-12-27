@@ -4,7 +4,6 @@ temp.*
 temp/
 log/
 logs/
-data/
 repo_ignore/
 build/
 dist/*.zip
@@ -16,7 +15,7 @@ __pycache__
 .idea
 #
 # test files are programmatically generated
-test/data/
+data\
 #
 # compiled files
 *.pyc

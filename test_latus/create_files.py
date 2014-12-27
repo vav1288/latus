@@ -9,8 +9,8 @@ import random
 
 from latus import const
 import latus.logger
-import test.const
-import test.util
+import test_latus.const
+import test_latus.util
 
 SRC = "src"
 DEST = "dest"
@@ -37,17 +37,11 @@ y_folder_files = None
 
 
 def get_data_root():
-    return os.path.join("test", "data")
+    return os.path.join('test_latus', 'data')
 
 
 def get_files_root():
     return os.path.join(get_data_root(), "files")
-
-
-def get_metadata_root():
-    # must not match nose's regex for test_latus files/directories below the main directory "test_latus",
-    # since nose errors out on the unicode files
-    return os.path.join(get_data_root(), "metadata")
 
 
 def get_unicode_root():
@@ -58,8 +52,12 @@ def get_simple_root():
     return os.path.join(get_files_root(), "simple")
 
 
-def get_mtime_root():
-    return os.path.join(get_files_root(), "mtime")
+def get_sync_root():
+    return os.path.join(get_files_root(), "sync")
+
+
+def get_logger_root():
+    return os.path.join(get_data_root(), "log")
 
 
 def get_random_roots():
@@ -91,15 +89,12 @@ class SyncNodesTestInfo():
         return node + '.txt'
 
 
-def clean(do_all):
+def clean():
     """
     clean up the test data
-    :param do_all: True to delete all test files and metadata, False for test files only.
     :return:
     """
     path = get_files_root()
-    if do_all:
-        path = get_data_root()
     latus.logger.log.info("cleaning:" + path)
     if os.path.exists(path):
         shutil.rmtree(path)
@@ -138,7 +133,7 @@ class TestFiles():
         if write_flag:
             #print("writing:" + p)
             d = os.path.dirname(p)
-            test.util.make_dirs(d)
+            test_latus.util.make_dirs(d)
             f = open(p, "w")
             f.write(contents)
             f.close()
