@@ -3,7 +3,7 @@ import distutils
 import py2exe
 
 distutils.core.setup(
-    console=['sync.py'],
+    console=['latus.py'],
 
     name="latus sync",
     version="0.0",
