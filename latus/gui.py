@@ -23,7 +23,9 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 class MainWindow(QtWidgets.QWidget):
     def __init__(self, latus_appdata_folder):
         super(MainWindow, self).__init__()
-        self.tray_icon = SystemTrayIcon(QtGui.QIcon(os.path.join('icons', 'active.ico')), self)
+        icon_path = os.path.abspath(os.path.join('icons', 'active.ico'))
+        latus.logger.log.info('icon_path : %s' % icon_path)
+        self.tray_icon = SystemTrayIcon(QtGui.QIcon(icon_path), self)
         self.tray_icon.show()
 
         config = latus.config.Config(latus.util.get_latus_appdata_folder())
