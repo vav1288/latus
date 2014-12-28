@@ -30,17 +30,21 @@ class Sync():
         latus.logger.log.info('crypto_key : %s' % self.crypto_key)
 
         latus.util.make_dirs(self.latus_folder)
+        latus.util.make_dirs(self.get_cloud_folder())
 
     def get_cloud_folder(self):
         return os.path.join(self.cloud_root, '.' + latus.const.NAME)
 
     def start(self):
         self.sync()
-        self.file_watcher = latus.filewatcher.FileWatcher(self.latus_folder, self.sync)
-        self.file_watcher.start()
+        self.latus_file_watcher = latus.filewatcher.FileWatcher(self.latus_folder, self.sync)
+        self.latus_file_watcher.start()
+        self.cloud_file_watcher = latus.filewatcher.FileWatcher(self.get_cloud_folder(), self.sync)
+        self.cloud_file_watcher.start()
 
     def request_exit(self):
-        self.file_watcher.request_exit()
+        self.latus_file_watcher.request_exit()
+        self.cloud_file_watcher.request_exit()
 
     def sync(self):
         """
@@ -90,7 +94,11 @@ class Sync():
                 if not os.path.exists(dest_path):
                     print('extracting', dest_path)
                     cloud_fernet_file = os.path.join(file_as_cloud_folder, hash + self.fernet_extension)
-                    crypto.expand(self.latus_folder, os.path.abspath(cloud_fernet_file), dest_path)
+                    abs_cloud_fernet_file = os.path.abspath(cloud_fernet_file)
+                    expand_ok = crypto.expand(self.latus_folder, abs_cloud_fernet_file, dest_path)
+                    if not expand_ok:
+                        latus.logger.log.error('could not expand : %s , %s , %s' %
+                                               (self.latus_folder, abs_cloud_fernet_file, dest_path))
 
     def update_database(self, partial_path, file_as_cloud_folder, hash, mtime, size):
         db_file_path = os.path.join(file_as_cloud_folder, self.DATABASE_FILE_NAME)
