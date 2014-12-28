@@ -55,11 +55,17 @@ class Config:
         session.close()
         return value
 
+    # Crypto keys are bytes, but we store them as a string.
     def crypto_set(self, key):
-        self.__config_set(self.__key_string, key)
+        s = key.decode()  # to string
+        self.__config_set(self.__key_string, s)
 
     def crypto_get(self):
-        return self.__config_get(self.__key_string)
+        b = None
+        key = self.__config_get(self.__key_string)
+        if key:
+            b = key.encode()  # to bytes
+        return b
 
     def cloud_root_set(self, folder):
         self.__config_set(self.__cloud_root_string, folder)
