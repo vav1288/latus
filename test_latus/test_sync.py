@@ -89,6 +89,7 @@ def test_sync_cli_invocation(setup):
     cmd += ['-l', os.path.join(sync_folder, 'latus')]
     cmd += ['-c', os.path.join(sync_folder, 'dropbox')]
     cmd += ['-a', os.path.join(sync_folder, 'appdata')]
+    cmd += ['-k']
     cmd += ['-cli']
     cmd += ['-v']
     print('cmd', cmd)

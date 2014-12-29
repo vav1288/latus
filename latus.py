@@ -35,6 +35,8 @@ def main():
     parser.add_argument('-l', '--latus', metavar='path', help="latus folder")
     parser.add_argument('-c', '--cloud', metavar='path', help="cloud folder")
     parser.add_argument('-a', '--appdata', metavar='path', help="OS's appdata folder")
+    parser.add_argument('-k', '--key', nargs='?', help="set crypto key (omit value to automatically generate one)",
+                        default=None, const=True)
     parser.add_argument('-cli', action='store_true', help="use command line interface (not GUI)")
     parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")
     args = parser.parse_args()
@@ -62,17 +64,25 @@ def set_from_args(args):
         latus_appdata_folder = os.path.join(args.appdata, latus.const.NAME)
     else:
         latus_appdata_folder = latus.util.get_latus_appdata_folder()  # default
+    latus.logger.log.info('latus_appdata_folder : %s' % latus_appdata_folder)
     config = latus.config.Config(latus_appdata_folder)
-    if args.cli and args.verbose:
-        print('latus_appdata_folder', latus_appdata_folder)
 
     # determine crypto key
-    key = config.crypto_get()
-    if not key:
-        key = latus.crypto.new_key()
-        if args.verbose:
-            print('New crypto key:', key)
-        config.crypto_set(key)
+    if args.key:
+        # Key option specified - either with no value or with a key value.  If no value given we get True (the
+        # default which tells us to generate a key).
+        if args.key is True:
+            key = latus.crypto.new_key()  # generate if no key parameter given
+            config.crypto_set(key)
+            latus.logger.log.info('New crypto key : %s' % config.crypto_get_string())
+        else:
+            config.crypto_set_string(args.key)  # command line is a string
+    else:
+        if args.cli:
+            # make sure we have a crypto key before proceeding
+            key = config.crypto_get()
+            if not key:
+                exit('No crypto key found in preferences.  Please use -k to provide or generate one.')
 
     # remember folder settings so the user doesn't have to specify them next time
     if args.latus:
