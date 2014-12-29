@@ -124,14 +124,17 @@ def get_latus_appdata_folder():
     """
     return os.path.join(get_os_appdata_folder(), latus.const.NAME)
 
+
 def get_latus_log_folder():
     # use appdata local (log files can get big, so they shouldn't be in roaming)
     return os.path.join(get_os_appdata_local_folder(), latus.const.NAME, 'log')
+
 
 def get_os_appdata_folder():
     # I'd like to use winpaths.get_local_appdata() but it doesn't seem to work with Python 3, so I'll
     # rely on the environment variable.
     return os.environ['APPDATA']
+
 
 def get_os_appdata_local_folder():
     return os.environ['LOCALAPPDATA']
