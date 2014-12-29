@@ -54,6 +54,7 @@ def set_from_args(args):
 
     if args.verbose:
         latus.logger.set_console_log_level(logging.INFO)
+    latus.logger.log.info('log folder : %s' % latus.util.get_latus_log_folder())
 
     # determine appdata folder
     if args.appdata:
