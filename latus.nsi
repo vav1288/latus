@@ -33,7 +33,7 @@ Section "Install"
 
   ; for PyQt
   File /r "dist\*.dll"
-  File /r "dist\*.ico"
+  ;File /r "dist\*.ico"
   ;File "dist\platforms\*.dll"
 
   writeUninstaller "$INSTDIR\uninstall.exe"

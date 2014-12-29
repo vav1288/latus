@@ -18,7 +18,7 @@ class Folder():
         self.line = QtWidgets.QLineEdit(path)
         self.line.setMinimumWidth(font_metrics.width(path) + LINE_BOX_PADDING)  # actual width plus padding
         self.edit_button = QtWidgets.QDialogButtonBox()
-        self.edit_button.addButton('Edit ...', QtWidgets.QDialogButtonBox.AcceptRole)
+        self.edit_button.addButton('Select ...', QtWidgets.QDialogButtonBox.AcceptRole)
         self.edit_button.accepted.connect(file_dialog_method)
 
     def layout(self, grid, column):
@@ -44,9 +44,9 @@ class CryptoKey():
         return self.line.text()
 
 
-class OptionsDialog(QtWidgets.QDialog):
+class PreferencesDialog(QtWidgets.QDialog):
     def __init__(self, latus_appdata_folder):
-        super(OptionsDialog, self).__init__()
+        super(PreferencesDialog, self).__init__()
 
         self.config = latus.config.Config(latus_appdata_folder)
         self.latus_folder = Folder('Latus', self.config.latus_folder_get(), self.new_folder, self.fontMetrics())
@@ -59,9 +59,6 @@ class OptionsDialog(QtWidgets.QDialog):
         cancel_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel)
         cancel_buttonBox.rejected.connect(self.cancel)
 
-        #self.latus_folder.clicked.connect(self.set_latus_folder)
-        #self.cloud_root_folder.clicked.connect(self.set_cloud_root_folder)
-
         grid_layout = QtWidgets.QGridLayout()
         self.latus_folder.layout(grid_layout, 0)
         self.cloud_folder.layout(grid_layout, 1)
@@ -71,7 +68,7 @@ class OptionsDialog(QtWidgets.QDialog):
         grid_layout.setColumnStretch(1, 1)  # path column
         self.setLayout(grid_layout)
 
-        self.setWindowTitle("Options")
+        self.setWindowTitle("Preferences")
 
     def ok(self):
         self.config.latus_folder_set(self.latus_folder.get())
@@ -90,14 +87,15 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
     def __init__(self, app, latus_appdata_folder, parent=None):
         self.app = app
-        icon_path = os.path.abspath(os.path.join('icons', 'active.ico'))
-        icon = QtGui.QIcon(icon_path)
+
+        import icons.icons  # actually used for QPixmap
+        icon = QtGui.QIcon(QtGui.QPixmap(':active.png'))
         super(SystemTrayIcon, self).__init__(icon, parent)
         self.latus_appdata_folder = latus_appdata_folder
 
         menu = QtWidgets.QMenu(parent)
-        about_action = menu.addAction("Options")
-        about_action.triggered.connect(self.options)
+        about_action = menu.addAction("Preferences")
+        about_action.triggered.connect(self.preferences)
         about_action = menu.addAction("About")
         about_action.triggered.connect(self.about)
         exit_action = menu.addAction("Exit")
@@ -124,9 +122,9 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
     def about(self):
         QtWidgets.QMessageBox.about(QtWidgets.QMessageBox(), 'latus', 'www.lat.us')
 
-    def options(self):
-        options_dialog = OptionsDialog(self.latus_appdata_folder)
-        options_dialog.exec_()
+    def preferences(self):
+        preferences_dialog = PreferencesDialog(self.latus_appdata_folder)
+        preferences_dialog.exec_()
 
     def exit(self):
         self.hide()

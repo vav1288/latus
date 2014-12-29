@@ -1,0 +1,1 @@
+C:\Python34\Lib\site-packages\PyQt5\pyrcc5.exe -o icons.py latus.qrc

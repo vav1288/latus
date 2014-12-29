@@ -76,13 +76,13 @@ class Config:
         return b
 
     def cloud_root_set(self, folder):
-        self.__config_set(self.__cloud_root_string, folder)
+        self.__config_set(self.__cloud_root_string, os.path.abspath(folder))
 
     def cloud_root_get(self):
         return self.__config_get(self.__cloud_root_string)
 
     def latus_folder_set(self, folder):
-        self.__config_set(self.__latus_folder_string, folder)
+        self.__config_set(self.__latus_folder_string, os.path.abspath(folder))
 
     def latus_folder_get(self):
         return self.__config_get(self.__latus_folder_string)
