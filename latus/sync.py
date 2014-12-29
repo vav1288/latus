@@ -86,19 +86,22 @@ class Sync():
             if os.path.isdir(full_path):
                 file_as_cloud_folder = os.path.join(self.get_cloud_folder(), partial_path)
                 db = self.read_database(file_as_cloud_folder)
-                file_path = db['path']
-                version = db['versions'][-1] # last entry in the list is most recent
-                hash = version['hash']
-                # todo: compare hashes
-                dest_path = os.path.join(self.latus_folder, file_path)
-                if not os.path.exists(dest_path):
-                    print('extracting', dest_path)
-                    cloud_fernet_file = os.path.join(file_as_cloud_folder, hash + self.fernet_extension)
-                    abs_cloud_fernet_file = os.path.abspath(cloud_fernet_file)
-                    expand_ok = crypto.expand(self.latus_folder, abs_cloud_fernet_file, dest_path)
-                    if not expand_ok:
-                        latus.logger.log.error('could not expand : %s , %s , %s' %
-                                               (self.latus_folder, abs_cloud_fernet_file, dest_path))
+                if db:
+                    file_path = db['path']
+                    version = db['versions'][-1] # last entry in the list is most recent
+                    hash = version['hash']
+                    # todo: compare hashes
+                    dest_path = os.path.join(self.latus_folder, file_path)
+                    if not os.path.exists(dest_path):
+                        print('extracting', dest_path)
+                        cloud_fernet_file = os.path.join(file_as_cloud_folder, hash + self.fernet_extension)
+                        abs_cloud_fernet_file = os.path.abspath(cloud_fernet_file)
+                        expand_ok = crypto.expand(self.latus_folder, abs_cloud_fernet_file, dest_path)
+                        if not expand_ok:
+                            latus.logger.log.error('could not expand : %s , %s , %s' %
+                                                   (self.latus_folder, abs_cloud_fernet_file, dest_path))
+                else:
+                    latus.logger.log.warn('no DB : %s' % file_as_cloud_folder)
 
     def update_database(self, partial_path, file_as_cloud_folder, hash, mtime, size):
         db_file_path = os.path.join(file_as_cloud_folder, self.DATABASE_FILE_NAME)
@@ -114,6 +117,8 @@ class Sync():
 
     def read_database(self, file_as_cloud_folder):
         db_file_path = os.path.join(file_as_cloud_folder, self.DATABASE_FILE_NAME)
-        with open(db_file_path) as f:
-            db = json.load(f)
+        db = None
+        if os.path.exists(db_file_path):
+            with open(db_file_path) as f:
+                db = json.load(f)
         return db
