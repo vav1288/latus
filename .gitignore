@@ -6,7 +6,6 @@ log/
 logs/
 repo_ignore/
 build/
-dist/*.zip
 *.log
 __pycache__
 .latus
@@ -15,7 +14,12 @@ __pycache__
 .idea
 #
 # test files are programmatically generated
-data\
+data/
+#
+# stuff in the dist that are used to make the installer
+dist/latus.exe
+dist/*.dll
+dist/platforms/*.dll
 #
 # compiled files
 *.pyc
