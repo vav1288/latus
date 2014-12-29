@@ -1,1 +1,0 @@
-c:\b\DirHash.exe temp\hash_test\ SHA512
