@@ -55,14 +55,22 @@ class Config:
         session.close()
         return value
 
+    def crypto_set_string(self, key):
+        self.__config_set(self.__key_string, key)
+
     # Crypto keys are bytes, but we store them as a string.
     def crypto_set(self, key):
         s = key.decode()  # to string
         self.__config_set(self.__key_string, s)
 
+    # string version
+    def crypto_get_string(self):
+        return self.__config_get(self.__key_string)
+
+    # bytes version (for use by crypto routines)
     def crypto_get(self):
         b = None
-        key = self.__config_get(self.__key_string)
+        key = self.crypto_get_string()
         if key:
             b = key.encode()  # to bytes
         return b
