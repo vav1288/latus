@@ -77,12 +77,6 @@ def set_from_args(args):
             latus.logger.log.info('New crypto key : %s' % config.crypto_get_string())
         else:
             config.crypto_set_string(args.key)  # command line is a string
-    else:
-        if args.cli:
-            # make sure we have a crypto key before proceeding
-            key = config.crypto_get()
-            if not key:
-                exit('No crypto key found in preferences.  Please use -k to provide or generate one.')
 
     # remember folder settings so the user doesn't have to specify them next time
     if args.latus:

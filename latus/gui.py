@@ -83,6 +83,30 @@ class PreferencesDialog(QtWidgets.QDialog):
         f = QtWidgets.QFileDialog.getExistingDirectory()
         return f
 
+class CryptoKeyDialog(QtWidgets.QDialog):
+    def __init__(self, latus_appdata_folder):
+        super(CryptoKeyDialog, self).__init__()
+        self.config = latus.config.Config(latus_appdata_folder)
+        ok_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
+        ok_buttonBox.accepted.connect(self.ok)
+        cancel_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel)
+        cancel_buttonBox.rejected.connect(self.cancel)
+        self.key = CryptoKey(self.config.crypto_get_string(), self.fontMetrics())
+        grid_layout = QtWidgets.QGridLayout()
+        self.key.layout(grid_layout, 2)
+        grid_layout.addWidget(ok_buttonBox, 3, 0)
+        grid_layout.addWidget(cancel_buttonBox, 3, 1, alignment=QtCore.Qt.AlignLeft)  # kind of cheating on the layout
+        grid_layout.setColumnStretch(1, 1)  # path column
+        self.setLayout(grid_layout)
+        self.setWindowTitle("Preferences")
+
+    def ok(self):
+        self.config.crypto_set_string(self.key.get())
+        self.close()
+
+    def cancel(self):
+        self.close()
+
 class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
     def __init__(self, app, latus_appdata_folder, parent=None):
@@ -111,6 +135,9 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         latus_folder = config.latus_folder_get()
         cloud_root = config.cloud_root_get()
 
+        if not config.crypto_get():
+            crypto_key_dialog = CryptoKeyDialog(self.latus_appdata_folder)
+            crypto_key_dialog.exec_()
         if not config.cloud_root_get() or not config.latus_folder_get():
             exit('error - folders not specified')  # todo: run a setup wizard
         self.sync = latus.sync.Sync(config.crypto_get(), latus_folder, cloud_root, config.verbose_get())
@@ -133,7 +160,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
 
 def main(latus_appdata_folder):
-    latus.logger.log.info('gui mode')
+    latus.logger.log.info('gui')
     app = QtWidgets.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)  # so popup dialogs don't close the system tray icon
     system_tray = SystemTrayIcon(app, latus_appdata_folder)
