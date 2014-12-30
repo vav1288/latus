@@ -9,13 +9,18 @@ import latus.logger
 
 def main(latus_appdata_folder):
 
+    latus.logger.log.info('cli')
+
     config = latus.config.Config(latus_appdata_folder)
+
+    # make sure we have a crypto key before proceeding
     key = config.crypto_get()
+    if not key:
+        exit('No crypto key found in preferences.  Please use -k to provide or generate one.')
+
     latus_folder = config.latus_folder_get()
     cloud_root = config.cloud_root_get()
     verbose = config.verbose_get()
-
-    latus.logger.log.info('cli mode')
 
     if not cloud_root:
         exit('No cloud folder set - please initialize with the --cloud option.')
