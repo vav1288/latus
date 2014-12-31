@@ -113,7 +113,7 @@ class Sync():
         info = {'size' : size, 'hash' : hash, 'mtime' : mtime}
         db_info['versions'].append(info)
         with open(db_file_path, 'w') as f:
-            json.dump(db_info, f, indent = 4)
+            json.dump(db_info, f, indent=4)
 
     def read_database(self, file_as_cloud_folder):
         db_file_path = os.path.join(file_as_cloud_folder, self.DATABASE_FILE_NAME)

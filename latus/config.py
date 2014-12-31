@@ -24,6 +24,7 @@ class Config:
     def __init__(self, latus_appdata_folder):
 
         self.__key_string = 'cryptokey'
+        self.__most_recent_key_folder_string = 'keyfolder'
         self.__cloud_root_string = 'cloudroot'
         self.__latus_folder_string = 'latusfolder'
         self.__verbose_string = 'verbose'
@@ -92,6 +93,12 @@ class Config:
 
     def verbose_get(self):
         return bool(self.__config_get(self.__verbose_string))
+
+    def key_folder_set(self, folder):
+        self.__config_set(self.__most_recent_key_folder_string, folder)
+
+    def key_folder_get(self):
+        self.__config_get(self.__most_recent_key_folder_string)
 
     def init(self):
         Base.metadata.drop_all(self.__db_engine)

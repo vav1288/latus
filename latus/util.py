@@ -148,3 +148,14 @@ def make_dirs(path):
     """
     if not os.path.exists(path):
         os.makedirs(path)
+
+
+def get_latus_guid():
+    """
+    This is a GUID we can include in files to ensure it comes from this program.  For example, when we generate
+    a key or a database we can put this GUID in there to prevent aliasing and collisions.  Note that this doesn't
+    prohibit maliciousness - it only prevents accidental 'good faith' collisions.
+    :return: the latus GUID as a string
+    """
+    guid = '3E7A7DB0-3B15-416E-93D6-0FCF52BAEA38'
+    return guid
