@@ -8,40 +8,63 @@ import latus.sync
 import latus.config
 import latus.util
 import latus.const
+import latus.crypto
 
 LINE_BOX_PADDING = 50
 
 class Folder():
+    """
+    Folder widgets
+    """
     def __init__(self, name, path, file_dialog_method, font_metrics):
         self.name = name
         self.label = QtWidgets.QLabel(self.name + " Folder:")
         self.line = QtWidgets.QLineEdit(path)
         self.line.setMinimumWidth(font_metrics.width(path) + LINE_BOX_PADDING)  # actual width plus padding
-        self.edit_button = QtWidgets.QDialogButtonBox()
-        self.edit_button.addButton('Select ...', QtWidgets.QDialogButtonBox.AcceptRole)
-        self.edit_button.accepted.connect(file_dialog_method)
+        self.select_button = QtWidgets.QDialogButtonBox()
+        self.select_button.addButton('Select ...', QtWidgets.QDialogButtonBox.AcceptRole)
+        self.select_button.accepted.connect(file_dialog_method)
 
     def layout(self, grid, column):
         grid.addWidget(self.label, column, 0)
         grid.addWidget(self.line, column, 1)
-        grid.addWidget(self.edit_button, column, 2)
+        grid.addWidget(self.select_button, column, 2)
 
     def get(self):
         return self.line.text()
 
 
 class CryptoKey():
-    def __init__(self, key, font_metrics):
+    """
+    Crypto key widgets
+    """
+    def __init__(self, key, font_metrics, latus_appdata_folder):
+        self.latus_appdata_folder = latus_appdata_folder
         self.label = QtWidgets.QLabel("Key:")
         self.line = QtWidgets.QLineEdit(key)
         self.line.setMinimumWidth(font_metrics.width(key) + LINE_BOX_PADDING)  # actual width plus padding
 
+        self.modify_button = QtWidgets.QDialogButtonBox()
+        self.modify_button.addButton('Modify ...', QtWidgets.QDialogButtonBox.AcceptRole)
+        self.modify_button.accepted.connect(self.modify_key)
+
     def layout(self, grid, column):
         grid.addWidget(self.label, column, 0)
         grid.addWidget(self.line, column, 1)
+        grid.addWidget(self.modify_button, column, 2)
 
     def get(self):
         return self.line.text()
+
+    def set(self, s):
+        self.line.setText(s)
+
+    def set_width(self, val):
+        self.line.setMinimumWidth(val)
+
+    def modify_key(self):
+        crypto_key_dialog = CryptoKeyDialog(self.latus_appdata_folder)
+        crypto_key_dialog.exec_()
 
 
 class PreferencesDialog(QtWidgets.QDialog):
@@ -52,7 +75,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.latus_folder = Folder('Latus', self.config.latus_folder_get(), self.new_folder, self.fontMetrics())
         self.cloud_folder = Folder('Cloud', self.config.cloud_root_get(), self.new_folder, self.fontMetrics())
 
-        self.key = CryptoKey(self.config.crypto_get_string(), self.fontMetrics())
+        self.key = CryptoKey(self.config.crypto_get_string(), self.fontMetrics(), latus_appdata_folder)
 
         ok_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
         ok_buttonBox.accepted.connect(self.ok)
@@ -83,22 +106,72 @@ class PreferencesDialog(QtWidgets.QDialog):
         f = QtWidgets.QFileDialog.getExistingDirectory()
         return f
 
+
 class CryptoKeyDialog(QtWidgets.QDialog):
+    """
+    Dialog box for managing the crypto key.
+    """
     def __init__(self, latus_appdata_folder):
         super(CryptoKeyDialog, self).__init__()
+
+        self.key_file_filter = '*key.json'
+        self.caption = 'crypto key file'
+
         self.config = latus.config.Config(latus_appdata_folder)
         ok_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
         ok_buttonBox.accepted.connect(self.ok)
         cancel_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel)
         cancel_buttonBox.rejected.connect(self.cancel)
-        self.key = CryptoKey(self.config.crypto_get_string(), self.fontMetrics())
+
+        generate_buttonBox = QtWidgets.QDialogButtonBox()
+        generate_buttonBox.addButton('Generate New Key', QtWidgets.QDialogButtonBox.AcceptRole)
+        generate_buttonBox.clicked.connect(self.generate_key)
+
+        load_button_box = QtWidgets.QDialogButtonBox()
+        load_button_box.addButton('Load Key', QtWidgets.QDialogButtonBox.AcceptRole)
+        load_button_box.clicked.connect(self.load_key)
+
+        save_button_box = QtWidgets.QDialogButtonBox()
+        save_button_box.addButton('Save Key', QtWidgets.QDialogButtonBox.AcceptRole)
+        save_button_box.clicked.connect(self.save_key)
+
+        self.key = CryptoKey(self.config.crypto_get_string(), self.fontMetrics(), latus_appdata_folder)
+        self.key.set_width(400)  # swag
+
         grid_layout = QtWidgets.QGridLayout()
-        self.key.layout(grid_layout, 2)
-        grid_layout.addWidget(ok_buttonBox, 3, 0)
-        grid_layout.addWidget(cancel_buttonBox, 3, 1, alignment=QtCore.Qt.AlignLeft)  # kind of cheating on the layout
-        grid_layout.setColumnStretch(1, 1)  # path column
+        self.key.layout(grid_layout, 0)
+        grid_layout.addWidget(generate_buttonBox, 0, 2)
+        grid_layout.addWidget(load_button_box, 1, 0)
+        grid_layout.addWidget(save_button_box, 1, 1, alignment=QtCore.Qt.AlignLeft)  # kind of cheating on the layout
+        grid_layout.addWidget(ok_buttonBox, 2, 0)
+        grid_layout.addWidget(cancel_buttonBox, 2, 1, alignment=QtCore.Qt.AlignLeft)  # kind of cheating on the layout
+        grid_layout.setColumnStretch(1, 1)  # key column
         self.setLayout(grid_layout)
-        self.setWindowTitle("Preferences")
+
+        self.setWindowTitle("Crypto Key")
+
+    def load_key(self):
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, caption=self.caption,
+                                                        directory=self.config.key_folder_get(),
+                                                        filter=self.key_file_filter)
+        if path:
+            self.config.key_folder_set(os.path.dirname(path))
+            key_file = latus.crypto.CryptoFile(path)
+            key_info = key_file.load_key()
+            key = key_info['cryptokey']
+            self.key.set(key)
+
+    def save_key(self):
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption=self.caption,
+                                                        directory=self.config.key_folder_get(),
+                                                        filter=self.key_file_filter)
+        self.config.key_folder_set(os.path.dirname(path))
+        key_file = latus.crypto.CryptoFile(path)
+        key_file.save(self.key.get())
+
+    def generate_key(self):
+        new_key = latus.crypto.new_key()  # generate if no key parameter given
+        self.key.set(new_key.decode())
 
     def ok(self):
         self.config.crypto_set_string(self.key.get())

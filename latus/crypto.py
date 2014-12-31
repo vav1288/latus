@@ -1,11 +1,35 @@
 
 import os
+import json
+import datetime
 import cryptography.fernet
+import latus.util
 
 
 def new_key():
     return cryptography.fernet.Fernet.generate_key()
 
+class CryptoFile():
+
+    def __init__(self, path):
+        self.__path = path
+
+    def save(self, key):
+        """
+        save key to a file
+        :param key: key as bytes
+        :return: True on success, False on error
+        """
+        dt = datetime.datetime.now()
+        key_info = {'id': latus.util.get_latus_guid(), 'cryptokey': key, 'timestamp': str(dt)}
+        with open(self.__path, 'w') as f:
+            json.dump(key_info, f, indent=4)  # todo: stopped here
+        return True
+
+    def load_key(self):
+        with open(self.__path) as f:
+            key_info = json.load(f)
+        return key_info
 
 class Crypto():
     def __init__(self, key, verbose = False):
