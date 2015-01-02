@@ -8,14 +8,13 @@ import latus.walker
 import latus.hash
 import latus.crypto
 import latus.filewatcher
+import latus.fsdb
 
 
 class Sync():
     """
     Determines what needs to be done to sync local to cloud.
     """
-
-    DATABASE_FILE_NAME = '.' + latus.const.NAME + '_sync_db' + '.json' # reserved
 
     def __init__(self, crypto_key, latus_folder, cloud_root, verbose=False):
         self.crypto_key = crypto_key
@@ -60,6 +59,7 @@ class Sync():
         for partial_path in local_walker:
             # this is where we use the local _file_ name to create the cloud _folder_ where the fernet and metadata reside
             full_path = local_walker.full_path(partial_path)
+            latus.logger.log.info('new : %s' % full_path)
             file_as_cloud_folder = os.path.join(self.get_cloud_folder(), partial_path)
             if not os.path.exists(file_as_cloud_folder):
                 os.makedirs(file_as_cloud_folder)
@@ -76,7 +76,9 @@ class Sync():
                     crypto.compress(self.latus_folder, partial_path, os.path.abspath(cloud_fernet_file))
                     mtime = os.path.getmtime(full_path)
                     size = os.path.getsize(full_path)
-                    self.update_database(partial_path, file_as_cloud_folder, hash, mtime, size)
+                    fs_db = latus.fsdb.FileSystemDB(file_as_cloud_folder, partial_path)
+                    fs_db.update(size, hash, mtime)
+                    fs_db.close()
 
         # new or updated cloud files
         # todo: we're actually only interested in dirs here ... make Walker have a dirs only mode
@@ -85,15 +87,15 @@ class Sync():
             full_path = cloud_walker.full_path(partial_path)
             if os.path.isdir(full_path):
                 file_as_cloud_folder = os.path.join(self.get_cloud_folder(), partial_path)
-                db = self.read_database(file_as_cloud_folder)
-                if db:
-                    file_path = db['path']
-                    version = db['versions'][-1] # last entry in the list is most recent
-                    hash = version['hash']
+                fs_db = latus.fsdb.FileSystemDB(file_as_cloud_folder)
+                changes = fs_db.read()
+                file_path = fs_db.get_path()
+                fs_db.close()
+                if changes:
+                    hash = changes[-1]['hash'] # last entry in the list is most recent
                     # todo: compare hashes
                     dest_path = os.path.join(self.latus_folder, file_path)
                     if not os.path.exists(dest_path):
-                        print('extracting', dest_path)
                         cloud_fernet_file = os.path.join(file_as_cloud_folder, hash + self.fernet_extension)
                         abs_cloud_fernet_file = os.path.abspath(cloud_fernet_file)
                         expand_ok = crypto.expand(self.latus_folder, abs_cloud_fernet_file, dest_path)
@@ -103,22 +105,3 @@ class Sync():
                 else:
                     latus.logger.log.warn('no DB : %s' % file_as_cloud_folder)
 
-    def update_database(self, partial_path, file_as_cloud_folder, hash, mtime, size):
-        db_file_path = os.path.join(file_as_cloud_folder, self.DATABASE_FILE_NAME)
-        if os.path.exists(db_file_path):
-            with open(db_file_path) as f:
-                db_info = json.load(f)
-        else:
-            db_info = {'path' : partial_path, 'versions' : []}
-        info = {'size' : size, 'hash' : hash, 'mtime' : mtime}
-        db_info['versions'].append(info)
-        with open(db_file_path, 'w') as f:
-            json.dump(db_info, f, indent=4)
-
-    def read_database(self, file_as_cloud_folder):
-        db_file_path = os.path.join(file_as_cloud_folder, self.DATABASE_FILE_NAME)
-        db = None
-        if os.path.exists(db_file_path):
-            with open(db_file_path) as f:
-                db = json.load(f)
-        return db
