@@ -36,7 +36,7 @@ def main():
     parser.add_argument('-l', '--latus', metavar='path', help="latus folder")
     parser.add_argument('-c', '--cloud', metavar='path', help="cloud folder")
     parser.add_argument('-a', '--appdata', metavar='path', help="OS's appdata folder")
-    parser.add_argument('-id', nargs='?', help="Node ID value (omit value to automatically generate new one)",
+    parser.add_argument('-i', '--id', nargs='?', help="Node ID value (omit value to automatically generate new one)",
                         default=None, const=True)
     parser.add_argument('-k', '--key', nargs='?', help="set crypto key (omit value to automatically generate new one)",
                         default=None, const=True)

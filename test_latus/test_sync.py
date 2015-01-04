@@ -55,7 +55,7 @@ def test_sync_cli_invocation(setup):
     cmd += ['-c', os.path.join(sync_folder, 'dropbox')]
     cmd += ['-a', os.path.join(sync_folder, 'appdata')]
     cmd += ['-k', 'dQf6js1s-CcVRQMnt6t4w7fOdVJAzqhvcQNsHnvuQNQ=']
-    cmd += ['-id', 'x']
+    cmd += ['-i', 'x']
     cmd += ['-cli']
     cmd += ['-v']
     print('cmd', cmd)

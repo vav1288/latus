@@ -1,6 +1,5 @@
 import sys
 import os
-import logging
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 import latus.logger
@@ -209,8 +208,9 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
             crypto_key_dialog = CryptoKeyDialog(self.latus_appdata_folder)
             crypto_key_dialog.exec_()
         if not config.cloud_root_get() or not config.latus_folder_get():
-            exit('error - folders not specified')  # todo: run a setup wizard
-        self.sync = latus.sync.Sync(config.crypto_get(), latus_folder, cloud_root, config.verbose_get())
+            sys.exit('error - folders not specified')  # todo: run a setup wizard
+        self.sync = latus.sync.Sync(config.crypto_get(), latus_folder, cloud_root, config.node_id_get(),
+                                    config.verbose_get())
         self.sync.start()
 
     def show(self):
