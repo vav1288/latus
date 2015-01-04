@@ -40,25 +40,32 @@ class Crypto():
         self.__verbose = verbose
         self.__fernet = cryptography.fernet.Fernet(self.__key)
 
-    def compress(self, cwd, in_path, out_path):
-        latus.logger.log.info('compress : %s to %s' % (in_path, out_path))
-        with open(os.path.join(cwd, in_path), 'rb') as in_file:
-            token = self.__fernet.encrypt(in_file.read())
-            with open(out_path, 'wb') as out_file:
-                out_file.write(token)
+    def compress(self, cwd, partial_path, out_path):
+        full_path =  os.path.join(cwd, partial_path)
+        latus.logger.log.info('compress : %s to %s' % (full_path, out_path))
+        if os.path.exists(full_path):
+            with open(full_path, 'rb') as in_file:
+                token = self.__fernet.encrypt(in_file.read())
+                with open(out_path, 'wb') as out_file:
+                    out_file.write(token)
+        else:
+            latus.logger.log.warn('does not exist : %s' % partial_path)
 
     def expand(self, in_path, out_path):
         latus.logger.log.info('expand : %s to %s' % (in_path, out_path))
         success = False
-        with open(in_path, 'rb') as in_file:
-            try:
-                b = self.__fernet.decrypt(in_file.read())
-            except cryptography.fernet.InvalidToken:
-                b = None
-            if b:
-                with open(out_path, 'wb') as out_file:
-                    out_file.write(b)
-                    success = True
+        if os.path.exists(in_path):
+            with open(in_path, 'rb') as in_file:
+                try:
+                    b = self.__fernet.decrypt(in_file.read())
+                except cryptography.fernet.InvalidToken:
+                    b = None
+                if b:
+                    with open(out_path, 'wb') as out_file:
+                        out_file.write(b)
+                        success = True
+        else:
+            latus.logger.log.warn('does not exist : %s' % in_path)
         return success
 
 
