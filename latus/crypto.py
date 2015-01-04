@@ -41,11 +41,14 @@ class Crypto():
         self.__fernet = cryptography.fernet.Fernet(self.__key)
 
     def compress(self, cwd, partial_path, out_path):
-        full_path =  os.path.join(cwd, partial_path)
+        full_path = os.path.join(cwd, partial_path)
         latus.logger.log.info('compress : %s to %s' % (full_path, out_path))
         if os.path.exists(full_path):
             with open(full_path, 'rb') as in_file:
-                token = self.__fernet.encrypt(in_file.read())
+                try:
+                    token = self.__fernet.encrypt(in_file.read())
+                except cryptography.exceptions.UnsupportedAlgorithm as e:
+                    latus.logger.log.error('%s : %s %s', (e, full_path, out_path))
                 with open(out_path, 'wb') as out_file:
                     out_file.write(token)
         else:
@@ -56,10 +59,13 @@ class Crypto():
         success = False
         if os.path.exists(in_path):
             with open(in_path, 'rb') as in_file:
+                b = None
                 try:
                     b = self.__fernet.decrypt(in_file.read())
-                except cryptography.fernet.InvalidToken:
-                    b = None
+                except cryptography.fernet.InvalidToken as e:
+                    latus.logger.log.error('InvalidToken : %s %s', (e, in_path, out_path))
+                except cryptography.exceptions.UnsupportedAlgorithm as e:
+                    latus.logger.log.error('%s : %s %s', (e, in_path, out_path))
                 if b:
                     with open(out_path, 'wb') as out_file:
                         out_file.write(b)
