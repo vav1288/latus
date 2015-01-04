@@ -20,8 +20,10 @@ class CryptoFile():
         :param key: key as bytes
         :return: True on success, False on error
         """
-        dt = datetime.datetime.now()
-        key_info = {'id': latus.util.get_latus_guid(), 'cryptokey': key, 'timestamp': str(dt)}
+        dt = datetime.datetime.utcnow()
+        key_info = {'latusid': latus.util.get_latus_guid(),  # ensure no collisions or aliasing with other user files
+                    'cryptokey': key,
+                    'timestamp': str(dt)}
         with open(self.__path, 'w') as f:
             json.dump(key_info, f, indent=4)  # todo: stopped here
         return True
@@ -43,9 +45,9 @@ class Crypto():
             with open(out_path, 'wb') as out_file:
                 out_file.write(token)
 
-    def expand(self, cwd, in_path, out_path):
+    def expand(self, in_path, out_path):
         success = False
-        with open(os.path.join(cwd, in_path), 'rb') as in_file:
+        with open(in_path, 'rb') as in_file:
             try:
                 b = self.__fernet.decrypt(in_file.read())
             except cryptography.fernet.InvalidToken:

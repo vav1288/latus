@@ -82,8 +82,11 @@ class SyncNodesTestInfo():
     def get_cloud_folder(self, node):
         return os.path.join(self.sync_root, node, 'dropbox')
 
-    def get_appdata_folder(self, node):
-        return os.path.join(self.sync_root, node, 'appdata')
+    def get_appdata_roaming_folder(self, node):
+        return os.path.join(self.sync_root, node, 'appdata_roaming')
+
+    def get_appdata_local_folder(self, node):
+        return os.path.join(self.sync_root, node, 'appdata_local')
 
     def get_file_name(self, node):
         return node + '.txt'

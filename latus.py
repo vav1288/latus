@@ -19,6 +19,7 @@
 
 import os
 import logging
+import uuid
 import argparse
 
 import latus.cli
@@ -35,17 +36,19 @@ def main():
     parser.add_argument('-l', '--latus', metavar='path', help="latus folder")
     parser.add_argument('-c', '--cloud', metavar='path', help="cloud folder")
     parser.add_argument('-a', '--appdata', metavar='path', help="OS's appdata folder")
-    parser.add_argument('-k', '--key', nargs='?', help="set crypto key (omit value to automatically generate one)",
+    parser.add_argument('-id', nargs='?', help="Node ID value (omit value to automatically generate new one)",
+                        default=None, const=True)
+    parser.add_argument('-k', '--key', nargs='?', help="set crypto key (omit value to automatically generate new one)",
                         default=None, const=True)
     parser.add_argument('-cli', action='store_true', help="use command line interface (not GUI)")
     parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")
     args = parser.parse_args()
 
-    latus_appdata_folder = set_from_args(args)
+    latus_appdata_roaming_folder = set_from_args(args)
     if args.cli:
-        latus.cli.main(latus_appdata_folder)
+        latus.cli.main(latus_appdata_roaming_folder)
     else:
-        latus.gui.main(latus_appdata_folder)
+        latus.gui.main(latus_appdata_roaming_folder)
 
 def set_from_args(args):
     """
@@ -58,14 +61,15 @@ def set_from_args(args):
         latus.logger.set_console_log_level(logging.INFO)
     latus.logger.log.info('log folder : %s' % latus.util.get_latus_log_folder())
 
-    # determine appdata folder
+    # determine appdata (roaming) folder
     if args.appdata:
-        # particularly useful for testing ( args.appdata is the OS appdata folder )
-        latus_appdata_folder = os.path.join(args.appdata, latus.const.NAME)
+        # particularly useful for testing ( args.ar is the appdata roaming folder )
+        latus_appdata_roaming_folder = os.path.join(args.appdata, latus.const.NAME)
     else:
-        latus_appdata_folder = latus.util.get_latus_appdata_folder()  # default
-    latus.logger.log.info('latus_appdata_folder : %s' % latus_appdata_folder)
-    config = latus.config.Config(latus_appdata_folder)
+        latus_appdata_roaming_folder = latus.util.get_latus_appdata_roaming_folder()  # default
+
+    latus.logger.log.info('latus_appdata_roaming_folder : %s' % latus_appdata_roaming_folder)
+    config = latus.config.Config(latus_appdata_roaming_folder)
 
     # determine crypto key
     if args.key:
@@ -78,13 +82,25 @@ def set_from_args(args):
         else:
             config.crypto_set_string(args.key)  # command line is a string
 
+    # determine node id
+    if args.id:
+        # node id option specified - either with no value or with an id.  If no value given we get True (the
+        # default which tells us to generate a new node id).
+        if args.id is True:
+            node_id = str(uuid.uuid4())  # generate if no id given
+            config.node_id_set(node_id)
+            latus.logger.log.info('New node id : %s' % config.node_id_get())
+        else:
+            config.node_id_set(args.id)  # command line is a string
+
+
     # remember folder settings so the user doesn't have to specify them next time
     if args.latus:
         config.latus_folder_set(args.latus)
     if args.cloud:
         config.cloud_root_set(args.cloud)
 
-    return latus_appdata_folder
+    return latus_appdata_roaming_folder
 
 
 if __name__ == "__main__":
