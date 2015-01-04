@@ -224,6 +224,7 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         preferences_dialog.exec_()
 
     def exit(self):
+        latus.logger.log.info('exit')
         self.hide()
         self.sync.request_exit()
         QtWidgets.QApplication.exit()

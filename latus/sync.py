@@ -1,6 +1,7 @@
 
 import os
 import glob
+import pprint
 import latus.logger
 import latus.util
 import latus.const
@@ -17,11 +18,12 @@ class Sync():
     """
 
     def __init__(self, crypto_key, latus_folder, cloud_root, node_id, verbose):
+        self.timeout = 60  # seconds
         self.crypto_key = crypto_key
         self.latus_folder = latus_folder
-        cloud_folder = os.path.join(cloud_root, '.' + latus.const.NAME)
-        self.cloud_cache_folder = os.path.join(cloud_folder, 'cache')
-        self.cloud_fs_db_folder = os.path.join(cloud_folder, 'fsdb')
+        self.cloud_folder = os.path.join(cloud_root, '.' + latus.const.NAME)
+        self.cloud_cache_folder = os.path.join(self.cloud_folder, 'cache')
+        self.cloud_fs_db_folder = os.path.join(self.cloud_folder, 'fsdb')
         self.node_id = node_id
         self.verbose = verbose
         self.fernet_extension = '.fer'
@@ -40,13 +42,18 @@ class Sync():
         self.sync()
         self.latus_file_watcher = latus.filewatcher.FileWatcher(self.latus_folder, self.sync)
         self.latus_file_watcher.start()
-        self.cloud_file_watcher = latus.filewatcher.FileWatcher(self.cloud_cache_folder, self.sync)
+        self.cloud_file_watcher = latus.filewatcher.FileWatcher(self.cloud_folder, self.sync)
         self.cloud_file_watcher.start()
 
     def request_exit(self):
+        latus.logger.log.info('request_exit begin')
         self.latus_file_watcher.request_exit()
         self.cloud_file_watcher.request_exit()
+        self.latus_file_watcher.join(60)
+        self.cloud_file_watcher.join(60)
+        latus.logger.log.info('request_exit end')
 
+    # todo: break this up into 2 routines - local changes and cloud changes
     def sync(self):
         """
         Sync new or updated files (both local and cloud).
@@ -89,24 +96,35 @@ class Sync():
         fs_db.close()
 
         # new or updated cloud files
+        this_fs_db = latus.fsdb.FileSystemDB(self.cloud_fs_db_folder, self.node_id)
         for db_file in glob.glob(os.path.join(self.cloud_fs_db_folder, '*.db')):
             file_name = os.path.basename(db_file)
-            node_id = file_name.split('.')[0]
-            fs_db = latus.fsdb.FileSystemDB(self.cloud_fs_db_folder, node_id)
-            for partial_path in fs_db.get_paths():
-                local_path = os.path.join(self.latus_folder, partial_path)
-                local_hash = None
-                if os.path.exists(local_path):
-                    local_hash, _ = latus.hash.calc_sha512(local_path)
-                db_info = fs_db.get_file_info(partial_path)
-                most_recent = db_info[-1]
-                cloud_most_recent_hash = most_recent['hash']
-                cloud_most_recent_size = most_recent['size']
-                if cloud_most_recent_size > 0:
-                    if not os.path.exists(local_path) or local_hash != cloud_most_recent_hash:
-                        cloud_fernet_file = os.path.abspath(os.path.join(self.cloud_cache_folder, cloud_most_recent_hash + self.fernet_extension))
-                        file_abs_path = os.path.abspath(os.path.join(self.latus_folder, partial_path))
-                        expand_ok = crypto.expand(cloud_fernet_file, file_abs_path)
+            db_node_id = file_name.split('.')[0]
+            if db_node_id != self.node_id:
+                other_fs_db = latus.fsdb.FileSystemDB(self.cloud_fs_db_folder, db_node_id)
+                for partial_path in other_fs_db.get_paths():
+                    local_path = os.path.join(self.latus_folder, partial_path)
+
+                    local_hash = None
+                    if os.path.exists(local_path):
+                        local_hash, _ = latus.hash.calc_sha512(local_path)
+
+                    most_recent = None
+                    db_info = other_fs_db.get_file_info(partial_path)
+                    if db_info:
+                        most_recent = db_info[-1]
+
+                    if most_recent and most_recent['size'] > 0:
+                        local_sequence = None
+                        local_file_info = this_fs_db.get_file_info(partial_path)
+                        if local_file_info:
+                            local_sequence = local_file_info[-1]['seq']
+
+                        if not os.path.exists(local_path) or \
+                                (local_hash != most_recent['hash'] and most_recent['seq'] > local_sequence):
+                            cloud_fernet_file = os.path.abspath(os.path.join(self.cloud_cache_folder, most_recent['hash'] + self.fernet_extension))
+                            file_abs_path = os.path.abspath(os.path.join(self.latus_folder, partial_path))
+                            expand_ok = crypto.expand(cloud_fernet_file, file_abs_path)
 
     def get_highest_sequence_value(self):
         """
