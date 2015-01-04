@@ -16,7 +16,7 @@ distutils.core.setup(
     # make a single executable
     # PyQt version:
     options = {'py2exe': {'bundle_files': 1, 'compressed': True,
-                          "includes" : ["sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography.fernet"]}},
+                          "includes" : ["sqlalchemy", "sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography"]}},
     # CLI version:
     #options={'py2exe': {'bundle_files': 1, 'compressed': True, }},
 

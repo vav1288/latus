@@ -99,11 +99,14 @@ class Sync():
                 if os.path.exists(local_path):
                     local_hash, _ = latus.hash.calc_sha512(local_path)
                 db_info = fs_db.get_file_info(partial_path)
-                cloud_most_recent_hash = db_info[-1]['hash']
-                if not os.path.exists(local_path) or local_hash != cloud_most_recent_hash:
-                    cloud_fernet_file = os.path.abspath(os.path.join(self.cloud_cache_folder, cloud_most_recent_hash + self.fernet_extension))
-                    file_abs_path = os.path.abspath(os.path.join(self.latus_folder, partial_path))
-                    expand_ok = crypto.expand(cloud_fernet_file, file_abs_path)
+                most_recent = db_info[-1]
+                cloud_most_recent_hash = most_recent['hash']
+                cloud_most_recent_size = most_recent['size']
+                if cloud_most_recent_size > 0:
+                    if not os.path.exists(local_path) or local_hash != cloud_most_recent_hash:
+                        cloud_fernet_file = os.path.abspath(os.path.join(self.cloud_cache_folder, cloud_most_recent_hash + self.fernet_extension))
+                        file_abs_path = os.path.abspath(os.path.join(self.latus_folder, partial_path))
+                        expand_ok = crypto.expand(cloud_fernet_file, file_abs_path)
 
     def get_highest_sequence_value(self):
         """
