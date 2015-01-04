@@ -23,6 +23,7 @@ class ConfigTable(Base):
 class Config:
     def __init__(self, latus_appdata_folder):
 
+        self.__id_string = 'nodeid'
         self.__key_string = 'cryptokey'
         self.__most_recent_key_folder_string = 'keyfolder'
         self.__cloud_root_string = 'cloudroot'
@@ -38,7 +39,7 @@ class Config:
 
     def __config_set(self, key, value):
         session = self.__Session()
-        config_table = ConfigTable(key=key,value=value,datetime=datetime.datetime.now())
+        config_table = ConfigTable(key=key,value=value,datetime=datetime.datetime.utcnow())
         q = session.query(ConfigTable).filter_by(key=key).first()
         if q:
             session.delete(q)
@@ -99,6 +100,12 @@ class Config:
 
     def key_folder_get(self):
         self.__config_get(self.__most_recent_key_folder_string)
+
+    def node_id_set(self, new_node_id):
+        self.__config_set(self.__id_string, new_node_id)
+
+    def node_id_get(self):
+        return self.__config_get(self.__id_string)
 
     def init(self):
         Base.metadata.drop_all(self.__db_engine)

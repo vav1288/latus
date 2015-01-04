@@ -10,29 +10,6 @@ import latus.sync
 import test_latus.create_files
 from test_latus.conftest import setup
 
-def emulate_cloud_sync(a, b):
-    # one direction ...
-    for r, _, fs in os.walk(a):
-        for f in fs:
-            src = os.path.join(r, f)
-            # a kludge, but works for this particular case
-            dest = src.replace('\\a\\', '\\b\\')
-            if not os.path.exists(dest):
-                d = os.path.split(dest)[0]
-                if not os.path.exists(d):
-                    os.makedirs(d)
-                shutil.copyfile(src, dest)
-    # now the other direction ...
-    for r, _, fs in os.walk(b):
-        for f in fs:
-            src = os.path.join(r, f)
-            dest = src.replace('\\b\\', '\\a\\')
-            if not os.path.exists(dest):
-                d = os.path.split(dest)[0]
-                if not os.path.exists(d):
-                    os.makedirs(d)
-                shutil.copyfile(src, dest)
-
 def test_sync_simple(setup):
     """
     test a simple sync of 2 files across 2 nodes
@@ -43,27 +20,15 @@ def test_sync_simple(setup):
     sync_nodes_test_info = test_latus.create_files.SyncNodesTestInfo()
     sync = {}
 
-    # get the cloud folders
-    nodes = sync_nodes_test_info.nodes
-    cloud_folder_0 = sync_nodes_test_info.get_cloud_folder(nodes[0])
-    cloud_folder_1 = sync_nodes_test_info.get_cloud_folder(nodes[1])
-
-    # exit_event = win32event.CreateEvent(None, 0, 0, None)
-
     for node in sync_nodes_test_info.nodes:
+        # point both nodes to the same cloud folder to 'emulate' cloud sync
         sync[node] = latus.sync.Sync(key, sync_nodes_test_info.get_local_folder(node),
-                                     sync_nodes_test_info.get_cloud_folder(node), verbose=True)
-        sync[node].sync()
-
-        # do what the cloud service sync would normally do
-        emulate_cloud_sync(cloud_folder_0, cloud_folder_1)
-
-    for node in sync_nodes_test_info.nodes:
+                                     sync_nodes_test_info.get_cloud_folder(sync_nodes_test_info.nodes[0]),
+                                     node, True)
         sync[node].sync()
 
     for node in sync_nodes_test_info.nodes:
-        # shutil.rmtree(os.path.join(sync_nodes.get_cloud_folder(node))) # remove what sync creates
-        pass
+        sync[node].sync()
 
     local_folders = []
     file_names = []
@@ -89,7 +54,8 @@ def test_sync_cli_invocation(setup):
     cmd += ['-l', os.path.join(sync_folder, 'latus')]
     cmd += ['-c', os.path.join(sync_folder, 'dropbox')]
     cmd += ['-a', os.path.join(sync_folder, 'appdata')]
-    cmd += ['-k']
+    cmd += ['-k', 'dQf6js1s-CcVRQMnt6t4w7fOdVJAzqhvcQNsHnvuQNQ=']
+    cmd += ['-id', 'x']
     cmd += ['-cli']
     cmd += ['-v']
     print('cmd', cmd)
