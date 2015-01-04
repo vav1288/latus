@@ -4,6 +4,7 @@ import json
 import datetime
 import cryptography.fernet
 import latus.util
+import latus.logger
 
 
 def new_key():
@@ -40,12 +41,14 @@ class Crypto():
         self.__fernet = cryptography.fernet.Fernet(self.__key)
 
     def compress(self, cwd, in_path, out_path):
+        latus.logger.log.info('compress : %s to %s' % (in_path, out_path))
         with open(os.path.join(cwd, in_path), 'rb') as in_file:
             token = self.__fernet.encrypt(in_file.read())
             with open(out_path, 'wb') as out_file:
                 out_file.write(token)
 
     def expand(self, in_path, out_path):
+        latus.logger.log.info('expand : %s to %s' % (in_path, out_path))
         success = False
         with open(in_path, 'rb') as in_file:
             try:
@@ -56,7 +59,7 @@ class Crypto():
                 with open(out_path, 'wb') as out_file:
                     out_file.write(b)
                     success = True
-            return success
+        return success
 
 
 
