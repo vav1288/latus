@@ -63,7 +63,12 @@ class FileSystemDB:
     def get_paths(self):
         command = self.change_table.select()
         result = self.conn.execute(command)
-        return [row[1] for row in result]
+        file_paths = set()
+        for row in result:
+            file_path = row[1]
+            if file_path not in file_paths:
+                file_paths.add(row[1])
+        return file_paths
 
     def get_most_recent_hash(self, file_path):
         file_hash = None
