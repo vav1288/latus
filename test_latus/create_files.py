@@ -6,6 +6,7 @@ create the test files
 import os
 import shutil
 import random
+import time
 
 from latus import const
 import latus.logger
@@ -99,8 +100,15 @@ def clean():
     """
     path = get_files_root()
     latus.logger.log.info("cleaning:" + path)
-    if os.path.exists(path):
-        shutil.rmtree(path)
+    try_count = 10
+    while os.path.exists(path) and try_count:
+        try:
+            shutil.rmtree(path)
+        except PermissionError as e:
+            latus.logger.log.warn('can not rmtree %s - retrying' % path)
+            latus.logger.log.warn(str(e))
+            time.sleep(1)
+            try_count -= 1
 
 
 class TestFiles():

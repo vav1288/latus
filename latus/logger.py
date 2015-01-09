@@ -46,6 +46,8 @@ def init(log_folder = None):
     log.addHandler(fh)
     log.addHandler(ch)
 
+    return log_folder
+
 
 def set_file_log_level(new_level):
     fh.setLevel(new_level)

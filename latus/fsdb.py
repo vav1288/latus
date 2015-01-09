@@ -6,7 +6,7 @@ import latus.logger
 
 
 class FileSystemDB:
-    def __init__(self, cloud_fs_db_folder, node_id):
+    def __init__(self, cloud_fs_db_folder, node_id, write_flag=False):
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
         # writing to the DB since there is only one writer.
         self.database_file_name = node_id + '.db'
@@ -24,16 +24,15 @@ class FileSystemDB:
         # essentially a conflict.
         self.change_table = sqlalchemy.Table('change', self.sa_metadata,
                                              sqlalchemy.Column('sequence', sqlalchemy.Integer, primary_key=True),
-                                             sqlalchemy.Column('path', sqlalchemy.Integer, index=True),
+                                             sqlalchemy.Column('path', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('size', sqlalchemy.Integer),
                                              sqlalchemy.Column('hash', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('mtime', sqlalchemy.DateTime),
                                              sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
                                              )
-        self.sa_metadata.create_all(self.db_engine)  # eventually we can make this conditional on the db file existence
-        if self.get_node_id() != node_id:
-            command = self.general_table.insert().values(key='nodeid', value=node_id)
-            result = self.conn.execute(command)
+        if write_flag:
+            self.sa_metadata.create_all(self.db_engine)
+            self.set_node_id(node_id)
 
     def update(self, sequence, file_path, size=None, hash=None, mtime=None):
         if mtime:
@@ -41,6 +40,7 @@ class FileSystemDB:
                                                         mtime=datetime.datetime.utcfromtimestamp(mtime),
                                                         timestamp=datetime.datetime.utcnow())
         else:
+            # if file has been deleted, there's no mtime
             command = self.change_table.insert().values(sequence=sequence, path=file_path, size=size, hash=hash,
                                                         timestamp=datetime.datetime.utcnow())
         result = self.conn.execute(command)
@@ -90,14 +90,30 @@ class FileSystemDB:
                 node_id = row[1]
         return node_id
 
-    def get_highest_sequence_value(self):
-        highest_sequence_value = -1
-        command = self.change_table.select()
-        result = self.conn.execute(command)
-        if result:
-            for row in result:
-                highest_sequence_value = max(highest_sequence_value,row[0])
-        return highest_sequence_value
+    def set_node_id(self, node_id):
+        db_node_id = self.get_node_id()
+        latus.logger.log.debug('node_id : %s' % node_id)
+        latus.logger.log.debug('db_node_id : %s' % db_node_id)
+        if not db_node_id:
+            latus.logger.log.debug('insert')
+            command = self.general_table.insert().values(key='nodeid', value=node_id)
+            result = self.conn.execute(command)
+        elif db_node_id != node_id:
+            latus.logger.log.debug('update')
+            command = self.general_table.update().where(self.general_table.c.key == 'nodeid').values(value=node_id)
+            result = self.conn.execute(command)
+        else:
+            latus.logger.log.debug('equal')
+
+    if False:
+        def get_highest_sequence_value(self):
+            highest_sequence_value = -1
+            command = self.change_table.select()
+            result = self.conn.execute(command)
+            if result:
+                for row in result:
+                    highest_sequence_value = max(highest_sequence_value,row[0])
+            return highest_sequence_value
 
     def close(self):
         self.conn.close()
