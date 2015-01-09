@@ -131,16 +131,3 @@ class Sync():
                             file_abs_path = os.path.abspath(os.path.join(self.latus_folder, partial_path))
                             expand_ok = crypto.expand(cloud_fernet_file, file_abs_path)
 
-    if False:
-        def get_highest_sequence_value(self):
-            """
-            Get the highest sequence value of all the DBs.  Returns -1 if none found (so 1 can be added to start at 0).
-            """
-            highest_sequence_value = -1
-            for db_file in glob.glob(os.path.join(self.cloud_fs_db_folder, '*.db')):
-                file_name = os.path.basename(db_file)
-                node_id = file_name.split('.')[0]
-                fs_db = latus.fsdb.FileSystemDB(self.cloud_fs_db_folder, node_id)
-                highest_sequence_value = max(highest_sequence_value, fs_db.get_highest_sequence_value())
-            latus.logger.log.info('highest_sequence_value %s' % highest_sequence_value)
-            return highest_sequence_value
