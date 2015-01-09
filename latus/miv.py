@@ -29,16 +29,18 @@ class MonotonicallyIncreasingValue():
                                           sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
                                           )
         sa_metadata.create_all(self.db_engine)
-        value = self.get()
-        if value is None:
+        if self.get() is None:
             # initialize
+            latus.logger.log.info('init miv')
             command = self.miv_table.insert().values(value=0, timestamp=datetime.datetime.utcnow())
             self.conn.execute(command)
 
     def next(self):
         command = self.miv_table.update().values(value=self.miv_table.c.value + 1, timestamp=datetime.datetime.utcnow())
         self.conn.execute(command)
-        return self.get()
+        miv_value = self.get()
+        latus.logger.log.info('miv : %s' % miv_value)
+        return miv_value
 
     def get(self):
         miv_value = None
@@ -47,7 +49,6 @@ class MonotonicallyIncreasingValue():
             row = result.fetchone()
             if row:
                 miv_value = row[0]
-        latus.logger.log.info('miv : %s' % miv_value)
         return miv_value
 
     def close(self):

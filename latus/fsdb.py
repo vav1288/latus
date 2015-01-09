@@ -105,16 +105,6 @@ class FileSystemDB:
         else:
             latus.logger.log.debug('equal')
 
-    if False:
-        def get_highest_sequence_value(self):
-            highest_sequence_value = -1
-            command = self.change_table.select()
-            result = self.conn.execute(command)
-            if result:
-                for row in result:
-                    highest_sequence_value = max(highest_sequence_value,row[0])
-            return highest_sequence_value
-
     def close(self):
         self.conn.close()
 
