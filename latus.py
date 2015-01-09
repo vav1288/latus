@@ -31,7 +31,6 @@ import latus.crypto
 import latus.logger
 
 def main():
-    latus.logger.init()
     parser = argparse.ArgumentParser(description="efficient and secure cloud-based folder sync")
     parser.add_argument('-l', '--latus', metavar='path', help="latus folder")
     parser.add_argument('-c', '--cloud', metavar='path', help="cloud folder")
@@ -41,6 +40,7 @@ def main():
     parser.add_argument('-k', '--key', nargs='?', help="set crypto key (omit value to automatically generate new one)",
                         default=None, const=True)
     parser.add_argument('-cli', action='store_true', help="use command line interface (not GUI)")
+    parser.add_argument('-log', metavar='path', help="log folder")
     parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")
     args = parser.parse_args()
 
@@ -57,9 +57,13 @@ def set_from_args(args):
     :return:
     """
 
+    if args.log:
+        log_folder = latus.logger.init(args.log)
+    else:
+        log_folder = latus.logger.init()
     if args.verbose:
         latus.logger.set_console_log_level(logging.INFO)
-    latus.logger.log.info('log folder : %s' % latus.util.get_latus_log_folder())
+    latus.logger.log.info('log folder : %s' % log_folder)
 
     # determine appdata (roaming) folder
     if args.appdata:
@@ -67,8 +71,8 @@ def set_from_args(args):
         latus_appdata_roaming_folder = os.path.join(args.appdata, latus.const.NAME)
     else:
         latus_appdata_roaming_folder = latus.util.get_latus_appdata_roaming_folder()  # default
-
     latus.logger.log.info('latus_appdata_roaming_folder : %s' % latus_appdata_roaming_folder)
+
     config = latus.config.Config(latus_appdata_roaming_folder)
 
     # determine crypto key
