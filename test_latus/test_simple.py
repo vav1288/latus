@@ -4,12 +4,17 @@ from cryptography.fernet import Fernet
 import latus.const
 import latus.sync
 import test_latus.create_files
+import test_latus.conftest
 from test_latus.conftest import setup
 
-def test_mult(setup):
+def test_simple(setup):
     """
     test a simple sync of 2 files across 2 nodes
     """
+
+    test_latus.conftest.init()
+    test_latus.create_files.clean()
+    test_latus.create_files.write_files()
 
     key = Fernet.generate_key()
 
@@ -21,10 +26,10 @@ def test_mult(setup):
         sync[node] = latus.sync.Sync(key, sync_nodes_test_info.get_local_folder(node),
                                      sync_nodes_test_info.get_cloud_folder(sync_nodes_test_info.nodes[0]),
                                      node, True)
-        sync[node].sync()
+        sync[node].dispatch(None)
 
     for node in sync_nodes_test_info.nodes:
-        sync[node].sync()
+        sync[node].dispatch(None)
 
     local_folders = []
     file_names = []
