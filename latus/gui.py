@@ -11,18 +11,20 @@ import latus.crypto
 
 
 # todo: put this in PreferencesDialog as a method?  Create grid_layout early and just put all of this in one method.
-class FolderUI():
+class LineUI():
     """
     Set up the folder widgets
     """
-    def __init__(self, name, path, file_dialog_method, font_metrics):
-        self.name = name
-        self.label = QtWidgets.QLabel(self.name + " Folder:")
-        self.line = QtWidgets.QLineEdit(path)
+    def __init__(self, name, value, method=None, button_text='Select...'):
+        self.label = QtWidgets.QLabel(name + ':')
+        self.line = QtWidgets.QLineEdit(value)
         self.line.setMinimumWidth(600)  # swag
         self.select_button = QtWidgets.QDialogButtonBox()
-        self.select_button.addButton('Select ...', QtWidgets.QDialogButtonBox.AcceptRole)
-        self.select_button.accepted.connect(file_dialog_method)
+        if method:
+            self.select_button.addButton(button_text, QtWidgets.QDialogButtonBox.AcceptRole)
+            self.select_button.accepted.connect(method)
+        else:
+            self.line.setReadOnly(True)
 
     def layout(self, grid, column):
         grid.addWidget(self.label, column, 0)
@@ -38,7 +40,7 @@ class CryptoKeyUI():
     """
     Set up the crypto key widgets
     """
-    def __init__(self, key, font_metrics, latus_appdata_folder):
+    def __init__(self, key, latus_appdata_folder):
         self.latus_appdata_folder = latus_appdata_folder
         self.label = QtWidgets.QLabel("Key:")
         self.line = QtWidgets.QLineEdit(key)
@@ -69,10 +71,10 @@ class PreferencesDialog(QtWidgets.QDialog):
         super(PreferencesDialog, self).__init__()
 
         self.config = latus.config.Config(latus_appdata_folder)
-        self.latus_folder = FolderUI('Latus', self.config.latus_folder_get(), self.new_folder, self.fontMetrics())
-        self.cloud_folder = FolderUI('Cloud', self.config.cloud_root_get(), self.new_folder, self.fontMetrics())
-
-        self.key_ui = CryptoKeyUI(self.config.crypto_get_string(), self.fontMetrics(), latus_appdata_folder)
+        self.latus_folder = LineUI('Latus folder', self.config.latus_folder_get(), self.new_folder)
+        self.cloud_folder = LineUI('Cloud Folder', self.config.cloud_root_get(), self.new_folder)
+        self.key_ui = CryptoKeyUI(self.config.crypto_get_string(), latus_appdata_folder)
+        self.node_id = LineUI('Node ID', self.config.node_id_get())
 
         ok_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
         ok_buttonBox.accepted.connect(self.ok)
@@ -83,8 +85,9 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.latus_folder.layout(grid_layout, 0)
         self.cloud_folder.layout(grid_layout, 1)
         self.key_ui.layout(grid_layout, 2)
-        grid_layout.addWidget(ok_buttonBox, 3, 0)
-        grid_layout.addWidget(cancel_buttonBox, 3, 1, alignment=QtCore.Qt.AlignLeft)  # kind of cheating on the layout
+        self.node_id.layout(grid_layout, 3)
+        grid_layout.addWidget(ok_buttonBox, 4, 0)
+        grid_layout.addWidget(cancel_buttonBox, 4, 1, alignment=QtCore.Qt.AlignLeft)  # kind of cheating on the layout
         grid_layout.setColumnStretch(1, 1)  # path column
         self.setLayout(grid_layout)
 
@@ -131,7 +134,7 @@ class CryptoKeyDialog(QtWidgets.QDialog):
         save_button_box.addButton('Save Key', QtWidgets.QDialogButtonBox.AcceptRole)
         save_button_box.clicked.connect(self.save_key)
 
-        self.key_ui = CryptoKeyUI(self.config.crypto_get_string(), self.fontMetrics(), latus_appdata_folder)
+        self.key_ui = CryptoKeyUI(self.config.crypto_get_string(), latus_appdata_folder)
 
         grid_layout = QtWidgets.QGridLayout()
         self.key_ui.layout(grid_layout, 0)
