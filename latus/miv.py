@@ -2,6 +2,7 @@ import os
 import datetime
 import time
 import random
+import sqlite3
 
 import sqlalchemy
 import sqlalchemy.exc
@@ -37,7 +38,15 @@ class MonotonicallyIncreasingValue():
 
     def next(self):
         command = self.miv_table.update().values(value=self.miv_table.c.value + 1, timestamp=datetime.datetime.utcnow())
-        self.conn.execute(command)
+        increment_complete = False
+        retry_count = 3
+        while not increment_complete and retry_count > 0:
+            try:
+                self.conn.execute(command)
+                increment_complete = True
+            except sqlalchemy.exc.IntegrityError:
+                latus.logger.log.warn('retrying miv next (retry_count %s)' % retry_count)
+            retry_count -= 1
         miv_value = self.get()
         latus.logger.log.info('miv : %s' % miv_value)
         return miv_value
