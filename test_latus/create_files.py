@@ -7,6 +7,7 @@ import os
 import shutil
 import random
 import time
+import logging
 
 from latus import const
 import latus.logger
@@ -92,7 +93,6 @@ class SyncNodesTestInfo():
     def get_file_name(self, node):
         return node + '.txt'
 
-
 def clean():
     """
     clean up the test data
@@ -109,6 +109,11 @@ def clean():
             latus.logger.log.warn(str(e))
             time.sleep(1)
             try_count -= 1
+
+
+def write_files():
+    t = TestFiles()
+    t.write_files()
 
 
 class TestFiles():
@@ -214,6 +219,7 @@ class TestFiles():
         a_folder, b_folder = get_random_roots()
         write_files(a_folder, a)
         write_files(b_folder, b)
+
 
 
 
