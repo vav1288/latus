@@ -56,15 +56,5 @@ class Walker:
     def full_path(self, partial_path):
         return os.path.join(self.root, partial_path)
 
-    # todo: get this working.
-    # For some reason, msvcrt.kbhit() blocks.  It seems like it shouldn't
-    def check_exit(self):
-        return False # just don't allow forced exit for now ...
-        #print("check_exit_start", self.keyboard_hit_exit)
-        #if not self.keyboard_hit_exit:
-        #    if msvcrt.kbhit():
-        #        print ("keyboard interrupt")
-        #        self.keyboard_hit_exit = True
-        #print("check_exit_end", self.keyboard_hit_exit)
-        #return(self.keyboard_hit_exit)
+
 
