@@ -19,7 +19,6 @@
 
 import os
 import logging
-import uuid
 import argparse
 
 import latus.cli
@@ -91,18 +90,21 @@ def set_from_args(args):
         # node id option specified - either with no value or with an id.  If no value given we get True (the
         # default which tells us to generate a new node id).
         if args.id is True:
-            node_id = str(uuid.uuid4())  # generate if no id given
+            node_id = latus.util.new_node_id()  # generate if no id given
             config.node_id_set(node_id)
             latus.logger.log.info('New node id : %s' % config.node_id_get())
         else:
             config.node_id_set(args.id)  # command line is a string
-
 
     # remember folder settings so the user doesn't have to specify them next time
     if args.latus:
         config.latus_folder_set(args.latus)
     if args.cloud:
         config.cloud_root_set(args.cloud)
+
+    node_id = config.node_id_get()
+    if not node_id:
+        config.node_id_set(latus.util.new_node_id())
 
     return latus_appdata_roaming_folder
 

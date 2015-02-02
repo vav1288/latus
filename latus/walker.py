@@ -4,7 +4,7 @@ from . import util
 from latus import const
 
 class Walker:
-    def __init__(self, root, do_dirs = False, ignore = []):
+    def __init__(self, root, do_dirs=False, ignore=[]):
         """
         root: the directory to start the walk from
         do_dirs: if True, return directories (as opposed to only files).
@@ -41,17 +41,11 @@ class Walker:
             for name in dirnames:
                 # note the separator delineates a folder/directory
                 partial_path = self.create_partial_path(name, dirpath) + util.get_folder_sep()
-                if self.check_exit():
-                    break
-                else:
-                    yield partial_path
+                yield partial_path
 
             for name in filenames:
                 partial_path = self.create_partial_path(name, dirpath)
-                if self.check_exit():
-                    break
-                else:
-                    yield partial_path
+                yield partial_path
 
     def full_path(self, partial_path):
         return os.path.join(self.root, partial_path)

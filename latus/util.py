@@ -155,8 +155,10 @@ def make_dirs(path):
 
     :param path: path of directories/folders to create
     """
-    if not os.path.exists(path):
+    try:
         os.makedirs(path)
+    except FileExistsError:
+        pass
 
 
 def get_latus_guid():
