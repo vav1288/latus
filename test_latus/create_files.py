@@ -42,118 +42,66 @@ def get_data_root():
     return os.path.join('test_latus', 'data')
 
 
-def get_files_root():
-    return os.path.join(get_data_root(), "files")
 
 
-def get_unicode_root():
-    return os.path.join(get_files_root(), "unicode")
+class Folders():
 
-
-def get_simple_root():
-    return os.path.join(get_files_root(), "simple")
-
-
-def get_sync_root():
-    return os.path.join(get_files_root(), "sync")
-
-
-def get_logger_root():
-    return os.path.join(get_data_root(), "log")
-
-
-def get_random_roots():
-    root = os.path.join(get_files_root(), "random")
-    return os.path.join(root, 'a'), os.path.join(root, 'b')
-
-
-class SyncNodesTestInfo():
-    nodes = ['a', 'b']
-
-    def __init__(self):
-        self.sync_root = os.path.join(get_files_root(), "sync")
-
-    def write(self):
-        for node in self.nodes:
-            for folder_name in self.folder_names:
-                os.makedirs(os.path.join(self.sync_root, node, folder_name))
+    def __init__(self, root):
+        self.sync_root = root
 
     def get_local_folder(self, node):
         return os.path.join(self.sync_root, node, 'latus')
 
-    def get_cloud_folder(self, node):
+    def get_cloud_root(self, node):
         return os.path.join(self.sync_root, node, 'dropbox')
 
     def get_appdata_roaming_folder(self, node):
         return os.path.join(self.sync_root, node, 'appdata_roaming')
 
-    def get_appdata_local_folder(self, node):
-        return os.path.join(self.sync_root, node, 'appdata_local')
+    def get_appdata_local_folder(self):
+        return os.path.join(self.sync_root, 'appdata_local')
+
+    def get_log_folder(self):
+        return os.path.join(self.get_appdata_local_folder(), 'log')
 
     def get_file_name(self, node):
         return node + '.txt'
+
 
 def clean():
     """
     clean up the test data
     :return:
     """
-    path = get_files_root()
-    latus.logger.log.info("cleaning:" + path)
+    path = get_data_root()
     try_count = 10
     while os.path.exists(path) and try_count:
         try:
             shutil.rmtree(path)
         except PermissionError as e:
-            latus.logger.log.warn('can not rmtree %s - retrying' % path)
-            latus.logger.log.warn(str(e))
+            # log isn't set up yet, so just print
+            print('can not rmtree %s - retrying' % path)
+            print(str(e))
             time.sleep(1)
             try_count -= 1
+    assert(try_count > 0)
+    if try_count == 0:
+        exit('clean failed')
 
 
-def write_files():
-    t = TestFiles()
-    t.write_files()
+def write_to_file(p, contents):
+    test_latus.util.make_dirs(os.path.dirname(p))
+    with open(p, "w") as f:
+        f.write(contents)
+        f.close()
 
 
-class TestFiles():
-    def __init__(self):
-        self.files_written = 0
-
-    # This writes various input files.  The goal is to not have to package up test_latus files in the repo, if we
-    # can avoid it.  Also, this way we can readily re-initialize and fully clean up test_latus files.
-    def write_files(self, force = False, write_flag = True):
-
-        self.files_written = 0
-
-        sync_nodes = SyncNodesTestInfo()
-        if force or not os.path.exists(sync_nodes.sync_root):
-            for node in sync_nodes.nodes:
-                self.write_to_file(os.path.join(sync_nodes.get_local_folder(node), sync_nodes.get_file_name(node)), node, write_flag)
-
-        latus.logger.log.info("files_written:" + str(self.files_written))
-        return self.files_written
-
+class DeleteMe:
     def write_big_file(self, path, size, write_flag):
         if write_flag or not os.path.exists(path):
             with open(path,'w') as f:
                 f.seek(size-1) # trick to make the write fast
                 f.write('\0')
-
-    def write_to_file(self, p, contents, write_flag):
-        """
-        makes the required dirs if necessary
-        """
-        # turn off writing to enable us to merely count the files we would have written
-        # (we need to know how many files written for testing purposes)
-        if write_flag:
-            #print("writing:" + p)
-            d = os.path.dirname(p)
-            test_latus.util.make_dirs(d)
-            f = open(p, "w")
-            f.write(contents)
-            f.close()
-        self.files_written += 1
 
     def write_unicode_files(self, root_dir, test_string, write_flag):
         paths = self.get_unicode_file_paths(root_dir)

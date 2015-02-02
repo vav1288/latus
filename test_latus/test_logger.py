@@ -5,6 +5,11 @@ import logging
 import latus.logger
 import test_latus.create_files
 
+
+def get_logger_root():
+    return os.path.join(test_latus.create_files.get_data_root(), "logger")
+
+
 def print_all_levels(msg):
     latus.logger.log.error('error test_latus message %s', msg)
     latus.logger.log.warning('warning test_latus message %s', msg)
@@ -12,9 +17,9 @@ def print_all_levels(msg):
     latus.logger.log.debug('debug test_latus message %s', msg)
 
 
-def test_logger():
+def test_logger(setup):
 
-    latus.logger.init(test_latus.create_files.get_logger_root())
+    latus.logger.init(get_logger_root())
 
     print()
     print_all_levels("default level")
@@ -23,5 +28,3 @@ def test_logger():
     print()
     print_all_levels("debug level")
 
-if __name__ == '__main__':
-    test_logger()

@@ -2,13 +2,17 @@ import os
 import time
 import subprocess
 import test_latus.create_files
-from test_latus.conftest import setup
+
+
+def get_cli_root():
+    return os.path.join(test_latus.create_files.get_data_root(), "cli")
+
 
 def test_sync_cli_invocation(setup):
     """
     Just test that the CLI version can be run at all.
     """
-    sync_folder = os.path.join(test_latus.create_files.get_sync_root(), 'a')
+    sync_folder = os.path.join(get_cli_root(), 'a')
     python_exe = os.path.join('c:', '/', 'python34', 'python.exe')
     print('python_exe', python_exe)
     cmd = [python_exe, 'latus.py']

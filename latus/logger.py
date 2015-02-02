@@ -11,10 +11,12 @@ LOGGER_NAME_BASE = 'latus'
 fh = None
 ch = None
 log = None
+log_folder = None
 
 
-def init(log_folder = None):
-    global fh, ch, log
+def init(log_folder_param=None):
+    global fh, ch, log, log_folder
+    log_folder = log_folder_param
 
     if not log_folder:
         log_folder = latus.util.get_latus_log_folder()
@@ -46,6 +48,10 @@ def init(log_folder = None):
     log.addHandler(fh)
     log.addHandler(ch)
 
+    return log_folder
+
+
+def get_log_folder():
     return log_folder
 
 
