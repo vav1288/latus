@@ -26,10 +26,10 @@ class FileSystemDB:
                                               )
         # 'seq' is intended to be monotonically increasing (across all nodes) for this user.  It is used to
         # globally determine file modification order.  Exceptions can occur when 2 or more nodes are offline and
-        # they both make changes.  This is only a problem when nodes modify the same file offline, which is
-        # essentially a conflict.
+        # they both make changes.
         self.change_table = sqlalchemy.Table('change', self.sa_metadata,
-                                             sqlalchemy.Column('seq', sqlalchemy.Integer, primary_key=True),
+                                             sqlalchemy.Column('index', sqlalchemy.Integer, primary_key=True),
+                                             sqlalchemy.Column('seq', sqlalchemy.Integer, index=True),
                                              sqlalchemy.Column('originator', sqlalchemy.String),
                                              sqlalchemy.Column('path', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('size', sqlalchemy.Integer),
@@ -56,13 +56,14 @@ class FileSystemDB:
 
     def db_row_to_info(self, row):
         entry = {}
-        entry['seq'] = row[0]
-        entry['originator'] = row[1]
-        entry['path'] = row[2]
-        entry['size'] = row[3]
-        entry['hash'] = row[4]
-        entry['mtime'] = row[5]
-        entry['timestamp'] = row[6]
+        entry['index'] = row[0]
+        entry['seq'] = row[1]
+        entry['originator'] = row[2]
+        entry['path'] = row[3]
+        entry['size'] = row[4]
+        entry['hash'] = row[5]
+        entry['mtime'] = row[6]
+        entry['timestamp'] = row[7]
         return entry
 
     def get_file_info(self, file_path):
@@ -92,9 +93,9 @@ class FileSystemDB:
             command = self.change_table.select()
             result = conn.execute(command)
             for row in result:
-                file_path = row[2]  # todo: make these number indices defined somewhere
+                file_path = row[3]  # todo: make these number indices defined somewhere
                 if file_path not in file_paths:
-                    file_paths.add(row[2])  # todo: make these number indices defined somewhere
+                    file_paths.add(file_path)  # todo: make these number indices defined somewhere
         else:
             latus.logger.log.warning('change_table does not exist')
         conn.close()
@@ -108,7 +109,7 @@ class FileSystemDB:
         if result:
             all_hashes = result.fetchall()
             if all_hashes:
-                file_hash = all_hashes[-1][4]  # todo: make these number indices defined somewhere
+                file_hash = all_hashes[-1][5]  # todo: make these number indices defined somewhere
         conn.close()
         return file_hash
 
