@@ -29,11 +29,11 @@ def wait_for_node(log_folder):
     # wait for this node to settle down and cease all activity
     # returns True if stability found, False if we merely timed out and gave up
 
-    sleep_time = 0.1  # sec
-    time_out = 30/sleep_time  # sec to timeout
-    stable = 2/sleep_time  # number of seconds we need to see stable files to declare it stable
+    sleep_time = 0.5  # sec
+    time_out = 60/sleep_time  # sec to timeout
+    stable_time = 4/sleep_time  # number of seconds we need to see stable files to declare it stable
     time_out_count = time_out
-    stable_count = stable
+    stable_count = stable_time
     unstable_file = None
 
     status = []
@@ -53,7 +53,8 @@ def wait_for_node(log_folder):
                         stable_flag = False
                     if prior_status[log_file]:
                         #print('status', status)
-                        if status['count'] != prior_status[log_file]['count'] or status['status'] != 'waiting':
+                        if status['count'] != prior_status[log_file]['count']:
+                            latus.logger.log.info('%s not yet stable %s : %s' % (file_path, status, prior_status[log_file]))
                             stable_flag = False
                             unstable_file = file_path
                     else:
@@ -65,7 +66,7 @@ def wait_for_node(log_folder):
         if stable_flag:
             stable_count -= 1
         else:
-            stable_count = stable
+            stable_count = stable_time
         time_out_count -= 1
         time.sleep(0.1)
     if time_out_count <= 0:
