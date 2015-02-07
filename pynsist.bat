@@ -1,0 +1,2 @@
+
+pynsist installer.cfg
