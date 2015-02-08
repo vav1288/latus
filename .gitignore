@@ -27,3 +27,6 @@ __pycache__/
 #
 # using MANIFEST.in to drive builds (MANIFEST created programmatically)
 MANIFEST
+#
+# this is programmatically created
+installer.cfg

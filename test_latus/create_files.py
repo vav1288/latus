@@ -7,10 +7,7 @@ import os
 import shutil
 import random
 import time
-import logging
 
-from latus import const
-import latus.logger
 import test_latus.const
 import test_latus.util
 

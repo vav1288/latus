@@ -2,3 +2,5 @@
 sqlalchemy
 cryptography
 PyQt5
+send2trash
+watchdog
