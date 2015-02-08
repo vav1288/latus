@@ -1,11 +1,14 @@
-import sys
-import distutils
-import py2exe
-import cx_Freeze
 
-# pick one
+import distutils.core
+#import py2exe
+#import cx_Freeze
+
+import latus.const
+import latus.util
+
+use_distutils = True
 use_py2exe = False
-use_cx_freeze = True
+use_cx_freeze = False
 
 if use_cx_freeze:
 
@@ -23,13 +26,13 @@ if use_cx_freeze:
 
     cx_Freeze.setup(
 
-        name="latus",
-        version="0.0",
-        author='James Abel',
-        author_email='j@abel.co',
-        url='www.lat.us',
+        name=latus.const.NAME,
+        version=latus.util.version_string(),
+        author=latus.const.AUTHOR,
+        author_email=latus.const.EMAIL,
+        url=latus.const.URL,
         license='LICENSE', # points to the actual file
-        description="secure file sync with low impact to cloud storage",
+        description=latus.const.DESCRIPTION,
         options={"build_exe": build_exe_options},
 
         # make a single executable
@@ -40,7 +43,7 @@ if use_cx_freeze:
         #                      "includes" : ["sqlalchemy", "sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography",
         #                                    "watchdog"]}},
 
-        executables=[cx_Freeze.Executable("latus.py", base=base)],
+        executables=[cx_Freeze.Executable(latus.const.MAIN_FILE, base=base)],
 
 
     )
@@ -48,15 +51,13 @@ if use_cx_freeze:
 if use_py2exe:
     distutils.core.setup(
 
-        console=['latus.py'],
-
-        name="latus",
-        version="0.0",
-        author='James Abel',
-        author_email='j@abel.co',
-        url='www.lat.us',
-        license='LICENSE', # points to the actual file
-        description="secure file sync with low impact to cloud storage",
+        name=latus.const.NAME,
+        version=latus.util.version_string(),
+        author=latus.const.AUTHOR,
+        author_email=latus.const.EMAIL,
+        url=latus.const.URL,
+        license='LICENSE',  # points to the actual file
+        description=latus.const.DESCRIPTION,
 
         # make a single executable
         # PyQt version:
@@ -65,7 +66,18 @@ if use_py2exe:
                               'optimize': 0,
                               "includes" : ["sqlalchemy", "sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography",
                                             "watchdog"]}},
-        windows=['latus.py'],
-
+        console=['latus.py'],
+        windows=[latus.const.MAIN_FILE],
         zipfile=None,  # a single executable
-)
+    )
+
+if use_distutils:
+    distutils.core.setup(
+        name=latus.const.NAME,
+        version=latus.util.version_string(),
+        author=latus.const.AUTHOR,
+        author_email=latus.const.EMAIL,
+        url=latus.const.URL,
+        license='LICENSE',  # points to the actual file
+        description=latus.const.DESCRIPTION,
+    )

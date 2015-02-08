@@ -1,8 +1,11 @@
 
 include LICENSE
+include *.md
 include .gitignore
 include *.bat
 include *.py
-recursive-include core *.py
+recursive-include latus *.py
+recursive-include icons *.py
 prune repo_ignore
 prune temp
+exclude temp.*
