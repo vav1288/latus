@@ -2,7 +2,6 @@ import os
 import datetime
 import time
 import random
-import sqlite3
 
 import sqlalchemy
 import sqlalchemy.exc
