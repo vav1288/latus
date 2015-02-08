@@ -240,3 +240,8 @@ def main(latus_appdata_folder):
     system_tray = SystemTrayIcon(app, latus_appdata_folder)
     system_tray.show()
     sys.exit(app.exec_())
+
+# for interactive testing
+if __name__ == "__main__":
+    latus.logger.init(sys.argv[1])
+    main(sys.argv[1])
