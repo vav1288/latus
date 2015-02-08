@@ -204,23 +204,29 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         config = latus.config.Config(self.latus_appdata_folder)
         latus.logger.log.info("latus_app_data: %s" % self.latus_appdata_folder)
 
-        latus_folder = config.latus_folder_get()
-        cloud_root = config.cloud_root_get()
-
         if not config.crypto_get():
             crypto_key_dialog = CryptoKeyDialog(self.latus_appdata_folder)
             crypto_key_dialog.exec_()
-        if not config.cloud_root_get() or not config.latus_folder_get():
-            sys.exit('error - folders not specified')  # todo: run a setup wizard
-        self.sync = latus.sync.Sync(config.crypto_get(), latus_folder, cloud_root, config.node_id_get(),
-                                    config.verbose_get())
+        if not config.cloud_root_get():
+            QtWidgets.QMessageBox.information(QtWidgets.QMessageBox(), latus.const.NAME,
+                                              'Please select the cloud folder (e.g. Dropbox, Google Drive, Microsoft One Drive, etc.)')
+            config.cloud_root_set(str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Cloud Folder", options = QtWidgets.QFileDialog.ShowDirsOnly)))
+        if not config.latus_folder_get():
+            QtWidgets.QMessageBox.information(QtWidgets.QMessageBox(), latus.const.NAME, 'Please select a latus folder')
+            config.latus_folder_set(str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Latus Folder", options = QtWidgets.QFileDialog.ShowDirsOnly)))
+        if not config.node_id_get():
+            config.node_id_set(latus.util.new_node_id())
+            QtWidgets.QMessageBox.information(QtWidgets.QMessageBox(), latus.const.NAME, 'Note: A new Node ID has been created: %s' % str(config.node_id_get()))
+
+        self.sync = latus.sync.Sync(config.crypto_get(), config.latus_folder_get(), config.cloud_root_get(),
+                                    config.node_id_get(), config.verbose_get())
         self.sync.start()
 
     def show(self):
         QtWidgets.QSystemTrayIcon.show(self)
 
     def about(self):
-        QtWidgets.QMessageBox.about(QtWidgets.QMessageBox(), 'latus', 'www.lat.us')
+        QtWidgets.QMessageBox.about(QtWidgets.QMessageBox(), latus.const.NAME, latus.const.URL)
 
     def preferences(self):
         preferences_dialog = PreferencesDialog(self.latus_appdata_folder)

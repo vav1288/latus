@@ -1,6 +1,7 @@
 import os
 import platform
 import uuid
+import datetime
 
 import win32con
 import pywintypes
@@ -171,5 +172,10 @@ def get_latus_guid():
     guid = '3E7A7DB0-3B15-416E-93D6-0FCF52BAEA38'
     return guid
 
+
 def new_node_id():
     return str(uuid.uuid4())
+
+
+def version_string():
+    return datetime.datetime.utcnow().strftime("%y%m%d")
