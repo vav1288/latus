@@ -20,11 +20,11 @@ class LineUI():
         self.line = QtWidgets.QLineEdit(value)
         self.line.setMinimumWidth(600)  # swag
         self.select_button = QtWidgets.QDialogButtonBox()
+        self.line.setReadOnly(True)  # guide user via dialog boxes - don't allow them to just type anything in
         if method:
             self.select_button.addButton(button_text, QtWidgets.QDialogButtonBox.AcceptRole)
             self.select_button.accepted.connect(method)
-        else:
-            self.line.setReadOnly(True)
+
 
     def layout(self, grid, column):
         grid.addWidget(self.label, column, 0)
@@ -45,15 +45,16 @@ class CryptoKeyUI():
         self.label = QtWidgets.QLabel("Key:")
         self.line = QtWidgets.QLineEdit(key)
         self.line.setMinimumWidth(400)  # swag
+        self.line.setReadOnly(True)  # guide user via dialog boxes - don't allow them to just type anything in
 
-        self.modify_button = QtWidgets.QDialogButtonBox()
-        self.modify_button.addButton('Modify ...', QtWidgets.QDialogButtonBox.AcceptRole)
-        self.modify_button.accepted.connect(self.modify_key)
+        self.manage_button = QtWidgets.QDialogButtonBox()
+        self.manage_button.addButton('Manage ...', QtWidgets.QDialogButtonBox.AcceptRole)
+        self.manage_button.accepted.connect(self.manage_key)
 
     def layout(self, grid, column):
         grid.addWidget(self.label, column, 0)
         grid.addWidget(self.line, column, 1)
-        grid.addWidget(self.modify_button, column, 2)
+        grid.addWidget(self.manage_button, column, 2)
 
     def get(self):
         return self.line.text()
@@ -61,7 +62,7 @@ class CryptoKeyUI():
     def set(self, s):
         self.line.setText(s)
 
-    def modify_key(self):
+    def manage_key(self):
         crypto_key_dialog = CryptoKeyDialog(self.latus_appdata_folder)
         crypto_key_dialog.exec_()
 
@@ -114,7 +115,7 @@ class CryptoKeyDialog(QtWidgets.QDialog):
     def __init__(self, latus_appdata_folder):
         super(CryptoKeyDialog, self).__init__()
 
-        self.caption = 'crypto key file'
+        self.caption = 'Key file'
 
         self.config = latus.config.Config(latus_appdata_folder)
         ok_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
@@ -146,12 +147,12 @@ class CryptoKeyDialog(QtWidgets.QDialog):
         grid_layout.setColumnStretch(1, 1)  # key column
         self.setLayout(grid_layout)
 
-        self.setWindowTitle("Crypto Key")
+        self.setWindowTitle("Key Management")
 
     def load_key(self):
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, caption=self.caption,
-                                                        directory=self.config.key_folder_get(),
-                                                        filter=latus.const.LATUS_KEY_FILE_EXTENSION)
+        print(self.config.key_folder_get())
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(None, self.caption, self.config.key_folder_get(),
+                                                        '*' + latus.const.LATUS_KEY_FILE_EXTENSION)
         if path:
             self.config.key_folder_set(os.path.dirname(path))
             key_file = latus.crypto.CryptoFile(path)
@@ -160,9 +161,8 @@ class CryptoKeyDialog(QtWidgets.QDialog):
             self.key_ui.set(key)
 
     def save_key(self):
-        path, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption=self.caption,
-                                                        directory=self.config.key_folder_get(),
-                                                        filter=latus.const.LATUS_KEY_FILE_EXTENSION)
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(None, self.caption, self.config.key_folder_get(),
+                                                        '*' + latus.const.LATUS_KEY_FILE_EXTENSION)
         if path:
             self.config.key_folder_set(os.path.dirname(path))
             key_file = latus.crypto.CryptoFile(path)
@@ -210,10 +210,12 @@ class SystemTrayIcon(QtWidgets.QSystemTrayIcon):
         if not config.cloud_root_get():
             QtWidgets.QMessageBox.information(QtWidgets.QMessageBox(), latus.const.NAME,
                                               'Please select the cloud folder (e.g. Dropbox, Google Drive, Microsoft One Drive, etc.)')
-            config.cloud_root_set(str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Cloud Folder", options = QtWidgets.QFileDialog.ShowDirsOnly)))
+            config.cloud_root_set(str(QtWidgets.QFileDialog.getExistingDirectory(QtWidgets.QFileDialog(), "Select Cloud Folder",
+                                                                                 options=QtWidgets.QFileDialog.ShowDirsOnly)))
         if not config.latus_folder_get():
             QtWidgets.QMessageBox.information(QtWidgets.QMessageBox(), latus.const.NAME, 'Please select a latus folder')
-            config.latus_folder_set(str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Latus Folder", options = QtWidgets.QFileDialog.ShowDirsOnly)))
+            config.latus_folder_set(str(QtWidgets.QFileDialog.getExistingDirectory(QtWidgets.QFileDialog(), "Select Latus Folder",
+                                                                                   options=QtWidgets.QFileDialog.ShowDirsOnly)))
         if not config.node_id_get():
             config.node_id_set(latus.util.new_node_id())
             QtWidgets.QMessageBox.information(QtWidgets.QMessageBox(), latus.const.NAME, 'Note: A new Node ID has been created: %s' % str(config.node_id_get()))

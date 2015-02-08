@@ -99,7 +99,7 @@ class Config:
         self.__config_set(self.__most_recent_key_folder_string, folder)
 
     def key_folder_get(self):
-        self.__config_get(self.__most_recent_key_folder_string)
+        return self.__config_get(self.__most_recent_key_folder_string)
 
     def node_id_set(self, new_node_id):
         self.__config_set(self.__id_string, new_node_id)
