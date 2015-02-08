@@ -19,7 +19,7 @@ dist_dir = 'dist'
 # In other words, I don't expect to release more than one version in a day and that will all live on.
 # Also, the repo management gets too difficult if we have too many file names.  And nsist doesn't seem
 # to like super frequent version string updates either.
-version = installer_string + '_' + datetime.datetime.utcnow().strftime("%y%m%d")
+version = installer_string + '_' + latus.util.version_string()
 
 # get rid of all existing installers
 existing_installers = []
