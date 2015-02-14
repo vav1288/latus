@@ -13,6 +13,10 @@ class Wizard():
     def get_cloud_folders(self):
         return self.cloud_folders
 
+    # child classes can override this to get progress
+    def progress(self, path):
+        print(path)
+
     def try_dropbox_folder(self, candidate_path):
         # dropbox appears to use this layout ...
         candidate = os.path.join(candidate_path, 'Dropbox')
@@ -33,7 +37,7 @@ class Wizard():
                 for drive in drives:
                     root = os.path.join(drive, os.sep)
                     if os.path.exists(os.path.join(root, 'Windows')):
-                        # only look in the user area for the drive that has Windows, etc.
+                        # only look in the user area for the drive that has Windows, Program Files, etc.
                         roots.append(home_folder)
                     else:
                         roots.append(root)
@@ -41,10 +45,14 @@ class Wizard():
                 pass  # todo: get possible location roots for Linux
             for root in roots:
                 self.try_dropbox_folder(root)
+                self.progress(root)
                 for path, dirs, _ in os.walk(root):
                     for d in dirs:
-                        self.try_dropbox_folder(os.path.join(path, d))
+                        candidate = os.path.join(path, d)
+                        self.try_dropbox_folder(candidate)
+                        self.progress(candidate)
         return self.cloud_folders
+
 
 if __name__ == "__main__":
     w = Wizard()
