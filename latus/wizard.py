@@ -3,14 +3,15 @@ import os
 import win32api
 
 import latus.util
+import latus.const
 
 # setup wizard
 
-class Wizard():
+class FolderWizard():
     def __init__(self):
         self.cloud_folders = []
 
-    def get_cloud_folders(self):
+    def get_folders(self):
         return self.cloud_folders
 
     # child classes can override this to get progress
@@ -24,7 +25,7 @@ class Wizard():
             if candidate not in self.cloud_folders:
                 self.cloud_folders.append(candidate)
 
-    def find_cloud_folder(self, exhaustive=False):
+    def find_folders(self, exhaustive=False):
         self.cloud_folders = []
         home_folder = os.path.expanduser('~')
         # first, try the normal location
@@ -53,8 +54,10 @@ class Wizard():
                         self.progress(candidate)
         return self.cloud_folders
 
+    def latus_folder(self):
+        return os.path.join(os.path.dirname(self.cloud_folders[0]), latus.const.NAME)
 
 if __name__ == "__main__":
-    w = Wizard()
-    print(w.find_cloud_folder())
-    print(w.find_cloud_folder(True))
+    w = FolderWizard()
+    print(w.find_folders())
+    print(w.find_folders(True))
