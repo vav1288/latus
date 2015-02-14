@@ -8,26 +8,25 @@ import latus.util
 
 class Wizard():
     def __init__(self):
-        pass
+        self.cloud_folders = []
+
+    def get_cloud_folders(self):
+        return self.cloud_folders
 
     def try_dropbox_folder(self, candidate_path):
-        # candidate_path is that folder that potentially contains the dropbox folder
-        cloud_folder = None
         # dropbox appears to use this layout ...
         candidate = os.path.join(candidate_path, 'Dropbox')
         if os.path.exists(candidate) and os.path.exists(os.path.join(candidate, '.dropbox')):
-            cloud_folder = candidate
-        return cloud_folder
+            if candidate not in self.cloud_folders:
+                self.cloud_folders.append(candidate)
 
     def find_cloud_folder(self, exhaustive=False):
-        cloud_folders = []
+        self.cloud_folders = []
         home_folder = os.path.expanduser('~')
         # first, try the normal location
-        if self.try_dropbox_folder(home_folder):
-            cloud_folders.append(self.try_dropbox_folder(home_folder))
-        if exhaustive or len(cloud_folders) == 0:
-            # If we couldn't find a cloud folder in the normal location, search more possible
-            # locations (will take longer).
+        self.try_dropbox_folder(home_folder)
+        if exhaustive or len(self.cloud_folders) == 0:
+            # Search more possible locations (will take longer).
             roots = []
             if latus.util.is_windows():
                 drives = win32api.GetLogicalDriveStrings().split('\0')[:-1]
@@ -41,17 +40,11 @@ class Wizard():
             elif latus.util.is_linux():
                 pass  # todo: get possible location roots for Linux
             for root in roots:
-                candidate = self.try_dropbox_folder(root)
-                if candidate:
-                    if candidate not in cloud_folders:
-                        cloud_folders.append(candidate)
+                self.try_dropbox_folder(root)
                 for path, dirs, _ in os.walk(root):
                     for d in dirs:
-                        candidate = self.try_dropbox_folder(os.path.join(path, d))
-                        if candidate:
-                            if candidate not in cloud_folders:
-                                cloud_folders.append(candidate)
-        return cloud_folders
+                        self.try_dropbox_folder(os.path.join(path, d))
+        return self.cloud_folders
 
 if __name__ == "__main__":
     w = Wizard()
