@@ -7,12 +7,27 @@ import latus.const
 
 # setup wizard
 
+
 class FolderWizard():
     def __init__(self):
-        self.cloud_folders = []
+        self.potential_cloud_folders = []
+        self.selected_cloud_folder = None
+        self.selected_latus_folder = None
 
-    def get_folders(self):
-        return self.cloud_folders
+    def get_potential_cloud_folders(self):
+        return self.potential_cloud_folders
+
+    def set_cloud_folder(self, folder):
+        self.selected_cloud_folder = folder
+
+    def set_latus_folder(self, folder):
+        self.selected_latus_folder = folder
+
+    def get_cloud_folder(self):
+        return self.selected_cloud_folder
+
+    def get_latus_folder(self):
+        return self.selected_latus_folder
 
     # child classes can override this to get progress
     def progress(self, path):
@@ -22,15 +37,15 @@ class FolderWizard():
         # dropbox appears to use this layout ...
         candidate = os.path.join(candidate_path, 'Dropbox')
         if os.path.exists(candidate) and os.path.exists(os.path.join(candidate, '.dropbox')):
-            if candidate not in self.cloud_folders:
-                self.cloud_folders.append(candidate)
+            if candidate not in self.potential_cloud_folders:
+                self.potential_cloud_folders.append(candidate)
 
-    def find_folders(self, exhaustive=False):
-        self.cloud_folders = []
+    def find_cloud_folders(self, exhaustive=False):
+        self.potential_cloud_folders = []
         home_folder = os.path.expanduser('~')
         # first, try the normal location
         self.try_dropbox_folder(home_folder)
-        if exhaustive or len(self.cloud_folders) == 0:
+        if exhaustive or len(self.potential_cloud_folders) == 0:
             # Search more possible locations (will take longer).
             roots = []
             if latus.util.is_windows():
@@ -52,12 +67,13 @@ class FolderWizard():
                         candidate = os.path.join(path, d)
                         self.try_dropbox_folder(candidate)
                         self.progress(candidate)
-        return self.cloud_folders
+        return self.potential_cloud_folders
 
-    def latus_folder(self):
-        return os.path.join(os.path.dirname(self.cloud_folders[0]), latus.const.NAME)
+
+def latus_folder_from_cloud_folder(path):
+    return os.path.join(os.path.dirname(path), latus.const.NAME)
 
 if __name__ == "__main__":
     w = FolderWizard()
-    print(w.find_folders())
-    print(w.find_folders(True))
+    print(w.find_cloud_folders())
+    print(w.find_cloud_folders(True))

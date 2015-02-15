@@ -2,75 +2,105 @@
 from PyQt5 import QtGui, QtWidgets, QtCore
 
 import latus.wizard
+import latus.config
 
 
-def create_intro_page():
-    page = QtWidgets.QWizardPage()
-    page.setTitle("Latus Setup Wizard")
+class GUIWizard(QtWidgets.QWizard):
 
-    label = QtWidgets.QLabel("This will guide you through the Latus setup process.")
-    label.setWordWrap(True)
+    def __init__(self):
+        super(GUIWizard, self).__init__()
+        app_folder_wizard = latus.wizard.FolderWizard()
+        self.cloud_folder_list = QtWidgets.QListWidget()
 
-    layout = QtWidgets.QVBoxLayout()
-    layout.addWidget(label)
-    page.setLayout(layout)
+        self.addPage(IntroPage())
+        self.addPage(CloudFolderPage(app_folder_wizard, self.cloud_folder_list))
+        self.addPage(LatusFolderPage(app_folder_wizard, self.cloud_folder_list))
+        self.addPage(ConclusionPage())
+        self.setWindowTitle("")
+        self.show()
 
-    return page
-
-
-def create_cloud_folder_selection_page(folder_wizard):
-    page = QtWidgets.QWizardPage()
-    page.setTitle("Cloud storage folder")
-    page.setSubTitle("Please select the cloud storage folder on your computer (for example: Dropbox, Microsoft's "
-                     "OneDrive, Google Drive, etc.):")
-
-    cloud_folders = folder_wizard.find_folders()
-
-    cloud_folder_list = QtWidgets.QListView()
-    model = QtGui.QStandardItemModel(cloud_folder_list)
-
-    for cloud_folder in cloud_folders:
-        item = QtGui.QStandardItem(cloud_folder)
-        item.setCheckable(True)
-        model.appendRow(item)
-
-    cloud_folder_list.setModel(model)
-    cloud_folder_list.show()
-
-    layout = QtWidgets.QGridLayout()
-    layout.addWidget(cloud_folder_list, 0, 1)
-    page.setLayout(layout)
-
-    return page
+    def accept(self):
+        print(self.cloud_folder_list.currentItem().text())
+        print(self.field('latus_folder'))
+        super(GUIWizard, self).accept()
 
 
-def create_latus_folder_selection_page(folder_wizard):
-    page = QtWidgets.QWizardPage()
-    page.setTitle("Latus folder")
-    page.setSubTitle("This is the Latus folder on your computer:")
+class IntroPage(QtWidgets.QWizardPage):
 
-    latus_folder_path = QtWidgets.QLabel(folder_wizard.latus_folder())
+    def __init__(self):
+        super(IntroPage, self).__init__()
+        self.setTitle("Latus Setup Wizard")
 
-    latus_folder_path.show()
+        label = QtWidgets.QLabel("This will guide you through the Latus setup process.")
+        label.setWordWrap(True)
 
-    layout = QtWidgets.QGridLayout()
-    layout.addWidget(latus_folder_path, 0, 1)
-    page.setLayout(layout)
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(label)
+        self.setLayout(layout)
 
-    return page
 
-def create_conclusion_page():
-    page = QtWidgets.QWizardPage()
-    page.setTitle("Complete!")
+class CloudFolderPage(QtWidgets.QWizardPage):
 
-    label = QtWidgets.QLabel("Latus setup is now complete!")
-    label.setWordWrap(True)
+    def __init__(self, folder_wizard, cloud_folder_list):
+        super(CloudFolderPage, self).__init__()
+        self.folder_wizard = folder_wizard
+        self.cloud_folder_list = cloud_folder_list
+        self.cloud_folders = []
 
-    layout = QtWidgets.QVBoxLayout()
-    layout.addWidget(label)
-    page.setLayout(layout)
+        self.setTitle("Cloud storage folder")
+        self.setSubTitle("Please select the cloud storage folder on your computer (for example: Dropbox, Microsoft's "
+                         "OneDrive, Google Drive, etc.):")
 
-    return page
+        self.cloud_folder_list.show()
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(self.cloud_folder_list, 0, 1)
+        self.setLayout(layout)
+
+    def initializePage(self):
+        item_count = 0
+        for folder in self.folder_wizard.find_cloud_folders():
+            item = QtWidgets.QListWidgetItem()
+            item.setText(folder)
+            self.cloud_folder_list.insertItem(item_count, item)
+            item_count += 1
+
+
+class LatusFolderPage(QtWidgets.QWizardPage):
+
+    def __init__(self, folder_wizard, cloud_folder_list):
+        super(LatusFolderPage, self).__init__()
+        self.folder_wizard = folder_wizard
+        self.cloud_folder_list = cloud_folder_list
+
+        self.setTitle("Latus folder")
+        self.setSubTitle("This is the Latus folder on your computer:")
+
+        self.latus_folder_box = QtWidgets.QLineEdit()
+        self.latus_folder_box.setReadOnly(True)
+        self.latus_folder_box.show()
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(self.latus_folder_box, 0, 1)
+        self.setLayout(layout)
+
+    def initializePage(self):
+        latus_folder = latus.wizard.latus_folder_from_cloud_folder(self.cloud_folder_list.currentItem().text())
+        self.latus_folder_box.setText(latus_folder)
+        self.registerField('latus_folder', self.latus_folder_box)
+
+class ConclusionPage(QtWidgets.QWizardPage):
+    def __init__(self):
+        super(ConclusionPage, self).__init__()
+
+        self.setTitle("Complete!")
+
+        label = QtWidgets.QLabel("Latus setup is now complete!")
+        label.setWordWrap(True)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(label)
+        self.setLayout(layout)
 
 
 if __name__ == '__main__':
@@ -78,16 +108,5 @@ if __name__ == '__main__':
     import sys
 
     app = QtWidgets.QApplication(sys.argv)
-
-    folder_wizard = latus.wizard.FolderWizard()
-
-    wizard = QtWidgets.QWizard()
-    wizard.addPage(create_intro_page())
-    wizard.addPage(create_cloud_folder_selection_page(folder_wizard))
-    wizard.addPage(create_latus_folder_selection_page(folder_wizard))
-    wizard.addPage(create_conclusion_page())
-
-    wizard.setWindowTitle("")
-    wizard.show()
-
-    sys.exit(wizard.exec_())
+    app_gui_wizard = GUIWizard()
+    sys.exit(app_gui_wizard.exec_())
