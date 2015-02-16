@@ -36,6 +36,7 @@ class GUIWizard(QtWidgets.QWizard):
         self.folder_wizard.request_exit()
         super(GUIWizard, self).done(result)
 
+
 class IntroPage(QtWidgets.QWizardPage):
 
     def __init__(self):
@@ -87,12 +88,13 @@ class CloudFolderPage(QtWidgets.QWizardPage):
     def progress(self, d):
         t = time.time()
         if d:
-            if t - self.prior_time > 0.2:
+            rate = 0.25  # if this rate is too frequent, Python (or PyQT) will crash ... I don't know why
+            if t - self.prior_time > rate:
                 self.progressbar.setText('Searching: ' + d)
                 self.progressbar.setCursorPosition(0)
                 self.prior_time = t
         else:
-            self.progressbar.setText('Search complete.')
+            self.progressbar.setText('Search complete.  Select a path below.')
 
     def wizard_alert(self, folders):
         item_count = 0
