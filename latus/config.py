@@ -21,7 +21,7 @@ class ConfigTable(Base):
 
 
 class Config:
-    def __init__(self, latus_appdata_folder):
+    def __init__(self, latus_appdata_folder, init=False):
 
         self.__id_string = 'nodeid'
         self.__key_string = 'cryptokey'
@@ -34,6 +34,8 @@ class Config:
             latus.util.make_dirs(latus_appdata_folder)
         sqlite_path = 'sqlite:///' + os.path.abspath(os.path.join(latus_appdata_folder, 'config.db'))
         self.__db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
+        if init:
+            self.init()
         Base.metadata.create_all(self.__db_engine)
         self.__Session = sqlalchemy.orm.sessionmaker(bind=self.__db_engine)
 
@@ -111,3 +113,6 @@ class Config:
         Base.metadata.drop_all(self.__db_engine)
         Base.metadata.create_all(self.__db_engine)
 
+    def all_set(self):
+        # Return True if everything is set, and we're all set to go!
+        return self.crypto_get() and self.node_id_get() and self.cloud_root_get() and self.latus_folder_get()

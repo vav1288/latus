@@ -23,7 +23,7 @@ def start_one(node_id, test_name):
     cmd += ['-c', cloud_folder]
     cmd += ['-a', appdata_folder]
     cmd += ['-k', 'dQf6js1s-CcVRQMnt6t4w7fOdVJAzqhvcQNsHnvuQNQ=']
-    cmd += ['-i', node_id]
+    cmd += ['-n', node_id]
     cmd += ['-cli']
     cmd += ['-log', log_folder]
     cmd += ['-v']

@@ -18,24 +18,8 @@ import latus.hash
 import latus.crypto
 import latus.fsdb
 import latus.miv
-
-
-class CloudFolders:
-    def __init__(self, cloud_root):
-        self.__latus_cloud_folder = os.path.join(cloud_root, '.' + latus.const.NAME)
-
-    @property
-    def cache(self):
-        return os.path.join(self.__latus_cloud_folder, 'cache')
-
-    @property
-    def fsdb(self):
-        return os.path.join(self.__latus_cloud_folder, 'fsdb')
-
-    @property
-    def miv(self):
-        # monotonically increasing value
-        return os.path.join(self.__latus_cloud_folder, 'miv')
+import latus.folders
+import latus.local_comm
 
 
 class SyncBase(watchdog.events.FileSystemEventHandler):
@@ -251,26 +235,32 @@ class CloudSync(SyncBase):
 
 
 class Sync:
-    def __init__(self, crypto_key, latus_folder, cloud_root, node_id, verbose):
+    def __init__(self, crypto_key, latus_folder, cloud_root, node_id, local_comm_folder, verbose):
         latus.logger.log.info('node_id : %s' % node_id)
         latus.logger.log.info('local_folder : %s' % latus_folder)
         latus.logger.log.info('crypto_key : %s' % crypto_key)
         latus.logger.log.info('cloud_root : %s' % cloud_root)
 
-        cloud_folders = CloudFolders(cloud_root)
+        cloud_folders = latus.folders.CloudFolders(cloud_root)
 
         self.local_sync = LocalSync(crypto_key, latus_folder, cloud_folders, node_id, verbose)
         self.cloud_sync = CloudSync(crypto_key, latus_folder, cloud_folders, node_id, verbose)
 
+        self.local_comm = latus.local_comm.LocalComm(node_id, local_comm_folder)
+
     def start(self):
         self.local_sync.start()
         self.cloud_sync.start()
+        self.local_comm.start()
 
     def scan(self):
         self.local_sync.dispatch(None)
         self.cloud_sync.dispatch(None)
 
     def request_exit(self):
+        time_out = 60
         self.local_sync.request_exit()
         self.cloud_sync.request_exit()
+        self.local_comm.request_exit()
+        self.local_comm.join(time_out)
 

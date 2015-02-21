@@ -28,6 +28,7 @@ import latus.const
 import latus.config
 import latus.crypto
 import latus.logger
+import latus.local_comm
 
 
 def main():
@@ -35,8 +36,9 @@ def main():
     parser.add_argument('-l', '--latus', metavar='path', help="latus folder")
     parser.add_argument('-c', '--cloud', metavar='path', help="cloud folder")
     parser.add_argument('-a', '--appdata', metavar='path', help="OS's appdata folder")
-    parser.add_argument('-i', '--id', nargs='?', help="Node ID value (omit value to automatically generate new one)",
+    parser.add_argument('-n', '--node_id', nargs='?', help="Node ID value (omit value to automatically generate new one)",
                         default=None, const=True)
+    parser.add_argument('-i', '--init', action='store_true', help="initialize user configuration")
     parser.add_argument('-k', '--key', nargs='?', help="set crypto key (omit value to automatically generate new one)",
                         default=None, const=True)
     parser.add_argument('-cli', action='store_true', help="use command line interface (not GUI)")
@@ -45,6 +47,7 @@ def main():
     args = parser.parse_args()
 
     latus_appdata_roaming_folder = set_from_args(args)
+
     if args.cli:
         latus.cli.main(latus_appdata_roaming_folder)
     else:
@@ -74,7 +77,7 @@ def set_from_args(args):
         latus_appdata_roaming_folder = latus.util.get_latus_appdata_roaming_folder()  # default
     latus.logger.log.info('latus_appdata_roaming_folder : %s' % latus_appdata_roaming_folder)
 
-    config = latus.config.Config(latus_appdata_roaming_folder)
+    config = latus.config.Config(latus_appdata_roaming_folder, args.init)
 
     # determine crypto key
     if args.key:
@@ -88,15 +91,15 @@ def set_from_args(args):
             config.crypto_set_string(args.key)  # command line is a string
 
     # determine node id
-    if args.id:
+    if args.node_id:
         # node id option specified - either with no value or with an id.  If no value given we get True (the
         # default which tells us to generate a new node id).
-        if args.id is True:
+        if args.node_id is True:
             node_id = latus.util.new_node_id()  # generate if no id given
             config.node_id_set(node_id)
             latus.logger.log.info('New node id : %s' % config.node_id_get())
         else:
-            config.node_id_set(args.id)  # command line is a string
+            config.node_id_set(args.node_id)  # command line is a string
 
     # remember folder settings so the user doesn't have to specify them next time
     if args.latus:

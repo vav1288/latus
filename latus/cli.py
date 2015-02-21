@@ -6,6 +6,7 @@ import latus.crypto
 import latus.util
 import latus.sync
 import latus.logger
+import latus.folders
 
 
 def main(latus_appdata_roaming_folder):
@@ -31,7 +32,9 @@ def main(latus_appdata_roaming_folder):
     if not node_id:
         sys.exit('No node id - please initialize with the --id option')
 
-    sync = latus.sync.Sync(key, latus_folder, cloud_root, node_id, config.verbose_get())
+    cloud_folders = latus.folders.CloudFolders(cloud_root)
+
+    sync = latus.sync.Sync(key, latus_folder, cloud_root, node_id, cloud_folders.comm, config.verbose_get())
     sync.start()
     input('Hit enter to exit.')
     sync.request_exit()
