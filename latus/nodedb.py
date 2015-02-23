@@ -6,13 +6,18 @@ import sqlalchemy.exc
 import latus.logger
 
 
-class FileSystemDB:
-    def __init__(self, cloud_fs_db_folder, node_id, write_flag=False):
+class NodeDB:
+    def __init__(self, cloud_node_db_folder, node_id, write_flag=False):
+
+        self.node_id_string = 'nodeid'
+        self.local_ip_string = 'localip'
+        self.port_string = 'port'
+
         self.node_id = node_id
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
         # writing to the DB since there is only one writer.
         self.database_file_name = node_id + '.db'
-        sqlite_file_path = os.path.join(cloud_fs_db_folder, self.database_file_name)
+        sqlite_file_path = os.path.join(cloud_node_db_folder, self.database_file_name)
 
         # the 'bind' and 'connection' seem to be redundant - what do I really need????
         # (I seem to need the bind, so perhaps I can get rid of the connection?)
@@ -166,35 +171,46 @@ class FileSystemDB:
             conn.close()
         return lock_state
 
-
-    def get_node_id(self):
+    def _get_general(self, key):
         conn = self.db_engine.connect()
-        node_id = None
-        command = self.general_table.select().where(self.general_table.c.key == 'nodeid')
+        val = None
+        command = self.general_table.select().where(self.general_table.c.key == key)
         result = conn.execute(command)
         if result:
             row = result.fetchone()
             if row:
-                node_id = row[1]
+                val = row[1]
         conn.close()
-        return node_id
+        return val
+
+    def _set_general(self, key, value):
+        conn = self.db_engine.connect()
+        db_value = self._get_general(key)
+        if not db_value:
+            command = self.general_table.insert().values(key=key, value=value)
+            result = conn.execute(command)
+        elif db_value != value:
+            command = self.general_table.update().where(self.general_table.c.key == key).values(value=value)
+            result = conn.execute(command)
+        conn.close()
+
+    def get_node_id(self):
+        return self._get_general(self.node_id_string)
 
     def set_node_id(self, node_id):
-        conn = self.db_engine.connect()
-        db_node_id = self.get_node_id()
-        latus.logger.log.debug('node_id : %s' % node_id)
-        latus.logger.log.debug('db_node_id : %s' % db_node_id)
-        if not db_node_id:
-            latus.logger.log.debug('insert')
-            command = self.general_table.insert().values(key='nodeid', value=node_id)
-            result = conn.execute(command)
-        elif db_node_id != node_id:
-            latus.logger.log.debug('update')
-            command = self.general_table.update().where(self.general_table.c.key == 'nodeid').values(value=node_id)
-            result = conn.execute(command)
-        else:
-            latus.logger.log.debug('equal')
-        conn.close()
+        self._set_general(self.node_id_string, node_id)
+
+    def get_local_ip(self):
+        return self._get_general(self.local_ip_string)
+
+    def set_local_ip(self, ip):
+        self._set_general(self.local_ip_string, ip)
+
+    def get_port(self):
+        return self._get_general(self.port_string)
+
+    def set_port(self, port):
+        self._set_general(self.port_string, port)
 
     def get_last_seq(self, file_path):
         conn = self.db_engine.connect()

@@ -73,10 +73,10 @@ class PreferencesDialog(QtWidgets.QDialog):
         super().__init__()
 
         self.config = latus.config.Config(latus_appdata_folder)
-        self.latus_folder = LineUI('Latus folder', self.config.latus_folder_get(), self.new_folder)
-        self.cloud_folder = LineUI('Cloud Folder', self.config.cloud_root_get(), self.new_folder)
-        self.key_ui = CryptoKeyUI(self.config.crypto_get_string(), latus_appdata_folder)
-        self.node_id = LineUI('Node ID', self.config.node_id_get())
+        self.latus_folder = LineUI('Latus folder', self.config.get_latus_folder(), self.new_folder)
+        self.cloud_folder = LineUI('Cloud Folder', self.config.get_cloud_root(), self.new_folder)
+        self.key_ui = CryptoKeyUI(self.config.get_crypto_key_string(), latus_appdata_folder)
+        self.node_id = LineUI('Node ID', self.config.get_node_id())
 
         ok_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
         ok_buttonBox.accepted.connect(self.ok)
@@ -96,9 +96,9 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.setWindowTitle("Preferences")
 
     def ok(self):
-        self.config.latus_folder_set(self.latus_folder.get())
-        self.config.cloud_root_set(self.cloud_folder.get())
-        self.config.crypto_set_string(self.key_ui.get())
+        self.config.set_latus_folder(self.latus_folder.get())
+        self.config.set_cloud_root(self.cloud_folder.get())
+        self.config.set_crypto_key_string(self.key_ui.get())
         self.close()
 
     def cancel(self):
@@ -136,7 +136,7 @@ class CryptoKeyDialog(QtWidgets.QDialog):
         save_button_box.addButton('Save Key', QtWidgets.QDialogButtonBox.AcceptRole)
         save_button_box.clicked.connect(self.save_key)
 
-        self.key_ui = CryptoKeyUI(self.config.crypto_get_string(), latus_appdata_folder)
+        self.key_ui = CryptoKeyUI(self.config.get_crypto_key_string(), latus_appdata_folder)
 
         grid_layout = QtWidgets.QGridLayout()
         self.key_ui.layout(grid_layout, 0)
@@ -151,21 +151,21 @@ class CryptoKeyDialog(QtWidgets.QDialog):
         self.setWindowTitle("Key Management")
 
     def load_key(self):
-        print(self.config.key_folder_get())
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(None, self.caption, self.config.key_folder_get(),
+        print(self.config.get_key_folder())
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(None, self.caption, self.config.get_key_folder(),
                                                         '*' + latus.const.LATUS_KEY_FILE_EXTENSION)
         if path:
-            self.config.key_folder_set(os.path.dirname(path))
+            self.config.set_key_folder(os.path.dirname(path))
             key_file = latus.crypto.CryptoFile(path)
             key_info = key_file.load_key()
             key = key_info['cryptokey']
             self.key_ui.set(key)
 
     def save_key(self):
-        path, _ = QtWidgets.QFileDialog.getSaveFileName(None, self.caption, self.config.key_folder_get(),
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(None, self.caption, self.config.get_key_folder(),
                                                         '*' + latus.const.LATUS_KEY_FILE_EXTENSION)
         if path:
-            self.config.key_folder_set(os.path.dirname(path))
+            self.config.set_key_folder(os.path.dirname(path))
             key_file = latus.crypto.CryptoFile(path)
             key_file.save(self.key_ui.get())
 
@@ -174,7 +174,7 @@ class CryptoKeyDialog(QtWidgets.QDialog):
         self.key_ui.set(new_key.decode())
 
     def ok(self):
-        self.config.crypto_set_string(self.key_ui.get())
+        self.config.set_crypto_key_string(self.key_ui.get())
         self.close()
 
     def cancel(self):
@@ -207,22 +207,22 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         config = latus.config.Config(self.latus_appdata_folder)
         latus.logger.log.info("latus_app_data: %s" % self.latus_appdata_folder)
 
-        if not config.cloud_root_get() or not config.latus_folder_get():
+        if not config.get_cloud_root() or not config.get_latus_folder():
             app_gui_wizard = latus.wizardgui.GUIWizard()
             app_gui_wizard.exec_()
-            config.cloud_root_set(app_gui_wizard.get_cloud_folder())
-            config.latus_folder_set(app_gui_wizard.get_latus_folder())
+            config.set_cloud_root(app_gui_wizard.get_cloud_folder())
+            config.set_latus_folder(app_gui_wizard.get_latus_folder())
 
-        if not config.crypto_get():
+        if not config.get_crypto_key():
             crypto_key_dialog = CryptoKeyDialog(self.latus_appdata_folder)
             crypto_key_dialog.exec_()
 
-        if not config.node_id_get():
-            config.node_id_set(latus.util.new_node_id())
+        if not config.get_node_id():
+            config.set_node_id(latus.util.new_node_id())
 
-        if config.all_set():
-            self.sync = latus.sync.Sync(config.crypto_get(), config.latus_folder_get(), config.cloud_root_get(),
-                                        config.node_id_get(), config.verbose_get())
+        if config.are_all_set():
+            self.sync = latus.sync.Sync(config.get_crypto_key(), config.get_latus_folder(), config.get_cloud_root(),
+                                        config.get_node_id(), config.get_verbose())
             self.sync.start()
         else:
             latus.logger.log.warn('insufficient configuration - exiting')

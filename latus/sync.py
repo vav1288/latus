@@ -16,7 +16,7 @@ import latus.const
 import latus.walker
 import latus.hash
 import latus.crypto
-import latus.fsdb
+import latus.nodedb
 import latus.miv
 import latus.folders
 import latus.local_comm
@@ -102,7 +102,7 @@ class LocalSync(SyncBase):
             if local_hash:
                 # todo: encrypt the hash?
                 cloud_fernet_file = os.path.join(self.cloud_folders.cache, local_hash + self.fernet_extension)
-                fs_db = latus.fsdb.FileSystemDB(self.cloud_folders.fsdb, self.node_id, True)
+                fs_db = latus.nodedb.NodeDB(self.cloud_folders.nodedb, self.node_id, True)
                 fs_updated = False
                 while not fs_updated:
                     if fs_db.acquire_lock():
@@ -125,7 +125,7 @@ class LocalSync(SyncBase):
                 latus.logger.log.warn('could not calculate hash for %s' % local_full_path)
 
         # check for local deletions
-        fs_db = latus.fsdb.FileSystemDB(self.cloud_folders.fsdb, self.node_id, True)
+        fs_db = latus.nodedb.NodeDB(self.cloud_folders.nodedb, self.node_id, True)
         fs_updated = False
         while not fs_updated:
             if fs_db.acquire_lock():
@@ -148,15 +148,15 @@ class CloudSync(SyncBase):
     def __init__(self, crypto_key, latus_folder, cloud_folders, node_id, verbose):
         super().__init__(crypto_key, latus_folder, cloud_folders, node_id, verbose)
 
-        latus.logger.log.info('cloud_fs_db : %s' % self.cloud_folders.fsdb)
+        latus.logger.log.info('cloud_fs_db : %s' % self.cloud_folders.nodedb)
         latus.logger.log.info('cloud_cache : %s' % self.cloud_folders.cache)
         latus.logger.log.info('cloud_miv : %s' % self.cloud_folders.miv)
 
-        latus.util.make_dirs(self.cloud_folders.fsdb)
+        latus.util.make_dirs(self.cloud_folders.nodedb)
         latus.util.make_dirs(self.cloud_folders.cache)
         latus.util.make_dirs(self.cloud_folders.miv)
 
-        self.observer.schedule(self, self.cloud_folders.fsdb, recursive=True)
+        self.observer.schedule(self, self.cloud_folders.nodedb, recursive=True)
 
     def get_type(self):
         return 'cloud'
@@ -168,9 +168,9 @@ class CloudSync(SyncBase):
             latus.logger.log.info('%s : cloud dispatch : event : %s : %s' % (self.node_id, self.call_count, event))
 
             crypto = latus.crypto.Crypto(self.crypto_key, self.verbose)
-            fs_db_this_node = latus.fsdb.FileSystemDB(self.cloud_folders.fsdb, self.node_id)
+            fs_db_this_node = latus.nodedb.NodeDB(self.cloud_folders.nodedb, self.node_id)
             # for each file path, determine the 'winning' node (which could be this node)
-            db_files = glob.glob(os.path.join(self.cloud_folders.fsdb, '*.db'))
+            db_files = glob.glob(os.path.join(self.cloud_folders.nodedb, '*.db'))
             looking = True  # set to False when we have a full set of winners
             while looking:
                 winners = {}
@@ -179,7 +179,7 @@ class CloudSync(SyncBase):
                     if not any_locked:
                         file_name = os.path.basename(db_file)
                         db_node_id = file_name.split('.')[0]
-                        fs_db = latus.fsdb.FileSystemDB(self.cloud_folders.fsdb, db_node_id)
+                        fs_db = latus.nodedb.NodeDB(self.cloud_folders.nodedb, db_node_id)
                         if fs_db.get_lock_state():
                             # one of the DBs is locked - we can't use this
                             winners = {}
@@ -235,7 +235,7 @@ class CloudSync(SyncBase):
 
 
 class Sync:
-    def __init__(self, crypto_key, latus_folder, cloud_root, node_id, local_comm_folder, verbose):
+    def __init__(self, crypto_key, latus_folder, cloud_root, node_id, verbose):
         latus.logger.log.info('node_id : %s' % node_id)
         latus.logger.log.info('local_folder : %s' % latus_folder)
         latus.logger.log.info('crypto_key : %s' % crypto_key)
@@ -246,7 +246,7 @@ class Sync:
         self.local_sync = LocalSync(crypto_key, latus_folder, cloud_folders, node_id, verbose)
         self.cloud_sync = CloudSync(crypto_key, latus_folder, cloud_folders, node_id, verbose)
 
-        self.local_comm = latus.local_comm.LocalComm(node_id, local_comm_folder)
+        self.local_comm = latus.local_comm.LocalComm(node_id, cloud_folders.nodedb, crypto_key)
 
     def start(self):
         self.local_sync.start()
