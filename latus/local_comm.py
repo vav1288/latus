@@ -10,12 +10,13 @@ import glob
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
-import urllib.request
+import urllib.request, urllib.error
 
 import latus.logger
 import latus.nodedb
 import latus.folders
 
+# these need to be globals so the http server can get to them
 g_node_db_folder = None
 g_crypto_key = None
 
@@ -29,6 +30,8 @@ class CommServerHandler(BaseHTTPRequestHandler):
     """
 
     def do_GET(self):
+        global g_node_db_folder
+
         parsed = urlparse(self.path)
         path = parsed.path
         id_in_url = path[1:]
@@ -41,7 +44,7 @@ class CommServerHandler(BaseHTTPRequestHandler):
             else:
                 response = 404
             self.send_response(response)
-            self.send_header('Content-type','application/json')
+            self.send_header('Content-type', 'application/json')
             self.end_headers()
             json_values['response'] = response
             self.wfile.write(bytearray(json.dumps(json_values), 'utf-8'))
@@ -88,18 +91,33 @@ class LocalComm(threading.Thread):
 
         super().__init__()
 
-    def update_nodedb_folder(self, nodedb_folder):
-        global g_nodedb_folder
-        g_nodedb_folder = nodedb_folder
+    def update_nodedb_folder(self, node_db_folder):
+        global g_node_db_folder
+        g_node_db_folder = node_db_folder
 
     def update_crypto_key(self, crypto_key):
         global g_crypto_key
         g_crypto_key = crypto_key
 
     def get_key(self):
-        # find an existing node
-        for nodedb in glob.glob(os.path.join(g_node_db_folder, '*.db')):
-            node_id = os.path.basename(nodedb).replace('.db', '')
+        key = None
+        global g_node_db_folder
+        if g_node_db_folder:
+            for nodedb in glob.glob(os.path.join(g_node_db_folder, '*.db')):
+                node_id = os.path.basename(nodedb).replace('.db', '')
+                node_db = latus.nodedb.NodeDB(g_node_db_folder, node_id)
+                url = 'http://' + node_db.get_local_ip() + ':' + node_db.get_port() + '/' + str(node_id)
+                latus.logger.log.info('url : %s' % url)
+                js = None
+                try:
+                    js = urllib.request.urlopen(url).read()
+                except urllib.error.HTTPError as err:
+                    latus.logger.log.info(str(err))
+                if js:
+                    node_info = json.loads(js.decode("utf-8"))
+                    key = node_info['key']
+                    latus.logger.log.info('key : %s' % key)
+        return key
 
     def request_exit(self):
         self._request_exit_flag = True
@@ -157,5 +175,6 @@ if __name__ == "__main__":
     for s in range(0, 30, period):
         print(s)
         time.sleep(period)
+        lc.get_key()
     lc.request_exit()
     lc.join()
