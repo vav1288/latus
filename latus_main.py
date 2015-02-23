@@ -85,10 +85,10 @@ def set_from_args(args):
         # default which tells us to generate a key).
         if args.key is True:
             key = latus.crypto.new_key()  # generate if no key parameter given
-            config.crypto_set(key)
-            latus.logger.log.info('New crypto key : %s' % config.crypto_get_string())
+            config.set_crypto_key(key)
+            latus.logger.log.info('New crypto key : %s' % config.get_crypto_key_string())
         else:
-            config.crypto_set_string(args.key)  # command line is a string
+            config.set_crypto_key_string(args.key)  # command line is a string
 
     # determine node id
     if args.node_id:
@@ -96,20 +96,20 @@ def set_from_args(args):
         # default which tells us to generate a new node id).
         if args.node_id is True:
             node_id = latus.util.new_node_id()  # generate if no id given
-            config.node_id_set(node_id)
-            latus.logger.log.info('New node id : %s' % config.node_id_get())
+            config.set_node_id(node_id)
+            latus.logger.log.info('New node id : %s' % config.get_node_id())
         else:
-            config.node_id_set(args.node_id)  # command line is a string
+            config.set_node_id(args.node_id)  # command line is a string
 
     # remember folder settings so the user doesn't have to specify them next time
     if args.latus:
-        config.latus_folder_set(args.latus)
+        config.set_latus_folder(args.latus)
     if args.cloud:
-        config.cloud_root_set(args.cloud)
+        config.set_cloud_root(args.cloud)
 
-    node_id = config.node_id_get()
+    node_id = config.get_node_id()
     if not node_id:
-        config.node_id_set(latus.util.new_node_id())
+        config.set_node_id(latus.util.new_node_id())
 
     return latus_appdata_roaming_folder
 

@@ -59,60 +59,60 @@ class Config:
         session.close()
         return value
 
-    def crypto_set_string(self, key):
+    def set_crypto_key_string(self, key):
         self.__config_set(self.__key_string, key)
 
     # Crypto keys are bytes, but we store them as a string.
-    def crypto_set(self, key):
+    def set_crypto_key(self, key):
         s = key.decode()  # to string
         self.__config_set(self.__key_string, s)
 
     # string version
-    def crypto_get_string(self):
+    def get_crypto_key_string(self):
         return self.__config_get(self.__key_string)
 
     # bytes version (for use by crypto routines)
-    def crypto_get(self):
+    def get_crypto_key(self):
         b = None
-        key = self.crypto_get_string()
+        key = self.get_crypto_key_string()
         if key:
             b = key.encode()  # to bytes
         return b
 
-    def cloud_root_set(self, folder):
+    def set_cloud_root(self, folder):
         self.__config_set(self.__cloud_root_string, os.path.abspath(folder))
 
-    def cloud_root_get(self):
+    def get_cloud_root(self):
         return self.__config_get(self.__cloud_root_string)
 
-    def latus_folder_set(self, folder):
+    def set_latus_folder(self, folder):
         self.__config_set(self.__latus_folder_string, os.path.abspath(folder))
 
-    def latus_folder_get(self):
+    def get_latus_folder(self):
         return self.__config_get(self.__latus_folder_string)
 
-    def verbose_set(self, value):
+    def set_verbose(self, value):
         self.__config_set(self.__verbose_string, str(value))
 
-    def verbose_get(self):
+    def get_verbose(self):
         return bool(self.__config_get(self.__verbose_string))
 
-    def key_folder_set(self, folder):
+    def set_key_folder(self, folder):
         self.__config_set(self.__most_recent_key_folder_string, folder)
 
-    def key_folder_get(self):
+    def get_key_folder(self):
         return self.__config_get(self.__most_recent_key_folder_string)
 
-    def node_id_set(self, new_node_id):
+    def set_node_id(self, new_node_id):
         self.__config_set(self.__id_string, new_node_id)
 
-    def node_id_get(self):
+    def get_node_id(self):
         return self.__config_get(self.__id_string)
 
     def init(self):
         Base.metadata.drop_all(self.__db_engine)
         Base.metadata.create_all(self.__db_engine)
 
-    def all_set(self):
+    def are_all_set(self):
         # Return True if everything is set, and we're all set to go!
-        return self.crypto_get() and self.node_id_get() and self.cloud_root_get() and self.latus_folder_get()
+        return self.get_crypto_key() and self.get_node_id() and self.get_cloud_root() and self.get_latus_folder()

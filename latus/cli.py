@@ -16,25 +16,23 @@ def main(latus_appdata_roaming_folder):
     config = latus.config.Config(latus_appdata_roaming_folder)
 
     # make sure we have a crypto key before proceeding
-    key = config.crypto_get()
+    key = config.get_crypto_key()
     if not key:
         sys.exit('No crypto key found in preferences.  Please use -k to provide or generate one.')
 
-    latus_folder = config.latus_folder_get()
+    latus_folder = config.get_latus_folder()
     if not latus_folder:
         sys.exit('No latus folder set - please initialize with the --latus option.')
 
-    cloud_root = config.cloud_root_get()
+    cloud_root = config.get_cloud_root()
     if not cloud_root:
         sys.exit('No cloud folder set - please initialize with the --cloud option.')
 
-    node_id = config.node_id_get()
+    node_id = config.get_node_id()
     if not node_id:
         sys.exit('No node id - please initialize with the --id option')
 
-    cloud_folders = latus.folders.CloudFolders(cloud_root)
-
-    sync = latus.sync.Sync(key, latus_folder, cloud_root, node_id, cloud_folders.comm, config.verbose_get())
+    sync = latus.sync.Sync(key, latus_folder, cloud_root, node_id, config.get_verbose())
     sync.start()
     input('Hit enter to exit.')
     sync.request_exit()

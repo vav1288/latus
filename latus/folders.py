@@ -17,16 +17,12 @@ class CloudFolders:
         return os.path.join(self.__latus_cloud_folder, 'cache')
 
     @property
-    def fsdb(self):
+    def nodedb(self):
         # file system database
-        return os.path.join(self.__latus_cloud_folder, 'fsdb')
+        return os.path.join(self.__latus_cloud_folder, 'nodedb')
 
     @property
     def miv(self):
         # monotonically increasing value
         return os.path.join(self.__latus_cloud_folder, 'miv')
 
-    @property
-    def comm(self):
-        # LAN communications
-        return os.path.join(self.__latus_cloud_folder, 'comm')
