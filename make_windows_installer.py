@@ -34,11 +34,10 @@ kwargs = {'appname': latus.const.NAME,
           'version': version,
           'shortcuts': {
               latus.const.NAME: {'entry_point': 'latus_main:main',
-                                 # 'console': 'True',
-                                 # 'icon': os.path.join('icons', 'latus.ico'),
+                                 'console': False,
+                                 'icon': os.path.join('icons', 'latus.ico'),
                                 },
           },
-          # 'icon': os.path.join('icons', 'latus.ico'),
 
           # use this Python's version for the build version
           'py_version': sys.version.split()[0],
