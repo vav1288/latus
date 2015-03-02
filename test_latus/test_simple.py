@@ -35,7 +35,6 @@ def test_simple(setup):
         # point both nodes to the same cloud folder to emulate cloud sync
         local_folder = create_folders.get_local_folder(node)
         cloud_root = create_folders.get_cloud_root(nodes[0])
-        cloud_folders = latus.folders.CloudFolders(cloud_root)
         sync[node] = latus.sync.Sync(key, local_folder, cloud_root, node, True)
 
     for node in nodes:
