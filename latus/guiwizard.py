@@ -9,10 +9,13 @@ import latus.config
 import latus.gui
 import latus.sync
 import latus.folders
+import latus.logger
+import latus.crypto
 
 CLOUD_FOLDER_FIELD_STRING = 'cloud_folder'
 LATUS_FOLDER_FIELD_STRING = 'latus_folder'
 KEY_FIELD_STRING = 'key'
+
 
 class GUIWizard(QtWidgets.QWizard):
 
@@ -20,11 +23,11 @@ class GUIWizard(QtWidgets.QWizard):
     (IntroPageNumber, CloudFolderPageNumber, LatusFolderPageNumber, NewKeyPageNumber, ExistingKeyPageNumber,
      ConclusionPageNumber) = range(NUM_PAGES)
 
-    def __init__(self):
+    def __init__(self, latus_appdata_folder):
         super().__init__()
+        latus.logger.log.info('starting GUIWizard')
 
-        self.cloud_folder = None
-        self.latus_folder = None
+        self.latus_appdata_folder = latus_appdata_folder
         self.folder_wizard = latus.wizard.FolderWizard()
 
         self.setPage(self.IntroPageNumber, IntroPage())
@@ -37,15 +40,11 @@ class GUIWizard(QtWidgets.QWizard):
         self.show()
 
     def accept(self):
-        self.cloud_folder = self.field(CLOUD_FOLDER_FIELD_STRING)
-        self.latus_folder = self.field(LATUS_FOLDER_FIELD_STRING)
+        config = latus.config.Config(self.latus_appdata_folder)
+        config.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
+        config.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
+        config.set_crypto_key_string(self.field(KEY_FIELD_STRING))
         super().accept()
-
-    def get_cloud_folder(self):
-        return self.cloud_folder
-
-    def get_latus_folder(self):
-        return self.latus_folder
 
     def done(self, result):
         self.folder_wizard.request_exit()
@@ -181,7 +180,10 @@ class LatusFolderPage(QtWidgets.QWizardPage):
         if os.path.exists(cf.latus):
             return GUIWizard.ExistingKeyPageNumber
         else:
-            return GUIWizard.NewKeyPageNumber
+            new_key_bytes = latus.crypto.new_key()
+            self.setField(KEY_FIELD_STRING, new_key_bytes.decode())
+            return GUIWizard.ConclusionPageNumber
+
 
 class NewKeyPage(QtWidgets.QWizardPage):
 

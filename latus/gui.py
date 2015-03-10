@@ -8,7 +8,7 @@ import latus.config
 import latus.util
 import latus.const
 import latus.crypto
-import latus.wizardgui
+import latus.guiwizard
 
 
 # todo: put this in PreferencesDialog as a method?  Create grid_layout early and just put all of this in one method.
@@ -183,6 +183,7 @@ class CryptoKeyDialog(QtWidgets.QDialog):
 class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
     def __init__(self, app, latus_appdata_folder, parent=None):
+        latus.logger.log.info('starting LatusSystemTrayIcon')
         self.app = app
 
         import icons.icons  # actually used for QPixmap
@@ -205,27 +206,9 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
     def start_latus(self):
         config = latus.config.Config(self.latus_appdata_folder)
-        latus.logger.log.info("latus_app_data: %s" % self.latus_appdata_folder)
-
-        if not config.get_cloud_root() or not config.get_latus_folder():
-            app_gui_wizard = latus.wizardgui.GUIWizard()
-            app_gui_wizard.exec_()
-            config.set_cloud_root(app_gui_wizard.get_cloud_folder())
-            config.set_latus_folder(app_gui_wizard.get_latus_folder())
-
-        if not config.get_crypto_key():
-            crypto_key_dialog = CryptoKeyDialog(self.latus_appdata_folder)
-            crypto_key_dialog.exec_()
-
-        if not config.get_node_id():
-            config.set_node_id(latus.util.new_node_id())
-
-        if config.are_all_set():
-            self.sync = latus.sync.Sync(config.get_crypto_key(), config.get_latus_folder(), config.get_cloud_root(),
-                                        config.get_node_id(), config.get_verbose())
-            self.sync.start()
-        else:
-            latus.logger.log.warn('insufficient configuration - exiting')
+        self.sync = latus.sync.Sync(config.get_crypto_key(), config.get_latus_folder(), config.get_cloud_root(),
+                                    config.get_node_id(), config.get_verbose())
+        self.sync.start()
 
     def show(self):
         QtWidgets.QSystemTrayIcon.show(self)
@@ -240,19 +223,43 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
     def exit(self):
         latus.logger.log.info('exit')
         self.hide()
-        self.sync.request_exit()
+        if self.sync:
+            self.sync.request_exit()
         QtWidgets.QApplication.exit()
 
 
 def main(latus_appdata_folder):
     latus.logger.log.info('gui')
-    app = QtWidgets.QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)  # so popup dialogs don't close the system tray icon
-    system_tray = LatusSystemTrayIcon(app, latus_appdata_folder)
-    system_tray.show()
-    sys.exit(app.exec_())
+
+    # check if we should run the setup wizard first
+    config = latus.config.Config(latus_appdata_folder)
+    latus.logger.log.info("latus_app_data: %s" % latus_appdata_folder)
+
+    app = QtWidgets.QApplication(sys.argv)  # need this even for the GUIWizard
+
+    if not config.are_all_set():
+        latus.logger.log.info('not all preferences are set - starting WizardGUI')
+        app_gui_wizard = latus.guiwizard.GUIWizard(latus_appdata_folder)
+        app_gui_wizard.exec_()
+
+    if config.are_all_set():
+        app.setQuitOnLastWindowClosed(False)  # so popup dialogs don't close the system tray icon
+        system_tray = LatusSystemTrayIcon(app, latus_appdata_folder)
+        system_tray.show()
+        app.exec_()
+    else:
+        msg = 'Incomplete configuration.\n\nPlease re-run Latus and complete the Latus Setup Wizard.\n\nExiting ...'
+
+        w = QtWidgets.QMessageBox()
+        w.setWindowTitle(latus.const.NAME)
+        w.setText(msg)
+        w.exec()
+
+        latus.logger.log.warn(msg.replace('\n', ' '))  # don't put newlines in the log
+        sys.exit(1)
 
 # for interactive testing
 if __name__ == "__main__":
-    latus.logger.init(sys.argv[1])
-    main(sys.argv[1])
+    latus_appdata_folder = sys.argv[1]
+    latus.logger.init(latus_appdata_folder)
+    main(latus_appdata_folder)
