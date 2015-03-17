@@ -8,6 +8,7 @@ import sqlalchemy.exc
 import sqlalchemy.ext.declarative
 
 import latus.logger
+import latus.const
 
 """
     Monotonically Increasing Value (miv)
@@ -19,7 +20,7 @@ Base = sqlalchemy.ext.declarative.declarative_base()
 
 class MonotonicallyIncreasingValue():
     def __init__(self, folder):
-        self.database_file_name = 'miv.db'
+        self.database_file_name = 'miv' + latus.const.DB_EXTENSION
         sqlite_file_path = os.path.join(folder, self.database_file_name)
         self.db_engine = sqlalchemy.create_engine('sqlite:///' + os.path.abspath(sqlite_file_path))
         sa_metadata = sqlalchemy.MetaData()

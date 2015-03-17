@@ -13,6 +13,7 @@ import random
 import latus.logger
 import latus.util
 import latus.const
+import latus.preferences
 import latus.walker
 import latus.hash
 import latus.crypto
@@ -148,7 +149,7 @@ class CloudSync(SyncBase):
     def __init__(self, crypto_key, latus_folder, cloud_folders, node_id, verbose):
         super().__init__(crypto_key, latus_folder, cloud_folders, node_id, verbose)
 
-        latus.logger.log.info('cloud_fs_db : %s' % self.cloud_folders.nodedb)
+        latus.logger.log.info('cloud_nodedb : %s' % self.cloud_folders.nodedb)
         latus.logger.log.info('cloud_cache : %s' % self.cloud_folders.cache)
         latus.logger.log.info('cloud_miv : %s' % self.cloud_folders.miv)
 
@@ -170,7 +171,7 @@ class CloudSync(SyncBase):
             crypto = latus.crypto.Crypto(self.crypto_key, self.verbose)
             fs_db_this_node = latus.nodedb.NodeDB(self.cloud_folders.nodedb, self.node_id)
             # for each file path, determine the 'winning' node (which could be this node)
-            db_files = glob.glob(os.path.join(self.cloud_folders.nodedb, '*.db'))
+            db_files = glob.glob(os.path.join(self.cloud_folders.nodedb, '*' + latus.const.DB_EXTENSION))
             looking = True  # set to False when we have a full set of winners
             while looking:
                 winners = {}
@@ -235,18 +236,22 @@ class CloudSync(SyncBase):
 
 
 class Sync:
-    def __init__(self, crypto_key, latus_folder, cloud_root, node_id, verbose):
-        latus.logger.log.info('node_id : %s' % node_id)
-        latus.logger.log.info('local_folder : %s' % latus_folder)
-        latus.logger.log.info('crypto_key : %s' % crypto_key)
-        latus.logger.log.info('cloud_root : %s' % cloud_root)
+    def __init__(self, app_data_folder):
+        self.app_data_folder = app_data_folder
+        pref = latus.preferences.Preferences(app_data_folder)
+        latus.logger.log.info('node_id : %s' % pref.get_node_id())
+        latus.logger.log.info('local_folder : %s' % pref.get_latus_folder())
+        latus.logger.log.info('crypto_key : %s' % pref.get_crypto_key_string())
+        latus.logger.log.info('cloud_root : %s' % pref.get_cloud_root())
 
-        cloud_folders = latus.folders.CloudFolders(cloud_root)
+        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
 
-        self.local_sync = LocalSync(crypto_key, latus_folder, cloud_folders, node_id, verbose)
-        self.cloud_sync = CloudSync(crypto_key, latus_folder, cloud_folders, node_id, verbose)
+        self.local_sync = LocalSync(pref.get_crypto_key_string(), pref.get_latus_folder(), cloud_folders,
+                                    pref.get_node_id(), pref.get_verbose())
+        self.cloud_sync = CloudSync(pref.get_crypto_key_string(), pref.get_latus_folder(), cloud_folders,
+                                    pref.get_node_id(), pref.get_verbose())
 
-        self.local_comm = latus.local_comm.LocalComm(node_id, cloud_folders.nodedb, crypto_key)
+        self.local_comm = latus.local_comm.LocalComm(app_data_folder)
 
     def start(self):
         self.local_sync.start()

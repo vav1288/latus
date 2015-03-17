@@ -1,8 +1,10 @@
 
 import os
 import datetime
+import time
 import sqlalchemy
 import sqlalchemy.exc
+import latus.const
 import latus.logger
 
 
@@ -16,7 +18,7 @@ class NodeDB:
         self.node_id = node_id
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
         # writing to the DB since there is only one writer.
-        self.database_file_name = node_id + '.db'
+        self.database_file_name = node_id + latus.const.DB_EXTENSION
         sqlite_file_path = os.path.join(cloud_node_db_folder, self.database_file_name)
 
         # the 'bind' and 'connection' seem to be redundant - what do I really need????
@@ -29,6 +31,7 @@ class NodeDB:
                                               sqlalchemy.Column('key', sqlalchemy.String, primary_key=True),
                                               sqlalchemy.Column('value', sqlalchemy.String),
                                               )
+
         # 'seq' is intended to be monotonically increasing (across all nodes) for this user.  It is used to
         # globally determine file modification order.  Exceptions can occur when 2 or more nodes are offline and
         # they both make changes.
@@ -43,6 +46,7 @@ class NodeDB:
                                              sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
                                              )
         if write_flag:
+            time.sleep(0.01)  # todo: we need this during tests due to some race condition - figure out why!!!!!!!
             self.sa_metadata.create_all(self.db_engine)
             self.set_node_id(node_id)
 

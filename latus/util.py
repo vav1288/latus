@@ -120,18 +120,10 @@ def make_hidden(in_path):
 
 
 def get_latus_appdata_roaming_folder():
-    """
-    Things like config files are stored here.
-    :return: the latus appdata roaming folder
-    """
     return os.path.join(__get_os_appdata_roaming_folder(), latus.const.NAME)
 
 
 def get_latus_appdata_local_folder():
-    """
-    Things like config files are stored here.
-    :return: the latus appdata roaming folder
-    """
     return os.path.join(__get_os_appdata_local_folder(), latus.const.NAME)
 
 
@@ -141,12 +133,17 @@ def get_latus_log_folder():
 
 
 def __get_os_appdata_roaming_folder():
+    # Things stored here: preferences, etc.
+    # Usually smaller files.
+    #
     # I'd like to use winpaths.get_local_appdata() but it doesn't seem to work with Python 3, so I'll
     # rely on the environment variable.
     return os.environ['APPDATA']
 
 
 def __get_os_appdata_local_folder():
+    # Things stored here: logs, etc.
+    # Can be larger files.
     return os.environ['LOCALAPPDATA']
 
 
