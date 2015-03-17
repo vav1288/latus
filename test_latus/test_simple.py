@@ -8,6 +8,7 @@ import latus.sync
 import latus.util
 import latus.logger
 import latus.folders
+import latus.preferences
 import test_latus.create_files
 import test_latus.util
 
@@ -32,10 +33,15 @@ def test_simple(setup):
         test_latus.create_files.write_to_file(os.path.join(create_folders.get_local_folder(node), node + '.txt'), node)
 
     for node in nodes:
+        pref = latus.preferences.Preferences(create_folders.get_appdata_roaming_folder(node))
+        pref.set_crypto_key_string(key)
+        pref.set_latus_folder(create_folders.get_local_folder(node))
+        pref.set_node_id(node)
+        pref.set_verbose(True)
         # point both nodes to the same cloud folder to emulate cloud sync
-        local_folder = create_folders.get_local_folder(node)
-        cloud_root = create_folders.get_cloud_root(nodes[0])
-        sync[node] = latus.sync.Sync(key, local_folder, cloud_root, node, True)
+        pref.set_cloud_root(os.path.join(get_simple_root(), 'cloud'))
+
+        sync[node] = latus.sync.Sync(create_folders.get_appdata_roaming_folder(node))
 
     for node in nodes:
         sync[node].start()

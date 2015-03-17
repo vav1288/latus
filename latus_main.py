@@ -25,7 +25,7 @@ import latus.cli
 import latus.gui
 import latus.util
 import latus.const
-import latus.config
+import latus.preferences
 import latus.crypto
 import latus.logger
 import latus.local_comm
@@ -38,7 +38,7 @@ def main():
     parser.add_argument('-a', '--appdata', metavar='path', help="OS's appdata folder")
     parser.add_argument('-n', '--node_id', nargs='?', help="Node ID value (omit value to automatically generate new one)",
                         default=None, const=True)
-    parser.add_argument('-i', '--init', action='store_true', help="initialize user configuration")
+    parser.add_argument('-i', '--init', action='store_true', help="initialize perferences")
     parser.add_argument('-k', '--key', nargs='?', help="set crypto key (omit value to automatically generate new one)",
                         default=None, const=True)
     parser.add_argument('-cli', action='store_true', help="use command line interface (not GUI)")
@@ -77,7 +77,7 @@ def set_from_args(args):
         latus_appdata_roaming_folder = latus.util.get_latus_appdata_roaming_folder()  # default
     latus.logger.log.info('latus_appdata_roaming_folder : %s' % latus_appdata_roaming_folder)
 
-    config = latus.config.Config(latus_appdata_roaming_folder, args.init)
+    pref = latus.preferences.Preferences(latus_appdata_roaming_folder, args.init)
 
     # determine crypto key
     if args.key:
@@ -85,10 +85,10 @@ def set_from_args(args):
         # default which tells us to generate a key).
         if args.key is True:
             key = latus.crypto.new_key()  # generate if no key parameter given
-            config.set_crypto_key(key)
-            latus.logger.log.info('New crypto key : %s' % config.get_crypto_key_string())
+            pref.set_crypto_key(key)
+            latus.logger.log.info('New crypto key : %s' % pref.get_crypto_key_string())
         else:
-            config.set_crypto_key_string(args.key)  # command line is a string
+            pref.set_crypto_key_string(args.key)  # command line is a string
 
     # determine node id
     if args.node_id:
@@ -96,20 +96,20 @@ def set_from_args(args):
         # default which tells us to generate a new node id).
         if args.node_id is True:
             node_id = latus.util.new_node_id()  # generate if no id given
-            config.set_node_id(node_id)
-            latus.logger.log.info('New node id : %s' % config.get_node_id())
+            pref.set_node_id(node_id)
+            latus.logger.log.info('New node id : %s' % pref.get_node_id())
         else:
-            config.set_node_id(args.node_id)  # command line is a string
+            pref.set_node_id(args.node_id)  # command line is a string
 
     # remember folder settings so the user doesn't have to specify them next time
     if args.latus:
-        config.set_latus_folder(args.latus)
+        pref.set_latus_folder(args.latus)
     if args.cloud:
-        config.set_cloud_root(args.cloud)
+        pref.set_cloud_root(args.cloud)
 
-    node_id = config.get_node_id()
+    node_id = pref.get_node_id()
     if not node_id:
-        config.set_node_id(latus.util.new_node_id())
+        pref.set_node_id(latus.util.new_node_id())
 
     return latus_appdata_roaming_folder
 

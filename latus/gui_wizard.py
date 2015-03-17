@@ -2,10 +2,10 @@
 import time
 import os
 
-from PyQt5 import QtGui, QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore
 
 import latus.wizard
-import latus.config
+import latus.preferences
 import latus.gui
 import latus.sync
 import latus.folders
@@ -40,10 +40,10 @@ class GUIWizard(QtWidgets.QWizard):
         self.show()
 
     def accept(self):
-        config = latus.config.Config(self.latus_appdata_folder)
-        config.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
-        config.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
-        config.set_crypto_key_string(self.field(KEY_FIELD_STRING))
+        pref = latus.preferences.Preferences(self.latus_appdata_folder)
+        pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
+        pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
+        pref.set_crypto_key_string(self.field(KEY_FIELD_STRING))
         super().accept()
 
     def done(self, result):

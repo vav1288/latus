@@ -3,6 +3,7 @@
 NAME = 'latus'
 LOG_FILE = NAME + '.log'
 LATUS_KEY_FILE_EXTENSION = '.lky'
+DB_EXTENSION = '.db'
 URL = 'www.lat.us'
 EMAIL = 'j@abel.co'
 AUTHOR = 'James Abel'
