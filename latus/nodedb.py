@@ -2,10 +2,12 @@
 import os
 import datetime
 import time
+import hashlib
 import sqlalchemy
 import sqlalchemy.exc
 import latus.const
 import latus.logger
+import latus.local_comm
 
 
 class NodeDB:
@@ -14,6 +16,7 @@ class NodeDB:
         self.node_id_string = 'nodeid'
         self.local_ip_string = 'localip'
         self.port_string = 'port'
+        self.key_hash_string = 'keyhash'
 
         self.node_id = node_id
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
@@ -27,10 +30,25 @@ class NodeDB:
         self.sa_metadata = sqlalchemy.MetaData()
         self.sa_metadata.bind = self.db_engine
 
+        # general key/value store
         self.general_table = sqlalchemy.Table('general', self.sa_metadata,
                                               sqlalchemy.Column('key', sqlalchemy.String, primary_key=True),
                                               sqlalchemy.Column('value', sqlalchemy.String),
                                               )
+
+        # Keep a record of when this node provides a key to another node - i.e. when it enables another node to 'join'
+        # this Latus. This is good for debug as well as status, in case we want to see what nodes potentially belong
+        # to this Latus.
+        self.joins_table = sqlalchemy.Table('joins', self.sa_metadata,
+                                            # requester's node id
+                                            sqlalchemy.Column('requester', sqlalchemy.String, primary_key=True),
+                                            sqlalchemy.Column(latus.local_comm.COMPUTER_STRING, sqlalchemy.String),
+                                            sqlalchemy.Column(latus.local_comm.USER_STRING, sqlalchemy.String),
+                                            # The hash of the key tells us if there is more than one key trying to be
+                                            # used in this Latus.  If so, we need to resolve to a single key.
+                                            sqlalchemy.Column('keyhash', sqlalchemy.String),
+                                            sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
+                                            )
 
         # 'seq' is intended to be monotonically increasing (across all nodes) for this user.  It is used to
         # globally determine file modification order.  Exceptions can occur when 2 or more nodes are offline and
@@ -216,6 +234,9 @@ class NodeDB:
     def set_port(self, port):
         self._set_general(self.port_string, port)
 
+    def set_key_hash(self, key):
+        self._set_general(self.key_hash_string, self.key_to_hash(key))
+
     def get_last_seq(self, file_path):
         conn = self.db_engine.connect()
         q_cmd = self.change_table.select().where(self.change_table.c.path == file_path)
@@ -229,6 +250,23 @@ class NodeDB:
         conn.close()
         return last_seq
 
+    def set_join(self, requester, computer, user, key):
+        # use a hash of the key since all nodes can see this - protect the key in case cloud storage is hacked
+        keyhash = self.key_to_hash(key)
+        conn = self.db_engine.connect()
 
+        w = sqlalchemy.and_(self.joins_table.c.requester == requester, self.joins_table.c.computer == computer,
+                            self.joins_table.c.user == user)
+        q_cmd = self.joins_table.select().where(w)
+        q_result = conn.execute(q_cmd)
+        if q_result and q_result.fetchone():
+            cmd = self.joins_table.update().where(w).values(requester=requester, computer=computer, user=user,
+                                                            keyhash=keyhash, timestamp=datetime.datetime.utcnow())
+        else:
+            cmd = self.joins_table.insert().values(requester=requester, computer=computer, user=user, keyhash=keyhash,
+                                                   timestamp=datetime.datetime.utcnow())
+        result = conn.execute(cmd)
+        return result
 
-
+    def key_to_hash(self, key):
+        return hashlib.sha512(key.encode()).hexdigest()

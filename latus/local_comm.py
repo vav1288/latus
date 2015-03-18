@@ -77,6 +77,8 @@ class CommServerHandler(BaseHTTPRequestHandler):
                 if pref.get_trusted_network():
                     json_values[PROVIDING_KEY_STRING] = True
                     json_values[KEY_STRING] = pref.get_crypto_key_string()
+                    node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, node_id_in_url, True)
+                    node_db.set_join(ip, computer, user, pref.get_crypto_key_string())
                 else:
                     # todo: what we really need here is to pop up a window to ask if it's OK to provide the key (this code as it sits always denies if on an untrusted network)
                     ns = 'functionality not yet implemented'
@@ -202,6 +204,7 @@ class LocalComm(threading.Thread):
                 latus.logger.log.info('new_ip : %s , prior_ip : %s' % (current_ip, prior_ip))
                 node_db.set_local_ip(current_ip)
                 node_db.set_port(random.randint(49152, 65535))  # http://en.wikipedia.org/wiki/Ephemeral_port
+                node_db.set_key_hash(pref.get_crypto_key_string())
                 return True
         else:
             latus.logger.log.error('cloud_folders.nodedb : %s' % cloud_folders.nodedb)
