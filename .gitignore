@@ -25,3 +25,6 @@ MANIFEST
 #
 # this is programmatically created
 installer.cfg
+#
+# don't put the big dist files in the repo
+dist/
