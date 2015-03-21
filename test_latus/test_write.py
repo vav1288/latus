@@ -4,7 +4,6 @@ import time
 
 import test_latus.create_files
 import test_latus.util
-import test_latus.run_nodes
 import latus.util
 import latus.logger
 
@@ -15,13 +14,12 @@ def get_write_root():
 
 def test_write(setup):
 
-    folders = test_latus.create_files.Folders(get_write_root())
-    test_latus.util.logger_init(folders.get_log_folder())
+    test_latus.util.logger_init(os.path.join(get_write_root(), 'log'))
 
     test_name = 'write'
-    proc_a, folder_a, log_a = test_latus.run_nodes.start_one('a', test_name)
+    proc_a, folder_a, log_a = test_latus.util.start_cmd_line('a', test_name)
     file_a = 'a.txt'
-    proc_b, folder_b, log_b = test_latus.run_nodes.start_one('b', test_name)
+    proc_b, folder_b, log_b = test_latus.util.start_cmd_line('b', test_name)
     file_b = 'b.txt'
 
     log_folders = [log_a, log_b]
@@ -37,8 +35,8 @@ def test_write(setup):
 
     latus.logger.log.info("*************** ENDING WRITE *************")
 
-    assert(test_latus.run_nodes.wait_for_file(os.path.join(folder_a, file_b)))
-    assert(test_latus.run_nodes.wait_for_file(os.path.join(folder_b, file_a)))
+    assert(test_latus.util.wait_for_file(os.path.join(folder_a, file_b)))
+    assert(test_latus.util.wait_for_file(os.path.join(folder_b, file_a)))
 
     test_latus.util.wait_on_nodes(log_folders)
 

@@ -41,7 +41,7 @@ class NodeDB:
         # to this Latus.
         self.joins_table = sqlalchemy.Table('joins', self.sa_metadata,
                                             # requester's node id
-                                            sqlalchemy.Column('requester', sqlalchemy.String, primary_key=True),
+                                            sqlalchemy.Column('req', sqlalchemy.String, primary_key=True),
                                             sqlalchemy.Column(latus.local_comm.COMPUTER_STRING, sqlalchemy.String),
                                             sqlalchemy.Column(latus.local_comm.USER_STRING, sqlalchemy.String),
                                             # The hash of the key tells us if there is more than one key trying to be
@@ -250,20 +250,20 @@ class NodeDB:
         conn.close()
         return last_seq
 
-    def set_join(self, requester, computer, user, key):
+    def set_join(self, req, comp, user, key):
         # use a hash of the key since all nodes can see this - protect the key in case cloud storage is hacked
         keyhash = self.key_to_hash(key)
         conn = self.db_engine.connect()
 
-        w = sqlalchemy.and_(self.joins_table.c.requester == requester, self.joins_table.c.computer == computer,
+        w = sqlalchemy.and_(self.joins_table.c.req == req, self.joins_table.c.comp == comp,
                             self.joins_table.c.user == user)
         q_cmd = self.joins_table.select().where(w)
         q_result = conn.execute(q_cmd)
         if q_result and q_result.fetchone():
-            cmd = self.joins_table.update().where(w).values(requester=requester, computer=computer, user=user,
+            cmd = self.joins_table.update().where(w).values(req=req, comp=comp, user=user,
                                                             keyhash=keyhash, timestamp=datetime.datetime.utcnow())
         else:
-            cmd = self.joins_table.insert().values(requester=requester, computer=computer, user=user, keyhash=keyhash,
+            cmd = self.joins_table.insert().values(req=req, comp=comp, user=user, keyhash=keyhash,
                                                    timestamp=datetime.datetime.utcnow())
         result = conn.execute(cmd)
         return result

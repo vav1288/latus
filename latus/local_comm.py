@@ -30,9 +30,10 @@ import latus.const
 # a global so the http server can get to it
 g_app_data_folder = None
 
-PROVIDING_KEY_STRING = 'providing_key'
+PROVIDING_KEY_STRING = 'prov_key'
+REQUESTER_STRING = 'req'
 KEY_STRING = 'key'
-COMPUTER_STRING = 'computer'
+COMPUTER_STRING = 'comp'
 USER_STRING = 'user'
 
 class CommServerHandler(BaseHTTPRequestHandler):
@@ -46,48 +47,51 @@ class CommServerHandler(BaseHTTPRequestHandler):
 
         parsed = urllib.parse.urlparse(self.path)
         parsed_path = parsed.path
-        node_id_in_url = parsed_path[1:]
+        mode = parsed_path[1:]
         query = urllib.parse.parse_qs(parsed.query)
         json_values = {}
         response = http.client.NOT_FOUND
-        ip = self.client_address[0]
+        requester = None
         computer = None
         user = None
+        if REQUESTER_STRING in query:
+            requester = query[REQUESTER_STRING][0]
         if COMPUTER_STRING in query:
             computer = query[COMPUTER_STRING][0]
         if USER_STRING in query:
             user = query[USER_STRING][0]
 
-        latus.logger.log.debug("server : path : %s" % self.path)
-        latus.logger.log.info("server : requester : %s" % node_id_in_url)
-        latus.logger.log.info("server : ip : %s" % ip)
+        latus.logger.log.info("server : parsed_path : %s" % parsed_path)
+        latus.logger.log.info("server : mode : %s " % mode)
+        latus.logger.log.info("server : requester : %s" % requester)
         latus.logger.log.info("server : computer : %s" % computer)
         latus.logger.log.info("server : user : %s " % user)
 
-        # todo: put a log of the key requests/services in this node's nodedb - this tells us what nodes have let
-        # in other nodes.
-
         pref = latus.preferences.Preferences(g_app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        if cloud_folders.nodedb:
-            if os.path.exists(os.path.join(cloud_folders.nodedb, node_id_in_url + latus.const.DB_EXTENSION)):
-                # This node is known to me, so respond to it.  This even works for my own node, but that's just
-                # for testability.
-                response = http.client.OK
-                if pref.get_trusted_network():
-                    json_values[PROVIDING_KEY_STRING] = True
-                    json_values[KEY_STRING] = pref.get_crypto_key_string()
-                    node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, node_id_in_url, True)
-                    node_db.set_join(ip, computer, user, pref.get_crypto_key_string())
+        if mode == 'key' and cloud_folders.nodedb:
+            response = http.client.OK
+            if pref.get_trusted_network():
+                # todo: determine automatically if this is a trusted network (e.g. known as a "Home" network in Windows)
+                json_values[PROVIDING_KEY_STRING] = True
+                json_values[KEY_STRING] = pref.get_crypto_key_string()
+                node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, pref.get_node_id(), True)
+                key = pref.get_crypto_key_string()
+                if key:
+                    node_db.set_join(requester, computer, user, key)
                 else:
-                    # todo: what we really need here is to pop up a window to ask if it's OK to provide the key (this code as it sits always denies if on an untrusted network)
-                    ns = 'functionality not yet implemented'
-                    latus.logger.log.error(ns)
-                    print(ns)
+                    latus.logger.log.warn('%s : requester : %s : no key' % (pref.get_node_id(),
+                                                                            node_db.get_node_id()))
+            else:
+                # todo: what we really need here is to pop up a window to ask if it's OK to provide the key
+                # (this code as it sits always denies if on an untrusted network)
+                ns = 'functionality not yet implemented'
+                latus.logger.log.error(ns)
+                print(ns)
 
-                    json_values[PROVIDING_KEY_STRING] = False
+                json_values[PROVIDING_KEY_STRING] = False
 
-                latus.logger.log.info(str(json_values))
+            latus.logger.log.info(str(json_values))
         self.send_response(response)
         self.send_header('Content-type', 'application/json')
         self.end_headers()
@@ -137,38 +141,12 @@ class LocalComm(threading.Thread):
 
         super().__init__()
 
-    def get_key(self):
-        # local comm client
-        key = None
-        pref = latus.preferences.Preferences(g_app_data_folder)
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        if cloud_folders.nodedb:
-            for other_node_db in glob.glob(os.path.join(cloud_folders.nodedb, '*' + latus.const.DB_EXTENSION)):
-                # Note that you get get your own key, but that's just for testability.
-                other_node_id = os.path.basename(other_node_db).replace(latus.const.DB_EXTENSION, '')
-                other_node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, other_node_id)
-                query = urllib.parse.urlencode({COMPUTER_STRING: platform.node(), USER_STRING:  getpass.getuser()})
-                url = 'http://' + other_node_db.get_local_ip() + ':' + other_node_db.get_port() + '/'
-                url += pref.get_node_id() + '?' + query
-                latus.logger.log.info('client : get_key url : %s' % url)
-                js = None
-                try:
-                    js = urllib.request.urlopen(url).read()
-                except urllib.error.HTTPError as err:
-                    latus.logger.log.info(str(err))
-                if js:
-                    node_info = json.loads(js.decode("utf-8"))
-                    key = None
-                    if node_info[PROVIDING_KEY_STRING]:
-                        key = node_info[KEY_STRING]
-                    latus.logger.log.info('client : key : %s' % key)
-        return key
-
     def request_exit(self):
         self._request_exit_flag = True
 
     def run(self):
         # local comm server
+        global g_app_data_folder
         pref = latus.preferences.Preferences(g_app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
         self._check_for_new_local_ip()
@@ -188,23 +166,30 @@ class LocalComm(threading.Thread):
                 time.sleep(0.1)  # todo: make this event driven instead of polling
 
             comm_server.shutdown()
-            comm_server.join()  # todo: put in a timeout and check that the thread really stopped
+            comm_server.join(60)
+            if comm_server.is_alive():
+                latus.logger.log.warn('%s : comm_server is still alive' % pref.get_node_id())
         else:
             latus.logger.log.error('cloud_folders.nodedb : %s' % cloud_folders.nodedb)
 
     def _check_for_new_local_ip(self):
         pref = latus.preferences.Preferences(g_app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+        # We store the ip address in the node db (which is in the cloud folders), not the preferences.
         if cloud_folders.nodedb:
-            node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, pref.get_node_id(), True)
+            this_node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, pref.get_node_id(), True)
             current_ip = socket.gethostbyname(socket.gethostname())
-            prior_ip = node_db.get_local_ip()
+            prior_ip = this_node_db.get_local_ip()
             if current_ip != prior_ip:
                 # new ip address
-                latus.logger.log.info('new_ip : %s , prior_ip : %s' % (current_ip, prior_ip))
-                node_db.set_local_ip(current_ip)
-                node_db.set_port(random.randint(49152, 65535))  # http://en.wikipedia.org/wiki/Ephemeral_port
-                node_db.set_key_hash(pref.get_crypto_key_string())
+                latus.logger.log.info('%s : new_ip : %s , prior_ip : %s' % (pref.get_node_id(), current_ip, prior_ip))
+                this_node_db.set_local_ip(current_ip)
+                this_node_db.set_port(random.randint(49152, 65535))  # http://en.wikipedia.org/wiki/Ephemeral_port
+                ck = pref.get_crypto_key_string()
+                if ck:
+                    this_node_db.set_key_hash(ck)
+                else:
+                    latus.logger.log.warn('%s : key is %s' % (pref.get_node_id(), ck))
                 return True
         else:
             latus.logger.log.error('cloud_folders.nodedb : %s' % cloud_folders.nodedb)
@@ -213,13 +198,41 @@ class LocalComm(threading.Thread):
     def get_port(self):
         return self._port
 
+
+def get_key(app_data_folder):
+    # local comm client
+    key = None
+    pref = latus.preferences.Preferences(app_data_folder)
+    cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+    if cloud_folders.nodedb:
+        for other_node_db in glob.glob(os.path.join(cloud_folders.nodedb, '*' + latus.const.DB_EXTENSION)):
+            # Note that you get get your own key, but that's just for testability.
+            other_node_id = os.path.basename(other_node_db).replace(latus.const.DB_EXTENSION, '')
+            other_node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, other_node_id)
+            query = urllib.parse.urlencode({REQUESTER_STRING: pref.get_node_id(),
+                                            COMPUTER_STRING: platform.node(), USER_STRING:  getpass.getuser()})
+            url = 'http://' + other_node_db.get_local_ip() + ':' + other_node_db.get_port() + '/key?' + query
+            latus.logger.log.info('%s : client : get_key url : %s' % (pref.get_node_id(), url))
+            js = None
+            try:
+                js = urllib.request.urlopen(url).read()
+            except urllib.error.HTTPError as err:
+                latus.logger.log.info(str(err))
+            if js:
+                node_info = json.loads(js.decode("utf-8"))
+                key = None
+                if node_info[PROVIDING_KEY_STRING]:
+                    key = node_info[KEY_STRING]
+                latus.logger.log.info('client : key : %s' % key)
+    return key
+
 if __name__ == "__main__":
     # this is a basic start of the "server"
 
     import latus.sync
 
     node_str = 'aea275dd-8947-490d-a198-f5d98e43688d'
-    key = 'my_secret_crypto_key'
+    my_key = 'my_secret_crypto_key'
 
     temp_folder = os.path.join('temp', node_str)
 
@@ -228,24 +241,24 @@ if __name__ == "__main__":
 
     cloud_folder = os.path.join(temp_folder, 'cloud')
 
-    app_data_folder = os.path.join(temp_folder, 'appdata')
-    c = latus.preferences.Preferences(app_data_folder)
+    my_app_data_folder = os.path.join(temp_folder, 'appdata')
+    c = latus.preferences.Preferences(my_app_data_folder)
     c.set_cloud_root(cloud_folder)
     c.set_node_id(node_str)
-    c.set_crypto_key_string(key)
+    c.set_crypto_key_string(my_key)
     c.set_trusted_network(True)
 
     cf = latus.folders.CloudFolders(c.get_cloud_root())
     latus.util.make_dirs(cf.nodedb)
 
-    lc = LocalComm(app_data_folder)
+    lc = LocalComm(my_app_data_folder)
     lc.start()
-    current_ip = socket.gethostbyname(socket.gethostname())
     period = 5
     for s in range(0, 30, period):
         print(s)
         time.sleep(period)
-        latus.logger.log.info('key accessible at http://%s:%s/%s' % (current_ip, lc.get_port(), node_str))
-        lc.get_key()
+        latus.logger.log.info('key accessible at http://%s:%s/%s' % (socket.gethostbyname(socket.gethostname()),
+                                                                     lc.get_port(), node_str))
+        get_key(my_app_data_folder)
     lc.request_exit()
     lc.join()

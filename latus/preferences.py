@@ -8,6 +8,7 @@ import sqlalchemy.ext.declarative
 
 import latus.util
 import latus.const
+import latus.logger
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
@@ -116,7 +117,13 @@ class Preferences:
         self.__pref_set(self.__trusted_network_string, str(new_trusted_network))
 
     def get_trusted_network(self):
-        return eval(self.__pref_get(self.__trusted_network_string))
+        t = False
+        tn = self.__pref_get(self.__trusted_network_string)
+        if tn:
+            t = eval(tn)
+        else:
+            latus.logger.log.warn('%s : get_trusted_network not set' % self.get_node_id())
+        return t
 
     def init(self):
         Base.metadata.drop_all(self.__db_engine)

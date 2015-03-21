@@ -22,12 +22,12 @@ import latus.miv
 import latus.folders
 import latus.local_comm
 
+TIME_OUT = 60  # seconds
 
 class SyncBase(watchdog.events.FileSystemEventHandler):
 
     def __init__(self, crypto_key, latus_folder, cloud_folders, node_id, verbose):
         self.call_count = 0
-        self.timeout = 60  # seconds
         self.crypto_key = crypto_key
         self.latus_folder = latus_folder
         self.cloud_folders = cloud_folders
@@ -45,8 +45,9 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
     def request_exit(self):
         latus.logger.log.info('%s - %s - request_exit begin' % (self.node_id, self.get_type()))
         self.observer.stop()
-        self.observer.join()
+        self.observer.join(TIME_OUT)
         latus.logger.log.info('%s - %s - request_exit end' % (self.node_id, self.get_type()))
+        return self.observer.is_alive()
 
     def start(self):
         self.dispatch(None)  # rescan entire folder before we 'start' the observer
@@ -238,7 +239,7 @@ class CloudSync(SyncBase):
 class Sync:
     def __init__(self, app_data_folder):
         self.app_data_folder = app_data_folder
-        pref = latus.preferences.Preferences(app_data_folder)
+        pref = latus.preferences.Preferences(self.app_data_folder)
         latus.logger.log.info('node_id : %s' % pref.get_node_id())
         latus.logger.log.info('local_folder : %s' % pref.get_latus_folder())
         latus.logger.log.info('crypto_key : %s' % pref.get_crypto_key_string())
@@ -263,9 +264,13 @@ class Sync:
         self.cloud_sync.dispatch(None)
 
     def request_exit(self):
-        time_out = 60
-        self.local_sync.request_exit()
-        self.cloud_sync.request_exit()
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        latus.logger.log.info('%s - sync - request_exit begin' % pref.get_node_id())
+        timed_out = self.local_sync.request_exit()
+        timed_out |= self.cloud_sync.request_exit()
         self.local_comm.request_exit()
-        self.local_comm.join(time_out)
+        self.local_comm.join(TIME_OUT)
+        timed_out |= self.local_comm.is_alive()
+        latus.logger.log.info('%s - sync - request_exit end' % pref.get_node_id())
+        return timed_out
 

@@ -8,7 +8,6 @@ import shutil
 import random
 import time
 
-import test_latus.const
 import test_latus.util
 
 SRC = "src"
@@ -37,32 +36,6 @@ y_folder_files = None
 
 def get_data_root():
     return os.path.join('test_latus', 'data')
-
-
-
-
-class Folders():
-
-    def __init__(self, root):
-        self.sync_root = root
-
-    def get_local_folder(self, node):
-        return os.path.join(self.sync_root, node, 'latus')
-
-    def get_cloud_root(self, node):
-        return os.path.join(self.sync_root, node, 'dropbox')
-
-    def get_appdata_roaming_folder(self, node):
-        return os.path.join(self.sync_root, node, 'appdata_roaming')
-
-    def get_appdata_local_folder(self):
-        return os.path.join(self.sync_root, 'appdata_local')
-
-    def get_log_folder(self):
-        return os.path.join(self.get_appdata_local_folder(), 'log')
-
-    def get_file_name(self, node):
-        return node + '.txt'
 
 
 def clean():

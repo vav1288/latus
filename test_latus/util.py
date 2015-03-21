@@ -3,9 +3,14 @@ import os
 import time
 import logging
 import json
+import subprocess
 
 import latus.logger
-
+import latus.util
+import latus.crypto
+import latus.preferences
+import latus.sync
+import test_latus.create_files
 
 def logger_init(log_folder):
     latus.logger.init(log_folder)
@@ -72,3 +77,79 @@ def wait_for_node(log_folder):
     if time_out_count <= 0:
         latus.logger.log.warn('timeout : %s' % unstable_file)
     return time_out_count > 0
+
+def start_cmd_line(node_id, test_name):
+    test_folder = os.path.join(test_latus.create_files.get_data_root(), test_name)
+    node_folder = os.path.join(test_folder, node_id)
+    latus.util.make_dirs(node_folder)
+    latus_folder = os.path.join(node_folder, 'latus')
+    cloud_folder = os.path.join(test_folder, 'dropbox')  # all nodes use the same cloud folder to emulate cloud sync
+    appdata_folder = os.path.join(node_folder, 'appdata')
+    log_folder = os.path.join(node_folder, 'log')
+    python_exe = os.path.join('c:', '/', 'python34', 'python.exe')
+    #print('python_exe', python_exe)
+    cmd = [python_exe, 'latus_main.py']
+    cmd += ['-l', latus_folder]
+    # all nodes use same folder to emulate cloud sync
+    cmd += ['-c', cloud_folder]
+    cmd += ['-a', appdata_folder]
+    cmd += ['-k', 'dQf6js1s-CcVRQMnt6t4w7fOdVJAzqhvcQNsHnvuQNQ=']
+    cmd += ['-n', node_id]
+    cmd += ['-cli']
+    cmd += ['-log', log_folder]
+    cmd += ['-v']
+    print('cmd', cmd)
+    latus_process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    return latus_process, latus_folder, log_folder
+
+
+def wait_for_file(file_path):
+    time_out_sec = 10
+    sleep_time_sec = 0.1
+    time_out_count_down = time_out_sec / sleep_time_sec
+
+    while not os.path.exists(file_path) and time_out_count_down:
+        time.sleep(sleep_time_sec)
+        time_out_count_down -= 1
+    return time_out_count_down > 0
+
+
+def get_app_data_folder(root):
+    return os.path.join(root, 'appdata')
+
+class SetupSyncNode:
+    def __init__(self, setup_id, key, root, cloud):
+        self.node_id = setup_id
+        node_folder = os.path.join(root, self.node_id)  # give us our own folder
+        self.app_data_folder = get_app_data_folder(node_folder)
+        self.latus_folder = os.path.join(node_folder, 'latus')
+        self.cloud_root = cloud
+        pref = latus.preferences.Preferences(self.app_data_folder, True)
+        pref.set_cloud_root(self.cloud_root)
+        pref.set_latus_folder(self.latus_folder)
+        pref.set_node_id(self.node_id)
+        pref.set_crypto_key(key)
+        pref.set_trusted_network(True)
+        pref.set_verbose(True)
+        self.sync = latus.sync.Sync(self.app_data_folder)
+
+    def get_sync(self):
+        return self.sync
+
+    def get_app_data_folder(self):
+        return self.app_data_folder
+
+    def get_preferences(self):
+        return latus.preferences.Preferences(self.app_data_folder)
+
+    def get_file_name(self):
+        return self.node_id + '.txt'
+
+    def get_file_path(self):
+        return os.path.join(self.latus_folder, self.get_file_name())
+
+    def get_latus_folder(self):
+        return self.latus_folder
+
+    def get_cloud_root(self):
+        return self.cloud_root
