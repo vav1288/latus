@@ -128,8 +128,8 @@ class SetupSyncNode:
         pref.set_cloud_root(self.cloud_root)
         pref.set_latus_folder(self.latus_folder)
         pref.set_node_id(self.node_id)
+        pref.set_new_private_key()
         pref.set_crypto_key(key)
-        pref.set_trusted_network(True)
         pref.set_verbose(True)
         self.sync = latus.sync.Sync(self.app_data_folder)
 

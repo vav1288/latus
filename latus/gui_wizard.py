@@ -14,7 +14,7 @@ import latus.crypto
 
 CLOUD_FOLDER_FIELD_STRING = 'cloud_folder'
 LATUS_FOLDER_FIELD_STRING = 'latus_folder'
-KEY_FIELD_STRING = 'key'
+# KEY_FIELD_STRING = 'key'
 
 
 class GUIWizard(QtWidgets.QWizard):
@@ -33,8 +33,8 @@ class GUIWizard(QtWidgets.QWizard):
         self.setPage(self.IntroPageNumber, IntroPage())
         self.setPage(self.CloudFolderPageNumber, CloudFolderPage(self.folder_wizard))
         self.setPage(self.LatusFolderPageNumber, LatusFolderPage())
-        self.setPage(self.ExistingKeyPageNumber, ExistingKeyPage())
-        self.setPage(self.NewKeyPageNumber, NewKeyPage())
+        #self.setPage(self.ExistingKeyPageNumber, ExistingKeyPage())
+        #self.setPage(self.NewKeyPageNumber, NewKeyPage())
         self.setPage(self.ConclusionPageNumber, ConclusionPage())
         self.setWindowTitle("Latus Setup")
         self.show()
@@ -43,7 +43,7 @@ class GUIWizard(QtWidgets.QWizard):
         pref = latus.preferences.Preferences(self.latus_appdata_folder)
         pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
         pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
-        pref.set_crypto_key_string(self.field(KEY_FIELD_STRING))
+        # pref.set_crypto_key_string(self.field(KEY_FIELD_STRING))
         super().accept()
 
     def done(self, result):
@@ -175,14 +175,14 @@ class LatusFolderPage(QtWidgets.QWizardPage):
         latus_folder = latus.wizard.latus_folder_from_cloud_folder(self.field('cloud_folder'))
         self.latus_folder_box.setText(latus_folder)
 
-    def nextId(self):
-        cf = latus.folders.CloudFolders(self.field(CLOUD_FOLDER_FIELD_STRING))
-        if os.path.exists(cf.latus):
-            return GUIWizard.ExistingKeyPageNumber
-        else:
-            new_key_bytes = latus.crypto.new_key()
-            self.setField(KEY_FIELD_STRING, new_key_bytes.decode())
-            return GUIWizard.ConclusionPageNumber
+    #def nextId(self):
+    #    cf = latus.folders.CloudFolders(self.field(CLOUD_FOLDER_FIELD_STRING))
+    #    if os.path.exists(cf.latus):
+    #        return GUIWizard.ExistingKeyPageNumber
+    #    else:
+    #        new_key_bytes = latus.crypto.new_key()
+    #        self.setField(KEY_FIELD_STRING, new_key_bytes.decode())
+    #        return GUIWizard.ConclusionPageNumber
 
 
 class NewKeyPage(QtWidgets.QWizardPage):
@@ -221,7 +221,7 @@ class NewKeyPage(QtWidgets.QWizardPage):
         layout.addWidget(self.key_box, 2, 0)
         self.setLayout(layout)
 
-        self.registerField(KEY_FIELD_STRING, self.key_box)
+        # self.registerField(KEY_FIELD_STRING, self.key_box)
 
     def initializePage(self):
         pass
@@ -267,7 +267,7 @@ class ExistingKeyPage(QtWidgets.QWizardPage):
         layout.addWidget(self.key_box, 1, 4)
         self.setLayout(layout)
 
-        self.registerField(KEY_FIELD_STRING, self.key_box)
+        # self.registerField(KEY_FIELD_STRING, self.key_box)
 
     def initializePage(self):
         pass
@@ -305,10 +305,18 @@ class ConclusionPage(QtWidgets.QWizardPage):
 if __name__ == '__main__':
 
     import sys
+    import logging
+
+    temp_folder = os.path.join('temp', 'wizardgui')
+
+    latus.logger.init(temp_folder)
+    latus.logger.set_console_log_level(logging.INFO)
+    latus.logger.set_file_log_level(logging.DEBUG)
 
     app = QtWidgets.QApplication(sys.argv)
-    app_gui_wizard = GUIWizard()
+    app_gui_wizard = GUIWizard(temp_folder)
     app_gui_wizard.exec_()
-    print(app_gui_wizard.get_cloud_folder())
-    print(app_gui_wizard.get_latus_folder())
+    pref = latus.preferences.Preferences(temp_folder)
+    print(pref.get_cloud_root())
+    print(pref.get_latus_folder())
     sys.exit()

@@ -11,5 +11,6 @@ DESCRIPTION = 'Secure file sync with low impact to cloud storage.'
 MAIN_FILE = 'latus_main.py'
 
 BIG_FILE_SIZE = 1024 * 1024
-MAX_HASH_PERF_VALUES = 10 # determine how many longest hash times to store in the db
+MAX_HASH_PERF_VALUES = 10  # determine how many longest hash times to store in the db
+ASYMMETRIC_KEY_LENGTH = 2048  # Asymmetric key size (in bits)
 

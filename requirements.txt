@@ -3,4 +3,7 @@ sqlalchemy
 cryptography
 PyQt5
 send2trash
+pathtools
 watchdog
+Crypto
+simplecrypto

@@ -3,9 +3,11 @@ import os
 import win32api
 import threading
 import time
+import glob
 
 import latus.util
 import latus.const
+import latus.logger
 
 # setup wizard
 
@@ -41,31 +43,28 @@ class FolderWizard(threading.Thread):
     def try_dropbox_folder(self, candidate_path):
         # dropbox appears to use this layout ...
         candidate = os.path.join(candidate_path, 'Dropbox')
-        if os.path.exists(candidate) and os.path.exists(os.path.join(candidate, '.dropbox')):
-            if candidate not in self.potential_cloud_folders:
-                self.potential_cloud_folders.append(candidate)
-                if self.found_alert:
-                    self.found_alert(self.potential_cloud_folders)
+        if os.path.exists(candidate):
+            dots = glob.glob(os.path.join(candidate, '.dropbox*'))
+            if len(dots) > 0:
+                if candidate not in self.potential_cloud_folders:
+                    self.potential_cloud_folders.append(candidate)
+                    if self.found_alert:
+                        self.found_alert(self.potential_cloud_folders)
 
     def run(self):
         self.potential_cloud_folders = []
         home_folder = os.path.expanduser('~')
-        # first, try the normal location
-        self.try_dropbox_folder(home_folder)
 
         # Search more possible locations (will take longer).
-        roots = []
+        roots = [home_folder]
         if latus.util.is_windows():
             drives = win32api.GetLogicalDriveStrings().split('\0')[:-1]
             for drive in drives:
-                root = os.path.join(drive, os.sep)
-                if os.path.exists(os.path.join(root, 'Windows')):
-                    # only look in the user area for the drive that has Windows, Program Files, etc.
-                    roots.append(home_folder)
-                else:
-                    roots.append(root)
+                roots.append(os.path.join(drive, os.sep))
         elif latus.util.is_linux():
-            pass  # todo: get possible location roots for Linux
+            pass
+            # todo: get other possible location roots for Linux
+        latus.logger.log.info('FolderWizard : roots %s' % str(roots))
         for root in roots:
             self.try_dropbox_folder(root)
             for path, dirs, _ in os.walk(root):

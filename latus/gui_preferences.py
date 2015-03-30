@@ -85,12 +85,10 @@ class PreferencesDialog(QtWidgets.QDialog):
 
         self.setWindowTitle("Preferences")
 
-    def confirm_join_changed(self, state):
-        self.pref.set_trusted_network(bool(state))
-
     def ok(self):
         self.pref.set_latus_folder(self.latus_folder.get())
         self.pref.set_cloud_root(self.cloud_folder.get())
+        self.pref.set_new_private_key()
         self.pref.set_crypto_key_string(self.key_ui.get())
         self.close()
 

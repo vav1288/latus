@@ -3,20 +3,20 @@ import os
 import datetime
 import time
 import hashlib
+import random
 import sqlalchemy
 import sqlalchemy.exc
 import latus.const
 import latus.logger
-import latus.local_comm
 
 
 class NodeDB:
-    def __init__(self, cloud_node_db_folder, node_id, write_flag=False):
+    def __init__(self, cloud_node_db_folder, node_id, public_key=None, write_flag=False):
 
-        self.node_id_string = 'nodeid'
-        self.local_ip_string = 'localip'
-        self.port_string = 'port'
-        self.key_hash_string = 'keyhash'
+        self._node_id_string = 'nodeid'
+        self._local_ip_string = 'localip'
+        self._port_string = 'port'
+        self._public_key_string = 'publickey'
 
         self.node_id = node_id
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
@@ -26,7 +26,7 @@ class NodeDB:
 
         # the 'bind' and 'connection' seem to be redundant - what do I really need????
         # (I seem to need the bind, so perhaps I can get rid of the connection?)
-        self.db_engine = sqlalchemy.create_engine('sqlite:///' + os.path.abspath(sqlite_file_path))
+        self.db_engine = sqlalchemy.create_engine('sqlite:///' + os.path.abspath(sqlite_file_path))  # , echo=True)
         self.sa_metadata = sqlalchemy.MetaData()
         self.sa_metadata.bind = self.db_engine
 
@@ -35,20 +35,6 @@ class NodeDB:
                                               sqlalchemy.Column('key', sqlalchemy.String, primary_key=True),
                                               sqlalchemy.Column('value', sqlalchemy.String),
                                               )
-
-        # Keep a record of when this node provides a key to another node - i.e. when it enables another node to 'join'
-        # this Latus. This is good for debug as well as status, in case we want to see what nodes potentially belong
-        # to this Latus.
-        self.joins_table = sqlalchemy.Table('joins', self.sa_metadata,
-                                            # requester's node id
-                                            sqlalchemy.Column('req', sqlalchemy.String, primary_key=True),
-                                            sqlalchemy.Column(latus.local_comm.COMPUTER_STRING, sqlalchemy.String),
-                                            sqlalchemy.Column(latus.local_comm.USER_STRING, sqlalchemy.String),
-                                            # The hash of the key tells us if there is more than one key trying to be
-                                            # used in this Latus.  If so, we need to resolve to a single key.
-                                            sqlalchemy.Column('keyhash', sqlalchemy.String),
-                                            sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
-                                            )
 
         # 'seq' is intended to be monotonically increasing (across all nodes) for this user.  It is used to
         # globally determine file modification order.  Exceptions can occur when 2 or more nodes are offline and
@@ -64,21 +50,31 @@ class NodeDB:
                                              sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
                                              )
         if write_flag:
-            time.sleep(0.01)  # todo: we need this during tests due to some race condition - figure out why!!!!!!!
-            self.sa_metadata.create_all(self.db_engine)
+            try:
+                self.sa_metadata.create_all()
+            except sqlalchemy.exc.OperationalError as e:
+                # todo: this is really odd ... it keeps throwing these errors and I don't know why.  I shouldn't need
+                # to do this since create_all() is supposed to check first.
+                latus.logger.log.warn(str(e))
             self.set_node_id(node_id)
+            self.set_public_key(public_key)
 
     def update(self, seq, originator, file_path, size, hash, mtime):
         conn = self.db_engine.connect()
         latus.logger.log.info('%s updating %s %s %s %s %s %s' % (self.node_id, seq, originator, file_path, size, hash, mtime))
-        if mtime:
-            command = self.change_table.insert().values(seq=seq, originator=originator, path=file_path, size=size,
-                                                        hash=hash, mtime=mtime, timestamp=datetime.datetime.utcnow())
-        else:
-            # if file has been deleted, there's no mtime (but we can't pass None into a datetime)
-            command = self.change_table.insert().values(seq=seq, originator=originator, path=file_path,
-                                                        timestamp=datetime.datetime.utcnow())
+        command = self.change_table.select().where(self.change_table.c.seq == seq)
         result = conn.execute(command)
+        if not result.fetchone():
+            if mtime:
+                command = self.change_table.insert().values(seq=seq, originator=originator, path=file_path, size=size,
+                                                            hash=hash, mtime=mtime, timestamp=datetime.datetime.utcnow())
+            else:
+                # if file has been deleted, there's no mtime (but we can't pass None into a datetime)
+                command = self.change_table.insert().values(seq=seq, originator=originator, path=file_path,
+                                                            timestamp=datetime.datetime.utcnow())
+            result = conn.execute(command)
+        else:
+            latus.logger.log.warn('seq %s already found - not updating' % seq)
         conn.close()
 
     def db_row_to_info(self, row):
@@ -207,7 +203,13 @@ class NodeDB:
 
     def _set_general(self, key, value):
         conn = self.db_engine.connect()
-        db_value = self._get_general(key)
+        db_value = None
+        command = self.general_table.select().where(self.general_table.c.key == key)
+        result = conn.execute(command)
+        if result:
+            row = result.fetchone()
+            if row:
+                db_value = row[1]
         if not db_value:
             command = self.general_table.insert().values(key=key, value=value)
             result = conn.execute(command)
@@ -217,25 +219,25 @@ class NodeDB:
         conn.close()
 
     def get_node_id(self):
-        return self._get_general(self.node_id_string)
+        return self._get_general(self._node_id_string)
 
     def set_node_id(self, node_id):
-        self._set_general(self.node_id_string, node_id)
+        self._set_general(self._node_id_string, node_id)
 
     def get_local_ip(self):
-        return self._get_general(self.local_ip_string)
+        return self._get_general(self._local_ip_string)
 
     def set_local_ip(self, ip):
-        self._set_general(self.local_ip_string, ip)
+        self._set_general(self._local_ip_string, ip)
 
     def get_port(self):
-        return self._get_general(self.port_string)
+        return self._get_general(self._port_string)
 
     def set_port(self, port):
-        self._set_general(self.port_string, port)
+        self._set_general(self._port_string, port)
 
-    def set_key_hash(self, key):
-        self._set_general(self.key_hash_string, self.key_to_hash(key))
+    def set_public_key(self, public_key):
+        self._set_general(self._public_key_string, public_key)
 
     def get_last_seq(self, file_path):
         conn = self.db_engine.connect()
@@ -250,23 +252,4 @@ class NodeDB:
         conn.close()
         return last_seq
 
-    def set_join(self, req, comp, user, key):
-        # use a hash of the key since all nodes can see this - protect the key in case cloud storage is hacked
-        keyhash = self.key_to_hash(key)
-        conn = self.db_engine.connect()
 
-        w = sqlalchemy.and_(self.joins_table.c.req == req, self.joins_table.c.comp == comp,
-                            self.joins_table.c.user == user)
-        q_cmd = self.joins_table.select().where(w)
-        q_result = conn.execute(q_cmd)
-        if q_result and q_result.fetchone():
-            cmd = self.joins_table.update().where(w).values(req=req, comp=comp, user=user,
-                                                            keyhash=keyhash, timestamp=datetime.datetime.utcnow())
-        else:
-            cmd = self.joins_table.insert().values(req=req, comp=comp, user=user, keyhash=keyhash,
-                                                   timestamp=datetime.datetime.utcnow())
-        result = conn.execute(cmd)
-        return result
-
-    def key_to_hash(self, key):
-        return hashlib.sha512(key.encode()).hexdigest()

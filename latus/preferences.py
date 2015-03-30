@@ -6,11 +6,14 @@ import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.ext.declarative
 
+from simplecrypto import RsaKeypair, RsaPublicKey
+
 import latus.util
 import latus.const
 import latus.logger
 
 Base = sqlalchemy.ext.declarative.declarative_base()
+
 
 class PreferencesTable(Base):
     __tablename__ = 'preferences'
@@ -32,6 +35,7 @@ class Preferences:
         self.__cloud_root_string = 'cloudroot'
         self.__latus_folder_string = 'latusfolder'
         self.__trusted_network_string = 'trustednetwork'
+        self.__private_key_string = 'privatekey'
         self.__verbose_string = 'verbose'
 
         if not os.path.exists(latus_appdata_folder):
@@ -113,22 +117,21 @@ class Preferences:
     def get_node_id(self):
         return self.__pref_get(self.__id_string)
 
-    def set_trusted_network(self, new_trusted_network):
-        self.__pref_set(self.__trusted_network_string, str(new_trusted_network))
+    def set_new_private_key(self):
+        key_pair = RsaKeypair(latus.const.ASYMMETRIC_KEY_LENGTH)
+        key_pair_string = key_pair.serialize().decode("utf-8")
+        self.__pref_set(self.__private_key_string, key_pair_string)
 
-    def get_trusted_network(self):
-        t = False
-        tn = self.__pref_get(self.__trusted_network_string)
-        if tn:
-            t = eval(tn)
-        else:
-            latus.logger.log.warn('%s : get_trusted_network not set' % self.get_node_id())
-        return t
+    def get_private_key(self):
+        return self.__pref_get(self.__private_key_string)
+
+    def get_public_key(self):
+        public_key = RsaKeypair(self.get_private_key()).publickey
+        return public_key.serialize().decode("utf-8")
 
     def init(self):
         Base.metadata.drop_all(self.__db_engine)
         Base.metadata.create_all(self.__db_engine)
 
-    def are_all_set(self):
-        # Return True if everything is set, and we're all set to go!
-        return self.get_crypto_key() and self.get_node_id() and self.get_cloud_root() and self.get_latus_folder()
+    def folders_are_set(self):
+        return self.get_cloud_root() and self.get_latus_folder()
