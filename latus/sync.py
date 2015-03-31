@@ -20,6 +20,7 @@ import latus.crypto
 import latus.nodedb
 import latus.miv
 import latus.folders
+import latus.key_management
 
 TIME_OUT = 60  # seconds
 
@@ -252,10 +253,11 @@ class Sync:
 
         self.local_sync = LocalSync(self.app_data_folder)
         self.cloud_sync = CloudSync(self.app_data_folder)
+        self.key_management = latus.key_management.KeyManagement(self.app_data_folder)
 
-        if pref.get_crypto_key_string() is None:
-            # todo: implement getting the key
-            pass
+        # STOPPED HERE
+        # todo: implement getting the key
+        self.key_management.request_key()
 
     def start(self):
         self.local_sync.start()

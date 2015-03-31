@@ -1,13 +1,15 @@
 
 import os
 import datetime
-import time
-import hashlib
-import random
+import platform
+import getpass
+
 import sqlalchemy
 import sqlalchemy.exc
+
 import latus.const
 import latus.logger
+import latus.util
 
 
 class NodeDB:
@@ -17,6 +19,11 @@ class NodeDB:
         self._local_ip_string = 'localip'
         self._port_string = 'port'
         self._public_key_string = 'publickey'
+        self._user_string = 'user'
+        self._computer_string = 'computer'
+
+        if not os.path.exists(cloud_node_db_folder):
+            latus.util.make_dirs(cloud_node_db_folder)
 
         self.node_id = node_id
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
@@ -58,6 +65,8 @@ class NodeDB:
                 latus.logger.log.warn(str(e))
             self.set_node_id(node_id)
             self.set_public_key(public_key)
+            self.set_user(getpass.getuser())
+            self.set_computer(platform.node())
 
     def update(self, seq, originator, file_path, size, hash, mtime):
         conn = self.db_engine.connect()
@@ -238,6 +247,21 @@ class NodeDB:
 
     def set_public_key(self, public_key):
         self._set_general(self._public_key_string, public_key)
+
+    def get_public_key(self):
+        return self._get_general(self._public_key_string)
+
+    def set_user(self, user):
+        self._set_general(self._user_string, user)
+
+    def get_user(self):
+        return self._get_general(self._user_string)
+
+    def set_computer(self, computer):
+        self._set_general(self._computer_string, computer)
+
+    def get_computer(self):
+        return self._get_general(self._computer_string)
 
     def get_last_seq(self, file_path):
         conn = self.db_engine.connect()

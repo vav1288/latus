@@ -14,7 +14,6 @@ import latus.logger
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
-
 class PreferencesTable(Base):
     __tablename__ = 'preferences'
 

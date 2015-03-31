@@ -26,3 +26,6 @@ class CloudFolders:
         # monotonically increasing value
         return os.path.join(self.__latus_cloud_folder, 'miv')
 
+    @property
+    def keys(self):
+        return os.path.join(self.__latus_cloud_folder, 'keys')
