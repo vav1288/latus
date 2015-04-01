@@ -93,7 +93,11 @@ class LocalSync(SyncBase):
         pref = latus.preferences.Preferences(self.app_data_folder)
         latus.logger.log.info('%s : local dispatch : event : %s : %s' % (pref.get_node_id(), self.call_count, event))
 
-        crypto = latus.crypto.Crypto(pref.get_crypto_key(), pref.get_verbose())
+        crypto_key = pref.get_crypto_key()
+        if crypto_key is None:
+            latus.logger.log.info('no crypto_key yet')
+            return
+        crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
 
         # created or updated local files
@@ -175,7 +179,11 @@ class CloudSync(SyncBase):
             self.call_count += 1
             latus.logger.log.info('%s : cloud dispatch : event : %s : %s' % (pref.get_node_id(), self.call_count, event))
 
-            crypto = latus.crypto.Crypto(pref.get_crypto_key(), pref.get_verbose())
+            crypto_key = pref.get_crypto_key()
+            if crypto_key is None:
+                latus.logger.log.info('no crypto_key yet')
+                return
+            crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
             fs_db_this_node = latus.nodedb.NodeDB(cloud_folders.nodedb, pref.get_node_id())
             # for each file path, determine the 'winning' node (which could be this node)
             db_files = glob.glob(os.path.join(cloud_folders.nodedb, '*' + latus.const.DB_EXTENSION))

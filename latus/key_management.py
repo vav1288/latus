@@ -38,7 +38,6 @@ class KeyRequestTable(Base):
 class KeyManagement:
 
     KEY_MANAGEMENT_FILE = 'keys' + latus.const.DB_EXTENSION
-    TIME_WINDOW = datetime.timedelta(minutes=10)  # todo: make this a preference variable
 
     def __init__(self, app_data_folder):
         self.app_data_folder = app_data_folder
@@ -52,12 +51,19 @@ class KeyManagement:
         self.__Session = sqlalchemy.orm.sessionmaker(bind=self.__db_engine)
 
     def get_requesters(self):
-        requesters = []
+        # delete really old (> 1 day) requests
         session = self.__Session()
+        q = session.query(KeyRequestTable).all()
+        if q:
+            for row in q:
+                if row.datetime < datetime.datetime.utcnow() - datetime.timedelta(days=1):
+                    session.delete(row)
+        session.commit()
+        requesters = []
         rows = session.query(KeyRequestTable).all()
         for row in rows:
-            if datetime.datetime.utcnow() - row.datetime < self.TIME_WINDOW:
-                requesters.append(row.requester)
+            requesters.append(row.requester)
+        session.close()
         return requesters
 
     def get_requester_info(self, requester):
@@ -75,10 +81,10 @@ class KeyManagement:
         encrypted_latus_key = private_key.encrypt(pref.get_crypto_key_string())
         session = self.__Session()
         this_node_id = pref.get_node_id()
-        requester_node_id = requester_node_db.get_node_id()
-        kmt = KeyManagementTable(source=this_node_id, destination=requester_node_id,
+        requester = requester_node_db.get_node_id()
+        kmt = KeyManagementTable(source=this_node_id, destination=requester,
                                  encrypted_latus_key=encrypted_latus_key, datetime=datetime.datetime.utcnow())
-        q = session.query(KeyManagementTable).filter_by(source=this_node_id).filter_by(destination=requester_node_id).first()
+        q = session.query(KeyManagementTable).filter_by(source=this_node_id).filter_by(destination=requester).first()
         if q:
             session.delete(q)
         session.add(kmt)
@@ -96,10 +102,14 @@ class KeyManagement:
         session.close()
         return latus_key.decode("utf-8")
 
-    def request_key(self):
+    def request_key(self, timestamp=datetime.datetime.utcnow()):
         pref, node_db = create_pref_and_node_db(self.app_data_folder)
         session = self.__Session()
-        request_table = KeyRequestTable(requester=pref.get_node_id(), datetime=datetime.datetime.utcnow())
+        this_node_id = pref.get_node_id()
+        request_table = KeyRequestTable(requester=this_node_id, datetime=timestamp)
+        q = session.query(KeyRequestTable).filter_by(requester=this_node_id).first()
+        if q:
+            session.delete(q)
         session.add(request_table)
         session.commit()
         session.close()

@@ -1,5 +1,6 @@
 
 import os
+import datetime
 
 import latus.logger
 import latus.preferences
@@ -58,4 +59,11 @@ def test_key_management():
     # now b can request from a (just for testing ... b already has it ...)
     kms['b'].request_key()
     kms['a'].respond_to_request('b')
+
+    # test that we can request again without breaking anything
+    kms['a'].request_key()  # over write existing one
+    kms['a'].request_key(datetime.datetime.utcnow() - datetime.timedelta(days=10))  # an "old" one that will get deleted
+    requesters = kms['b'].get_requesters()  # this will delete the "old" one from above
+    assert(requesters == ['b'])
+
 

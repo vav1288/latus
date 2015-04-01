@@ -10,6 +10,8 @@ import latus.const
 import latus.crypto
 import latus.gui_wizard
 import latus.gui_preferences
+import latus.gui_management
+import latus.key_management
 
 
 class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
@@ -26,6 +28,8 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         menu = QtWidgets.QMenu(parent)
         about_action = menu.addAction("Preferences")
         about_action.triggered.connect(self.preferences)
+        about_action = menu.addAction("Manage")
+        about_action.triggered.connect(self.manage)
         about_action = menu.addAction("About")
         about_action.triggered.connect(self.about)
         exit_action = menu.addAction("Exit")
@@ -33,8 +37,6 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.setContextMenu(menu)
 
         self.sync = None
-
-        self.start_latus()
 
     def start_latus(self):
         self.sync = latus.sync.Sync(self.latus_appdata_folder)
@@ -49,6 +51,10 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
     def preferences(self):
         preferences_dialog = latus.gui_preferences.PreferencesDialog(self.latus_appdata_folder)
         preferences_dialog.exec_()
+
+    def manage(self):
+        management_dialog = latus.gui_management.ManagementDialog(self.latus_appdata_folder)
+        management_dialog.exec_()
 
     def exit(self):
         latus.logger.log.info('exit')
@@ -75,6 +81,7 @@ def main(latus_appdata_folder):
     if pref.folders_are_set():
         app.setQuitOnLastWindowClosed(False)  # so popup dialogs don't close the system tray icon
         system_tray = LatusSystemTrayIcon(app, latus_appdata_folder)
+        system_tray.start_latus()
         system_tray.show()
         app.exec_()
     else:
