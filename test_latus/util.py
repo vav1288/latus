@@ -104,7 +104,7 @@ def start_cmd_line(node_id, test_name):
 
 
 def wait_for_file(file_path):
-    time_out_sec = 10
+    time_out_sec = 60
     sleep_time_sec = 0.1
     time_out_count_down = time_out_sec / sleep_time_sec
 
