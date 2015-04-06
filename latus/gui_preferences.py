@@ -58,12 +58,6 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.key_ui = CryptoKeyUI(self.pref.get_crypto_key_string(), latus_appdata_folder)
         self.node_id = LineUI('Node ID', self.pref.get_node_id())
         self.blank = QtWidgets.QLabel('')
-        self.trusted_network = QtWidgets.QCheckBox('This is a Trusted Network')
-        self.trusted_network.stateChanged.connect(self.confirm_join_changed)
-
-        self.trusted_network_explanation = QtWidgets.QDialogButtonBox()
-        self.trusted_network_explanation.addButton('What is this?', QtWidgets.QDialogButtonBox.AcceptRole)
-        self.trusted_network_explanation.accepted.connect(self.trusted_network_explanation_dialog)
 
         ok_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
         ok_buttonBox.accepted.connect(self.ok)
@@ -75,11 +69,8 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.key_ui.layout(grid_layout, 2)
         self.node_id.layout(grid_layout, 3)
         grid_layout.addWidget(self.blank, 4, 0)
-        grid_layout.addWidget(self.trusted_network, 5, 0)
-        grid_layout.addWidget(self.trusted_network_explanation, 5, 1, alignment=QtCore.Qt.AlignLeft)
-        grid_layout.addWidget(self.blank, 6, 0)
-        grid_layout.addWidget(ok_buttonBox, 7, 0)
-        grid_layout.addWidget(cancel_buttonBox, 7, 1, alignment=QtCore.Qt.AlignLeft)  # kind of cheating on the layout
+        grid_layout.addWidget(ok_buttonBox, 5, 0)
+        grid_layout.addWidget(cancel_buttonBox, 5, 1, alignment=QtCore.Qt.AlignLeft)  # kind of cheating on the layout
         grid_layout.setColumnStretch(1, 1)  # path column
         self.setLayout(grid_layout)
 
@@ -99,9 +90,6 @@ class PreferencesDialog(QtWidgets.QDialog):
         f = QtWidgets.QFileDialog.getExistingDirectory()
         return f
 
-    def trusted_network_explanation_dialog(self):
-        d = TrustedNetworkExplanation()
-        d.exec()
 
 # todo: does this really need to be a separate class?  Perhaps put it back into PreferencesDialog
 class CryptoKeyUI:
@@ -207,45 +195,6 @@ class CryptoKeyDialog(QtWidgets.QDialog):
         self.close()
 
 
-class TrustedNetworkExplanation(QtWidgets.QDialog):
-    def __init__(self):
-        super().__init__()
-        self.setMinimumWidth(600)  # swag
-        self.setMinimumHeight(400)  # swag
-
-        self.setWindowTitle("Trusted Network Explanation")
-        grid_layout = QtWidgets.QGridLayout()
-        explanation = "TRUSTED NETWORK (box checked): This means your computer is always on a trusted " \
-                      "network.  For example, a stationary desktop on your home network.  This way no " \
-                      "special permissions need to be granted when your other computers join your Latus." \
-                      "<br><br>UNTRUSTED NETWORK (box unchecked): This means your computer is not always on a " \
-                      "trusted network.  For example, a laptop you use in public places like coffee shops and " \
-                      "airports.  In this case, the Latus application will pop up a window asking you to grant " \
-                      "access to a " \
-                      "computer trying to access your Latus." \
-                      "<br><br>Explanation:" \
-                      "<br><br>When possible, Latus will automatically configure itself across your computers.  " \
-                      "When two or " \
-                      "more of your computers running Latus are on the same local area network (either wired " \
-                      "ethernet or wifi), " \
-                      "Latus will attempt to configure them together.  To ensure your security while providing " \
-                      "the best ease-of-use, exactly how it " \
-                      "does this depends if your computer is on a trusted network or not." \
-                      "<br><br>It's important to note that this is all a precautionary measure in case your " \
-                      "cloud storage provider gets hacked.  For a computer to join your Latus it must first " \
-                      "have access to your cloud storage account (i.e. be running your cloud storage " \
-                      "application).  So, the only way you'll get a malicious request to join " \
-                      "your Latus is if someone first has access to your cloud storage account AND they are on " \
-                      "the same untrusted network as you.  While the scenario of a hacker getting into your " \
-                      "cloud storage account AND sitting in the same Starbucks as you is quite unlikely, Latus " \
-                      "still covers this situation by prompting you to explicitly grant them access." \
-                      "<br><br>You can always check what computers are in your Latus under Preferences." \
-                      "<br><br>You can change the Trusted Network setting at any time."
-        text_box = QtWidgets.QTextEdit(explanation)  # enables copy/paste, just in case anyone wants to
-        text_box.setReadOnly(True)
-        grid_layout.addWidget(text_box, 0, 0)
-        self.setLayout(grid_layout)
-
 if __name__ == '__main__':
     import sys
     temp_dir = 'temp'
@@ -254,6 +203,6 @@ if __name__ == '__main__':
 
     app = QtWidgets.QApplication(sys.argv)
 
-    preferences_dialog = latus.preferences.PreferencesDialog('temp')
+    preferences_dialog = PreferencesDialog('temp')
     preferences_dialog.show()
     preferences_dialog.exec_()

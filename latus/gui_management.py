@@ -23,16 +23,23 @@ class ManagementDialog(QtWidgets.QDialog):
         latus.logger.log.info('starting ManagementDialog')
         super().__init__()
         km = latus.key_management.KeyManagement(latus_app_data_folder)
+
+        pref = latus.preferences.Preferences(latus_app_data_folder)
+        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+
         grid_layout = QtWidgets.QGridLayout()
         lines = {}
-        buttons = {}
         row = 0
         for requester in km.get_requesters():
-            lines[requester] = QtWidgets.QLineEdit(requester)
-            lines[requester].setReadOnly(True)
-            buttons[requester] = AllowButton(latus_app_data_folder, requester)
-            grid_layout.addWidget(lines[requester], row, 0)
-            grid_layout.addWidget(buttons[requester], row, 1)
+            node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, requester)
+            lines[requester] = [QtWidgets.QLineEdit(node_db.get_user()), QtWidgets.QLineEdit(node_db.get_computer()),
+                                QtWidgets.QLineEdit(requester), AllowButton(latus_app_data_folder, requester)]
+            for item in range(0, 3):
+                lines[requester][item].setReadOnly(True)
+            column = 0
+            for item in lines[requester]:
+                grid_layout.addWidget(item, row, column)
+                column += 1
             row += 1
         self.setLayout(grid_layout)
         self.setWindowTitle("Management")

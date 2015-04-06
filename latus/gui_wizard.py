@@ -43,7 +43,6 @@ class GUIWizard(QtWidgets.QWizard):
         pref = latus.preferences.Preferences(self.latus_appdata_folder)
         pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
         pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
-        # pref.set_crypto_key_string(self.field(KEY_FIELD_STRING))
         super().accept()
 
     def done(self, result):
@@ -100,8 +99,6 @@ class CloudFolderPage(QtWidgets.QWizardPage):
                          "use for Dropbox, Microsoft's OneDrive, Google Drive, etc.\n\nOnce your cloud storage folder"
                          " is shown, please select it and hit 'Next'.")
 
-        self.cloud_folder_list.show()
-
         self.progress_line = QtWidgets.QLineEdit()
         self.progress_line.setReadOnly(True)
         self.progress_line.setText('...')
@@ -114,6 +111,8 @@ class CloudFolderPage(QtWidgets.QWizardPage):
         # use this for the value that's been selected
         self.cloud_folder_line = QtWidgets.QLineEdit()
         self.registerField(CLOUD_FOLDER_FIELD_STRING, self.cloud_folder_line)
+
+        self.cloud_folder_list.show()
 
     # controls the if the 'next' button is enabled or not
     def isComplete(self):
@@ -316,7 +315,8 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     app_gui_wizard = GUIWizard(temp_folder)
     app_gui_wizard.exec_()
-    pref = latus.preferences.Preferences(temp_folder)
-    print(pref.get_cloud_root())
-    print(pref.get_latus_folder())
+    my_pref = latus.preferences.Preferences(temp_folder)
+    print(my_pref.get_db_path())
+    print(my_pref.get_cloud_root())
+    print(my_pref.get_latus_folder())
     sys.exit()

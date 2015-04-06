@@ -26,10 +26,10 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.latus_appdata_folder = latus_appdata_folder
 
         menu = QtWidgets.QMenu(parent)
+        about_action = menu.addAction("Nodes")
+        about_action.triggered.connect(self.nodes)
         about_action = menu.addAction("Preferences")
         about_action.triggered.connect(self.preferences)
-        about_action = menu.addAction("Manage")
-        about_action.triggered.connect(self.manage)
         about_action = menu.addAction("About")
         about_action.triggered.connect(self.about)
         exit_action = menu.addAction("Exit")
@@ -52,7 +52,7 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         preferences_dialog = latus.gui_preferences.PreferencesDialog(self.latus_appdata_folder)
         preferences_dialog.exec_()
 
-    def manage(self):
+    def nodes(self):
         management_dialog = latus.gui_management.ManagementDialog(self.latus_appdata_folder)
         management_dialog.exec_()
 

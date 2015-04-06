@@ -31,6 +31,11 @@ class NodeDB:
         self.database_file_name = node_id + latus.const.DB_EXTENSION
         sqlite_file_path = os.path.join(cloud_node_db_folder, self.database_file_name)
 
+        if not os.path.exists(sqlite_file_path) and not write_flag:
+            latus.logger.log.error('DB does not exist and write_flag not set, can not initialize : %s' % sqlite_file_path)
+            self.db_engine = None
+            return
+
         # the 'bind' and 'connection' seem to be redundant - what do I really need????
         # (I seem to need the bind, so perhaps I can get rid of the connection?)
         self.db_engine = sqlalchemy.create_engine('sqlite:///' + os.path.abspath(sqlite_file_path))  # , echo=True)
@@ -199,6 +204,9 @@ class NodeDB:
         return lock_state
 
     def _get_general(self, key):
+        if self.db_engine is None:
+            latus.logger.log.warn('db_engine is None')
+            return None
         conn = self.db_engine.connect()
         val = None
         command = self.general_table.select().where(self.general_table.c.key == key)
@@ -211,6 +219,9 @@ class NodeDB:
         return val
 
     def _set_general(self, key, value):
+        if self.db_engine is None:
+            latus.logger.log.warn('db_engine is None')
+            return None
         conn = self.db_engine.connect()
         db_value = None
         command = self.general_table.select().where(self.general_table.c.key == key)

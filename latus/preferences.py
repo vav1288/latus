@@ -33,13 +33,13 @@ class Preferences:
         self.__most_recent_key_folder_string = 'keyfolder'
         self.__cloud_root_string = 'cloudroot'
         self.__latus_folder_string = 'latusfolder'
-        self.__trusted_network_string = 'trustednetwork'
         self.__private_key_string = 'privatekey'
         self.__verbose_string = 'verbose'
 
         if not os.path.exists(latus_appdata_folder):
             latus.util.make_dirs(latus_appdata_folder)
-        sqlite_path = 'sqlite:///' + os.path.abspath(os.path.join(latus_appdata_folder, self.PREFERENCES_FILE))
+        self._db_path = os.path.abspath(os.path.join(latus_appdata_folder, self.PREFERENCES_FILE))
+        sqlite_path = 'sqlite:///' + self._db_path
         self.__db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
         if init:
             self.init()
@@ -128,9 +128,12 @@ class Preferences:
         public_key = RsaKeypair(self.get_private_key()).publickey
         return public_key.serialize().decode("utf-8")
 
+    def get_db_path(self):
+        return self._db_path
+
     def init(self):
         Base.metadata.drop_all(self.__db_engine)
         Base.metadata.create_all(self.__db_engine)
 
     def folders_are_set(self):
-        return self.get_cloud_root() and self.get_latus_folder()
+        return self.get_cloud_root() is not None and self.get_latus_folder() is not None
