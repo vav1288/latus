@@ -131,7 +131,7 @@ class SetupSyncNode:
         pref.set_new_private_key()
         pref.set_crypto_key(key)
         pref.set_verbose(True)
-        self.sync = latus.sync.Sync(self.app_data_folder)
+        self.sync = latus.sync.Sync(self.app_data_folder, allow_always=True)
 
     def get_sync(self):
         return self.sync

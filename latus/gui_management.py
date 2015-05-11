@@ -34,10 +34,11 @@ class ManagementDialog(QtWidgets.QDialog):
             node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, requester)
             lines[requester] = [QtWidgets.QLineEdit(node_db.get_user()), QtWidgets.QLineEdit(node_db.get_computer()),
                                 QtWidgets.QLineEdit(requester), AllowButton(latus_app_data_folder, requester)]
-            for item in range(0, 3):
-                lines[requester][item].setReadOnly(True)
+            for item_number in range(0, len(lines)-1):
+                lines[requester][item_number].setReadOnly(True)
             column = 0
             for item in lines[requester]:
+                item.setMinimumWidth(item.sizeHint().width())
                 grid_layout.addWidget(item, row, column)
                 column += 1
             row += 1

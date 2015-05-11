@@ -22,8 +22,6 @@ import latus.miv
 import latus.folders
 import latus.key_management
 
-TIME_OUT = 60  # seconds
-
 
 class SyncBase(watchdog.events.FileSystemEventHandler):
 
@@ -34,6 +32,7 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         self.observer = watchdog.observers.Observer()
         latus.logger.log.info('log_folder : %s' % latus.logger.get_log_folder())
         self.write_log_status()
+        super().__init__()
 
     def get_type(self):
         # type of folder - children provide this - e.g. local, cloud
@@ -43,7 +42,7 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         pref = latus.preferences.Preferences(self.app_data_folder)
         latus.logger.log.info('%s - %s - request_exit begin' % (pref.get_node_id(), self.get_type()))
         self.observer.stop()
-        self.observer.join(TIME_OUT)
+        self.observer.join(latus.const.TIME_OUT)
         latus.logger.log.info('%s - %s - request_exit end' % (pref.get_node_id(), self.get_type()))
         return self.observer.is_alive()
 
@@ -251,7 +250,7 @@ class CloudSync(SyncBase):
 
 
 class Sync:
-    def __init__(self, app_data_folder):
+    def __init__(self, app_data_folder, is_gui=True, allow_always=False):
         self.app_data_folder = app_data_folder
         pref = latus.preferences.Preferences(self.app_data_folder)
         latus.logger.log.info('node_id : %s' % pref.get_node_id())
@@ -261,11 +260,7 @@ class Sync:
 
         self.local_sync = LocalSync(self.app_data_folder)
         self.cloud_sync = CloudSync(self.app_data_folder)
-        self.key_management = latus.key_management.KeyManagement(self.app_data_folder)
-
-        # STOPPED HERE
-        # todo: implement getting the key
-        self.key_management.request_key()
+        self.key_management = latus.key_management.KeyManagement(self.app_data_folder, is_gui, allow_always)
 
     def start(self):
         self.local_sync.start()
@@ -280,6 +275,7 @@ class Sync:
         latus.logger.log.info('%s - sync - request_exit begin' % pref.get_node_id())
         timed_out = self.local_sync.request_exit()
         timed_out |= self.cloud_sync.request_exit()
+        timed_out |= self.key_management.request_exit()
         latus.logger.log.info('%s - sync - request_exit end' % pref.get_node_id())
         return timed_out
 

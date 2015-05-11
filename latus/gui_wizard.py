@@ -184,107 +184,108 @@ class LatusFolderPage(QtWidgets.QWizardPage):
     #        return GUIWizard.ConclusionPageNumber
 
 
-class NewKeyPage(QtWidgets.QWizardPage):
+if False:
+    class NewKeyPage(QtWidgets.QWizardPage):
 
-    complete_trigger = QtCore.pyqtSignal()
+        complete_trigger = QtCore.pyqtSignal()
 
-    def __init__(self):
-        super().__init__()
-        self.prior_is_complete = None
-        self.key_box = QtWidgets.QLineEdit()
-        self.key_box.show()  # only show when we get a value
+        def __init__(self):
+            super().__init__()
+            self.prior_is_complete = None
+            self.key_box = QtWidgets.QLineEdit()
+            self.key_box.show()  # only show when we get a value
 
-        self.setTitle("Latus key")
-        self.setSubTitle("This will set up the Latus secret key.  Please make sure you keep this key secure.")
+            self.setTitle("Latus key")
+            self.setSubTitle("This will set up the Latus secret key.  Please make sure you keep this key secure.")
 
-        self.generate_label = QtWidgets.QTextEdit()
-        self.generate_label.setText('This is the first time using Latus.  Generate a my secret key.')
-        self.generate_label.show()
-        self.generate_button = QtWidgets.QDialogButtonBox()
-        self.generate_button.addButton('Generate', QtWidgets.QDialogButtonBox.AcceptRole)
-        self.generate_button.show()
+            self.generate_label = QtWidgets.QTextEdit()
+            self.generate_label.setText('This is the first time using Latus.  Generate a my secret key.')
+            self.generate_label.show()
+            self.generate_button = QtWidgets.QDialogButtonBox()
+            self.generate_button.addButton('Generate', QtWidgets.QDialogButtonBox.AcceptRole)
+            self.generate_button.show()
 
-        self.load_label = QtWidgets.QTextEdit()
-        self.load_label.setText('I am already using Latus.  Load my secret key that was generated on another computer.')
-        self.load_label.show()
-        self.load_button = QtWidgets.QDialogButtonBox()
-        self.load_button.addButton('Load', QtWidgets.QDialogButtonBox.AcceptRole)
-        self.load_button.clicked.connect(self.load_key)
-        self.load_button.show()
+            self.load_label = QtWidgets.QTextEdit()
+            self.load_label.setText('I am already using Latus.  Load my secret key that was generated on another computer.')
+            self.load_label.show()
+            self.load_button = QtWidgets.QDialogButtonBox()
+            self.load_button.addButton('Load', QtWidgets.QDialogButtonBox.AcceptRole)
+            self.load_button.clicked.connect(self.load_key)
+            self.load_button.show()
 
-        layout = QtWidgets.QGridLayout()
-        layout.addWidget(self.generate_label, 0, 0)
-        layout.addWidget(self.generate_button, 0, 1)
-        layout.addWidget(self.load_label, 1, 0)
-        layout.addWidget(self.load_button, 1, 1)
-        layout.addWidget(self.key_box, 2, 0)
-        self.setLayout(layout)
+            layout = QtWidgets.QGridLayout()
+            layout.addWidget(self.generate_label, 0, 0)
+            layout.addWidget(self.generate_button, 0, 1)
+            layout.addWidget(self.load_label, 1, 0)
+            layout.addWidget(self.load_button, 1, 1)
+            layout.addWidget(self.key_box, 2, 0)
+            self.setLayout(layout)
 
-        # self.registerField(KEY_FIELD_STRING, self.key_box)
+            # self.registerField(KEY_FIELD_STRING, self.key_box)
 
-    def initializePage(self):
-        pass
+        def initializePage(self):
+            pass
 
-    # controls the if the 'next' button is enabled or not
-    def isComplete(self):
-        if len(self.key_box.text()) > 0:
-            is_complete = True
-        else:
-            is_complete = False
-        if is_complete != self.prior_is_complete:
-            self.prior_is_complete = is_complete
-            self.complete_trigger.connect(self.completeChanged)
-            self.complete_trigger.emit()  # inform the window to update the 'next' button state (call this method)
-        return is_complete
+        # controls the if the 'next' button is enabled or not
+        def isComplete(self):
+            if len(self.key_box.text()) > 0:
+                is_complete = True
+            else:
+                is_complete = False
+            if is_complete != self.prior_is_complete:
+                self.prior_is_complete = is_complete
+                self.complete_trigger.connect(self.completeChanged)
+                self.complete_trigger.emit()  # inform the window to update the 'next' button state (call this method)
+            return is_complete
 
-    def load_key(self):
-        self.isComplete()
+        def load_key(self):
+            self.isComplete()
 
 
-class ExistingKeyPage(QtWidgets.QWizardPage):
+    class ExistingKeyPage(QtWidgets.QWizardPage):
 
-    complete_trigger = QtCore.pyqtSignal()
+        complete_trigger = QtCore.pyqtSignal()
 
-    def __init__(self):
-        super().__init__()
-        self.prior_is_complete = None
-        self.key_box = QtWidgets.QLineEdit()
-        self.key_box.show()  # only show when we get a value
+        def __init__(self):
+            super().__init__()
+            self.prior_is_complete = None
+            self.key_box = QtWidgets.QLineEdit()
+            self.key_box.show()  # only show when we get a value
 
-        self.setTitle("Latus key")
-        self.setSubTitle("We now need to get your existing Latus key.  Please go to a computer already running Latus, "
-                         "right-click the Latus icon in the tool bar, and select 'Export Key'.  Export the key "
-                         "to a USB drive, bring it to this computer, and hit 'Import Key' below.")
+            self.setTitle("Latus key")
+            self.setSubTitle("We now need to get your existing Latus key.  Please go to a computer already running Latus, "
+                             "right-click the Latus icon in the tool bar, and select 'Export Key'.  Export the key "
+                             "to a USB drive, bring it to this computer, and hit 'Import Key' below.")
 
-        self.load_button = QtWidgets.QDialogButtonBox()
-        self.load_button.addButton('Import Key', QtWidgets.QDialogButtonBox.AcceptRole)
-        self.load_button.clicked.connect(self.load_key)
-        self.load_button.show()
+            self.load_button = QtWidgets.QDialogButtonBox()
+            self.load_button.addButton('Import Key', QtWidgets.QDialogButtonBox.AcceptRole)
+            self.load_button.clicked.connect(self.load_key)
+            self.load_button.show()
 
-        layout = QtWidgets.QGridLayout()
-        layout.addWidget(self.load_button, 1, 0)
-        layout.addWidget(self.key_box, 1, 4)
-        self.setLayout(layout)
+            layout = QtWidgets.QGridLayout()
+            layout.addWidget(self.load_button, 1, 0)
+            layout.addWidget(self.key_box, 1, 4)
+            self.setLayout(layout)
 
-        # self.registerField(KEY_FIELD_STRING, self.key_box)
+            # self.registerField(KEY_FIELD_STRING, self.key_box)
 
-    def initializePage(self):
-        pass
+        def initializePage(self):
+            pass
 
-    # controls the if the 'next' button is enabled or not
-    def isComplete(self):
-        if len(self.key_box.text()) > 0:
-            is_complete = True
-        else:
-            is_complete = False
-        if is_complete != self.prior_is_complete:
-            self.prior_is_complete = is_complete
-            self.complete_trigger.connect(self.completeChanged)
-            self.complete_trigger.emit()  # inform the window to update the 'next' button state (call this method)
-        return is_complete
+        # controls the if the 'next' button is enabled or not
+        def isComplete(self):
+            if len(self.key_box.text()) > 0:
+                is_complete = True
+            else:
+                is_complete = False
+            if is_complete != self.prior_is_complete:
+                self.prior_is_complete = is_complete
+                self.complete_trigger.connect(self.completeChanged)
+                self.complete_trigger.emit()  # inform the window to update the 'next' button state (call this method)
+            return is_complete
 
-    def load_key(self):
-        self.isComplete()
+        def load_key(self):
+            self.isComplete()
 
 
 class ConclusionPage(QtWidgets.QWizardPage):
