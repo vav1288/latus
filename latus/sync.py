@@ -108,7 +108,7 @@ class LocalSync(SyncBase):
             if local_hash:
                 # todo: encrypt the hash?
                 cloud_fernet_file = os.path.join(cloud_folders.cache, local_hash + self.fernet_extension)
-                fs_db = latus.nodedb.NodeDB(cloud_folders.nodedb, pref.get_node_id(), pref.get_public_key(), True)
+                fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), pref.get_public_key(), True)
                 fs_updated = False
                 while not fs_updated:
                     if fs_db.acquire_lock():
@@ -131,7 +131,7 @@ class LocalSync(SyncBase):
                 latus.logger.log.warn('could not calculate hash for %s' % local_full_path)
 
         # check for local deletions
-        fs_db = latus.nodedb.NodeDB(cloud_folders.nodedb, pref.get_node_id(), pref.get_public_key(), True)
+        fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), pref.get_public_key(), True)
         fs_updated = False
         while not fs_updated:
             if fs_db.acquire_lock():
@@ -157,15 +157,15 @@ class CloudSync(SyncBase):
         pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
 
-        latus.logger.log.info('cloud_nodedb : %s' % cloud_folders.nodedb)
+        latus.logger.log.info('cloud_nodedb : %s' % cloud_folders.nodes)
         latus.logger.log.info('cloud_cache : %s' % cloud_folders.cache)
         latus.logger.log.info('cloud_miv : %s' % cloud_folders.miv)
 
-        latus.util.make_dirs(cloud_folders.nodedb)
+        latus.util.make_dirs(cloud_folders.nodes)
         latus.util.make_dirs(cloud_folders.cache)
         latus.util.make_dirs(cloud_folders.miv)
 
-        self.observer.schedule(self, cloud_folders.nodedb, recursive=True)
+        self.observer.schedule(self, cloud_folders.nodes, recursive=True)
 
     def get_type(self):
         return 'cloud'
@@ -183,18 +183,17 @@ class CloudSync(SyncBase):
                 latus.logger.log.info('no crypto_key yet')
                 return
             crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
-            fs_db_this_node = latus.nodedb.NodeDB(cloud_folders.nodedb, pref.get_node_id())
+            fs_db_this_node = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
             # for each file path, determine the 'winning' node (which could be this node)
-            db_files = glob.glob(os.path.join(cloud_folders.nodedb, '*' + latus.const.DB_EXTENSION))
             looking = True  # set to False when we have a full set of winners
             while looking:
                 winners = {}
                 any_locked = False
-                for db_file in db_files:
+                for db_file in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
                     if not any_locked:
                         file_name = os.path.basename(db_file)
                         db_node_id = file_name.split('.')[0]
-                        fs_db = latus.nodedb.NodeDB(cloud_folders.nodedb, db_node_id)
+                        fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, db_node_id)
                         if fs_db.get_lock_state():
                             # one of the DBs is locked - we can't use this
                             winners = {}

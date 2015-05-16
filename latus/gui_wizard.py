@@ -11,31 +11,29 @@ import latus.sync
 import latus.folders
 import latus.logger
 import latus.crypto
+import latus.util
 
 CLOUD_FOLDER_FIELD_STRING = 'cloud_folder'
 LATUS_FOLDER_FIELD_STRING = 'latus_folder'
-# KEY_FIELD_STRING = 'key'
+NODE_ID_FIELD_STRING = 'node_id'
+LATUS_KEY_FIELD_STRING = 'latus_key'
 
 
 class GUIWizard(QtWidgets.QWizard):
-
-    NUM_PAGES = 6
-    (IntroPageNumber, CloudFolderPageNumber, LatusFolderPageNumber, NewKeyPageNumber, ExistingKeyPageNumber,
-     ConclusionPageNumber) = range(NUM_PAGES)
 
     def __init__(self, latus_appdata_folder):
         super().__init__()
         latus.logger.log.info('starting GUIWizard')
 
         self.latus_appdata_folder = latus_appdata_folder
+
         self.folder_wizard = latus.wizard.FolderWizard()
 
-        self.setPage(self.IntroPageNumber, IntroPage())
-        self.setPage(self.CloudFolderPageNumber, CloudFolderPage(self.folder_wizard))
-        self.setPage(self.LatusFolderPageNumber, LatusFolderPage())
-        #self.setPage(self.ExistingKeyPageNumber, ExistingKeyPage())
-        #self.setPage(self.NewKeyPageNumber, NewKeyPage())
-        self.setPage(self.ConclusionPageNumber, ConclusionPage())
+        self.addPage(IntroPage())
+        self.addPage(CloudRootPage(self.folder_wizard))
+        self.addPage(LatusFolderPage())
+        self.addPage(LatusKeyPage())
+        self.addPage(ConclusionPage())
         self.setWindowTitle("Latus Setup")
         self.show()
 
@@ -43,6 +41,8 @@ class GUIWizard(QtWidgets.QWizard):
         pref = latus.preferences.Preferences(self.latus_appdata_folder)
         pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
         pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
+        pref.set_node_id(self.field(NODE_ID_FIELD_STRING))
+        pref.set_crypto_key_string(self.field(LATUS_KEY_FIELD_STRING))
         super().accept()
 
     def done(self, result):
@@ -55,6 +55,10 @@ class IntroPage(QtWidgets.QWizardPage):
     def __init__(self):
         super().__init__()
         self.setTitle("Latus Setup Wizard")
+
+        self.node_id_line = QtWidgets.QLineEdit()  # non-visible
+        self.registerField(NODE_ID_FIELD_STRING, self.node_id_line)
+        self.node_id_line.setText(latus.util.new_node_id())
 
         label = QtWidgets.QLabel("This will guide you through the Latus setup process.")
         label.setWordWrap(True)
@@ -74,7 +78,7 @@ class WizardFolderListWidget(QtWidgets.QListWidget):
         super().selectionChanged(a, b)
 
 
-class CloudFolderPage(QtWidgets.QWizardPage):
+class CloudRootPage(QtWidgets.QWizardPage):
 
     complete_trigger = QtCore.pyqtSignal()
     selection_trigger = QtCore.pyqtSignal()
@@ -171,135 +175,53 @@ class LatusFolderPage(QtWidgets.QWizardPage):
         self.registerField(LATUS_FOLDER_FIELD_STRING, self.latus_folder_box)
 
     def initializePage(self):
-        latus_folder = latus.wizard.latus_folder_from_cloud_folder(self.field('cloud_folder'))
+        latus_folder = latus.wizard.latus_folder_from_cloud_folder(self.field(CLOUD_FOLDER_FIELD_STRING))
         self.latus_folder_box.setText(latus_folder)
 
-    #def nextId(self):
-    #    cf = latus.folders.CloudFolders(self.field(CLOUD_FOLDER_FIELD_STRING))
-    #    if os.path.exists(cf.latus):
-    #        return GUIWizard.ExistingKeyPageNumber
-    #    else:
-    #        new_key_bytes = latus.crypto.new_key()
-    #        self.setField(KEY_FIELD_STRING, new_key_bytes.decode())
-    #        return GUIWizard.ConclusionPageNumber
 
+class LatusKeyPage(QtWidgets.QWizardPage):
 
-if False:
-    class NewKeyPage(QtWidgets.QWizardPage):
+    complete_trigger = QtCore.pyqtSignal()
 
-        complete_trigger = QtCore.pyqtSignal()
+    def __init__(self):
+        super().__init__()
 
-        def __init__(self):
-            super().__init__()
-            self.prior_is_complete = None
-            self.key_box = QtWidgets.QLineEdit()
-            self.key_box.show()  # only show when we get a value
+        self.setTitle("Latus key")
 
-            self.setTitle("Latus key")
-            self.setSubTitle("This will set up the Latus secret key.  Please make sure you keep this key secure.")
+        self.latus_key_line = QtWidgets.QLineEdit()  # non-visible
+        self.registerField(LATUS_KEY_FIELD_STRING, self.latus_key_line)
 
-            self.generate_label = QtWidgets.QTextEdit()
-            self.generate_label.setText('This is the first time using Latus.  Generate a my secret key.')
-            self.generate_label.show()
-            self.generate_button = QtWidgets.QDialogButtonBox()
-            self.generate_button.addButton('Generate', QtWidgets.QDialogButtonBox.AcceptRole)
-            self.generate_button.show()
+    def initializePage(self):
+        cloud_folder = self.field(CLOUD_FOLDER_FIELD_STRING)
+        node_id = self.field(NODE_ID_FIELD_STRING)
+        latus.folders.CloudFolders(cloud_folder)
 
-            self.load_label = QtWidgets.QTextEdit()
-            self.load_label.setText('I am already using Latus.  Load my secret key that was generated on another computer.')
-            self.load_label.show()
-            self.load_button = QtWidgets.QDialogButtonBox()
-            self.load_button.addButton('Load', QtWidgets.QDialogButtonBox.AcceptRole)
-            self.load_button.clicked.connect(self.load_key)
-            self.load_button.show()
+        # todo: complete this ... STOPPED HERE!!!
+        self.setSubTitle('STOPPED HERE!!!!!')
 
-            layout = QtWidgets.QGridLayout()
-            layout.addWidget(self.generate_label, 0, 0)
-            layout.addWidget(self.generate_button, 0, 1)
-            layout.addWidget(self.load_label, 1, 0)
-            layout.addWidget(self.load_button, 1, 1)
-            layout.addWidget(self.key_box, 2, 0)
-            self.setLayout(layout)
+        self.latus_key_line.setText(latus.crypto.new_key().decode())
 
-            # self.registerField(KEY_FIELD_STRING, self.key_box)
+    # controls the if the 'next' button is enabled or not
+    def isComplete(self):
+        return True
+        if len(self.key_box.text()) > 0:
+            is_complete = True
+        else:
+            is_complete = False
+        if is_complete != self.prior_is_complete:
+            self.prior_is_complete = is_complete
+            self.complete_trigger.connect(self.completeChanged)
+            self.complete_trigger.emit()  # inform the window to update the 'next' button state (call this method)
+        return is_complete
 
-        def initializePage(self):
-            pass
-
-        # controls the if the 'next' button is enabled or not
-        def isComplete(self):
-            if len(self.key_box.text()) > 0:
-                is_complete = True
-            else:
-                is_complete = False
-            if is_complete != self.prior_is_complete:
-                self.prior_is_complete = is_complete
-                self.complete_trigger.connect(self.completeChanged)
-                self.complete_trigger.emit()  # inform the window to update the 'next' button state (call this method)
-            return is_complete
-
-        def load_key(self):
-            self.isComplete()
-
-
-    class ExistingKeyPage(QtWidgets.QWizardPage):
-
-        complete_trigger = QtCore.pyqtSignal()
-
-        def __init__(self):
-            super().__init__()
-            self.prior_is_complete = None
-            self.key_box = QtWidgets.QLineEdit()
-            self.key_box.show()  # only show when we get a value
-
-            self.setTitle("Latus key")
-            self.setSubTitle("We now need to get your existing Latus key.  Please go to a computer already running Latus, "
-                             "right-click the Latus icon in the tool bar, and select 'Export Key'.  Export the key "
-                             "to a USB drive, bring it to this computer, and hit 'Import Key' below.")
-
-            self.load_button = QtWidgets.QDialogButtonBox()
-            self.load_button.addButton('Import Key', QtWidgets.QDialogButtonBox.AcceptRole)
-            self.load_button.clicked.connect(self.load_key)
-            self.load_button.show()
-
-            layout = QtWidgets.QGridLayout()
-            layout.addWidget(self.load_button, 1, 0)
-            layout.addWidget(self.key_box, 1, 4)
-            self.setLayout(layout)
-
-            # self.registerField(KEY_FIELD_STRING, self.key_box)
-
-        def initializePage(self):
-            pass
-
-        # controls the if the 'next' button is enabled or not
-        def isComplete(self):
-            if len(self.key_box.text()) > 0:
-                is_complete = True
-            else:
-                is_complete = False
-            if is_complete != self.prior_is_complete:
-                self.prior_is_complete = is_complete
-                self.complete_trigger.connect(self.completeChanged)
-                self.complete_trigger.emit()  # inform the window to update the 'next' button state (call this method)
-            return is_complete
-
-        def load_key(self):
-            self.isComplete()
+    def load_key(self):
+        self.isComplete()
 
 
 class ConclusionPage(QtWidgets.QWizardPage):
     def __init__(self):
         super().__init__()
-
-        self.setTitle("Complete!")
-
-        label = QtWidgets.QLabel("Latus setup is now complete!")
-        label.setWordWrap(True)
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(label)
-        self.setLayout(layout)
+        self.setTitle("Congratulations - Latus setup is now complete!")
 
 
 if __name__ == '__main__':
@@ -318,6 +240,8 @@ if __name__ == '__main__':
     app_gui_wizard.exec_()
     my_pref = latus.preferences.Preferences(temp_folder)
     print(my_pref.get_db_path())
+    print(my_pref.get_node_id())
     print(my_pref.get_cloud_root())
     print(my_pref.get_latus_folder())
+    print(my_pref.get_crypto_key_string())
     sys.exit()

@@ -31,7 +31,7 @@ class ManagementDialog(QtWidgets.QDialog):
         lines = {}
         row = 0
         for requester in km.get_requesters():
-            node_db = latus.nodedb.NodeDB(cloud_folders.nodedb, requester)
+            node_db = latus.nodedb.NodeDB(cloud_folders.nodes, requester)
             lines[requester] = [QtWidgets.QLineEdit(node_db.get_user()), QtWidgets.QLineEdit(node_db.get_computer()),
                                 QtWidgets.QLineEdit(requester), AllowButton(latus_app_data_folder, requester)]
             for item_number in range(0, len(lines)-1):
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         preferences[node].set_node_id(node)
         preferences[node].set_new_private_key()
         preferences[node].set_cloud_root(cloud_folder)
-        node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodedb, node, preferences[node].get_public_key(), True)
+        node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodes, node, preferences[node].get_public_key(), True)
         node_dbs[node].set_user(user_prefix + node)  # essentially override defaults
         node_dbs[node].set_computer(computer_prefix + node)  # essentially override defaults
         kms[node] = latus.key_management.KeyManagement(app_data_folders[node])

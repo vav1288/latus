@@ -17,9 +17,9 @@ class CloudFolders:
         return os.path.join(self.__latus_cloud_folder, 'cache')
 
     @property
-    def nodedb(self):
+    def nodes(self):
         # file system database
-        return os.path.join(self.__latus_cloud_folder, 'nodedb')
+        return os.path.join(self.__latus_cloud_folder, 'nodes')
 
     @property
     def miv(self):

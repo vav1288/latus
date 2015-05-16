@@ -1,6 +1,5 @@
 
 import os
-import datetime
 import time
 
 import latus.logger
@@ -9,6 +8,7 @@ import latus.nodedb
 import latus.util
 import latus.folders
 import latus.key_management
+import latus.crypto
 import test_latus.create_files
 
 
@@ -40,16 +40,28 @@ def test_key_management():
         pref[node].set_node_id(node)
         pref[node].set_new_private_key()
         pref[node].set_cloud_root(cloud_folder)
-        node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodedb, node, pref[node].get_public_key(), True)
+        if node == nodes[0]:
+            pref[node].set_crypto_key(latus.crypto.new_key())
+        node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodes, node, pref[node].get_public_key(), True)
         node_dbs[node].set_user(user_prefix + node)  # essentially override defaults
         node_dbs[node].set_computer(computer_prefix + node)  # essentially override defaults
         kms[node] = latus.key_management.KeyManagement(app_data_folder, False, True)
         kms[node].start()
-        time.sleep(1)
 
+    time_out = 20.0  # seconds
+    timer_sec_per_iteration = 0.01  # seconds
+    timer_count = 0.0  # seconds
     key_0 = pref[nodes[0]].get_crypto_key()
-    key_1 = pref[nodes[1]].get_crypto_key()
-    latus.logger.log.info('key : %s' % key_0)
+    key_1 = None
+    while key_1 is None and timer_count <= time_out:
+        key_1 = pref[nodes[1]].get_crypto_key()
+        if not key_1:
+            time.sleep(timer_sec_per_iteration)
+            timer_count += timer_sec_per_iteration
+    latus.logger.log.info('key wait time : %f (sec)' % float(timer_count))
+
+    latus.logger.log.info('key_0 : %s' % key_0)
+    latus.logger.log.info('key_1 : %s' % key_1)
     assert(key_0 is not None)
     assert(key_0 == key_1)
 

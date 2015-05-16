@@ -3,6 +3,7 @@ import os
 import datetime
 import platform
 import getpass
+import glob
 
 import sqlalchemy
 import sqlalchemy.exc
@@ -287,4 +288,10 @@ class NodeDB:
         conn.close()
         return last_seq
 
+def node_id_from_node_db_file_path(node_db_file_path):
+    return os.path.basename(node_db_file_path).split('.')[0]
+
+def get_existing_nodes(cloud_node_db_folder):
+    node_db_files = glob.glob(os.path.join(cloud_node_db_folder, '*' + latus.const.DB_EXTENSION))
+    return [node_id_from_node_db_file_path(node_db_file) for node_db_file in node_db_files]
 
