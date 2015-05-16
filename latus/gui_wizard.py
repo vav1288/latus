@@ -12,6 +12,7 @@ import latus.folders
 import latus.logger
 import latus.crypto
 import latus.util
+import latus.nodedb
 
 CLOUD_FOLDER_FIELD_STRING = 'cloud_folder'
 LATUS_FOLDER_FIELD_STRING = 'latus_folder'
@@ -192,30 +193,18 @@ class LatusKeyPage(QtWidgets.QWizardPage):
         self.registerField(LATUS_KEY_FIELD_STRING, self.latus_key_line)
 
     def initializePage(self):
-        cloud_folder = self.field(CLOUD_FOLDER_FIELD_STRING)
+        cloud_folder_field = self.field(CLOUD_FOLDER_FIELD_STRING)
         node_id = self.field(NODE_ID_FIELD_STRING)
-        latus.folders.CloudFolders(cloud_folder)
+        cloud_folders = latus.folders.CloudFolders(cloud_folder_field)
+        existing_nodes = latus.nodedb.get_existing_nodes(cloud_folders.nodes)
+        latus.logger.log.info('existing nodes: %s' % str(existing_nodes))
+        if len(existing_nodes) < 1:
+            self.setField(LATUS_KEY_FIELD_STRING, latus.crypto.new_key())
 
         # todo: complete this ... STOPPED HERE!!!
         self.setSubTitle('STOPPED HERE!!!!!')
 
         self.latus_key_line.setText(latus.crypto.new_key().decode())
-
-    # controls the if the 'next' button is enabled or not
-    def isComplete(self):
-        return True
-        if len(self.key_box.text()) > 0:
-            is_complete = True
-        else:
-            is_complete = False
-        if is_complete != self.prior_is_complete:
-            self.prior_is_complete = is_complete
-            self.complete_trigger.connect(self.completeChanged)
-            self.complete_trigger.emit()  # inform the window to update the 'next' button state (call this method)
-        return is_complete
-
-    def load_key(self):
-        self.isComplete()
 
 
 class ConclusionPage(QtWidgets.QWizardPage):
