@@ -4,10 +4,11 @@ import os
 import logging
 import latus.logger
 import test_latus.create_files
+import test_latus.paths
 
 
 def get_logger_root():
-    return os.path.join(test_latus.create_files.get_data_root(), "logger")
+    return os.path.join(test_latus.paths.get_data_root(), "logger")
 
 
 def print_all_levels(msg):

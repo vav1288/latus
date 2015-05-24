@@ -10,10 +10,11 @@ import latus.folders
 import latus.key_management
 import latus.crypto
 import test_latus.create_files
+import test_latus.paths
 
 
 def get_key_management_root():
-    return os.path.join(test_latus.create_files.get_data_root(), "key_management")
+    return os.path.join(test_latus.paths.get_data_root(), "key_management")
 
 
 def test_key_management():
@@ -40,9 +41,12 @@ def test_key_management():
         pref[node].set_node_id(node)
         pref[node].set_new_private_key()
         pref[node].set_cloud_root(cloud_folder)
+        public_key = pref[node].get_public_key()  # public key is contained in the private key which is in preferences
+        node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodes, node, public_key, True)
         if node == nodes[0]:
             pref[node].set_crypto_key(latus.crypto.new_key())
-        node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodes, node, pref[node].get_public_key(), True)
+        else:
+            latus.key_management.request_key(node, cloud_folders.keys)
         node_dbs[node].set_user(user_prefix + node)  # essentially override defaults
         node_dbs[node].set_computer(computer_prefix + node)  # essentially override defaults
         kms[node] = latus.key_management.KeyManagement(app_data_folder, False, True)
@@ -54,7 +58,7 @@ def test_key_management():
     key_0 = pref[nodes[0]].get_crypto_key()
     key_1 = None
     while key_1 is None and timer_count <= time_out:
-        key_1 = pref[nodes[1]].get_crypto_key()
+        key_1 = latus.key_management.get_latus_key(nodes[1], cloud_folders.keys, pref[nodes[1]].get_private_key())
         if not key_1:
             time.sleep(timer_sec_per_iteration)
             timer_count += timer_sec_per_iteration

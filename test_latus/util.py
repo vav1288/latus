@@ -11,6 +11,7 @@ import latus.crypto
 import latus.preferences
 import latus.sync
 import test_latus.create_files
+import test_latus.paths
 
 def logger_init(log_folder):
     latus.logger.init(log_folder)
@@ -79,7 +80,7 @@ def wait_for_node(log_folder):
     return time_out_count > 0
 
 def start_cmd_line(node_id, test_name):
-    test_folder = os.path.join(test_latus.create_files.get_data_root(), test_name)
+    test_folder = os.path.join(test_latus.paths.get_data_root(), test_name)
     node_folder = os.path.join(test_folder, node_id)
     latus.util.make_dirs(node_folder)
     latus_folder = os.path.join(node_folder, 'latus')

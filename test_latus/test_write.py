@@ -4,12 +4,13 @@ import time
 
 import test_latus.create_files
 import test_latus.util
+import test_latus.paths
 import latus.util
 import latus.logger
 
 
 def get_write_root():
-    return os.path.join(test_latus.create_files.get_data_root(), "write")
+    return os.path.join(test_latus.paths.get_data_root(), "write")
 
 
 def test_write(setup):

@@ -6,15 +6,20 @@ import os
 
 from automa.api import *
 
+root = os.path.join('test_latus', 'test_gui_wizard')
+
 # run the wizard
 
 pp = 'PYTHONPATH'
 python_path_env_var = os.path.abspath('.')
-print(python_path_env_var)
+print('python_path_env_var', python_path_env_var)
 save_python_path_env_var = os.getenv(pp)
 os.putenv(pp, python_path_env_var)
 python_exe = os.path.join('c:', os.sep, 'python34', 'python.exe')
-test_program = os.path.abspath(os.path.join('test_latus', 'gui_wizard.py'))
+test_program = os.path.abspath(os.path.join(root, 'gui_wizard.py'))
+
+print('python_exe', python_exe)
+print('test_program', test_program)
 
 start(python_exe, test_program)
 

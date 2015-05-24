@@ -13,6 +13,7 @@ import latus.logger
 import latus.crypto
 import latus.util
 import latus.nodedb
+import latus.key_management
 
 CLOUD_FOLDER_FIELD_STRING = 'cloud_folder'
 LATUS_FOLDER_FIELD_STRING = 'latus_folder'
@@ -22,11 +23,10 @@ LATUS_KEY_FIELD_STRING = 'latus_key'
 
 class GUIWizard(QtWidgets.QWizard):
 
-    def __init__(self, latus_appdata_folder):
+    def __init__(self, app_data_folder):
         super().__init__()
-        latus.logger.log.info('starting GUIWizard')
-
-        self.latus_appdata_folder = latus_appdata_folder
+        self.app_data_folder = app_data_folder
+        latus.logger.log.info('starting GUIWizard : app_data_folder : %s' % app_data_folder)
 
         self.folder_wizard = latus.wizard.FolderWizard()
 
@@ -39,7 +39,7 @@ class GUIWizard(QtWidgets.QWizard):
         self.show()
 
     def accept(self):
-        pref = latus.preferences.Preferences(self.latus_appdata_folder)
+        pref = latus.preferences.Preferences(self.app_data_folder)
         pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
         pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
         pref.set_node_id(self.field(NODE_ID_FIELD_STRING))
@@ -165,7 +165,7 @@ class LatusFolderPage(QtWidgets.QWizardPage):
         self.latus_folder_box.setReadOnly(True)
 
         self.setTitle("Latus folder")
-        self.setSubTitle("This is the default Latus folder on your computer:")
+        self.setSubTitle("This is the Latus folder on your computer.  You may edit this path if you wish.")
 
         self.latus_folder_box.show()
 
@@ -189,22 +189,30 @@ class LatusKeyPage(QtWidgets.QWizardPage):
 
         self.setTitle("Latus key")
 
+        self.prior_is_complete = False
+
         self.latus_key_line = QtWidgets.QLineEdit()  # non-visible
         self.registerField(LATUS_KEY_FIELD_STRING, self.latus_key_line)
+        self.setField(LATUS_KEY_FIELD_STRING, None)
 
     def initializePage(self):
+
+        self.setTitle('Latus Key Setup')
+
         cloud_folder_field = self.field(CLOUD_FOLDER_FIELD_STRING)
-        node_id = self.field(NODE_ID_FIELD_STRING)
         cloud_folders = latus.folders.CloudFolders(cloud_folder_field)
         existing_nodes = latus.nodedb.get_existing_nodes(cloud_folders.nodes)
         latus.logger.log.info('existing nodes: %s' % str(existing_nodes))
         if len(existing_nodes) < 1:
-            self.setField(LATUS_KEY_FIELD_STRING, latus.crypto.new_key())
+            self.setField(LATUS_KEY_FIELD_STRING, latus.crypto.new_key().decode())
+            self.setSubTitle('This is the first computer you are adding to Latus.  The Latus key has been created.')
+        else:
+            latus.key_management.request_key()
+            self.setSubTitle('Please go to one of your other computers running Latus and accept the key request.')
 
-        # todo: complete this ... STOPPED HERE!!!
-        self.setSubTitle('STOPPED HERE!!!!!')
-
-        self.latus_key_line.setText(latus.crypto.new_key().decode())
+    # controls the if the 'next' button is enabled or not
+    def isComplete(self):
+        return self.field(LATUS_KEY_FIELD_STRING) is not None
 
 
 class ConclusionPage(QtWidgets.QWizardPage):
@@ -218,16 +226,21 @@ if __name__ == '__main__':
     import sys
     import logging
 
-    temp_folder = os.path.join('temp', 'wizardgui')
+    if len(sys.argv) < 2:
+        data_folder = os.path.join('temp', 'wizardgui')
+    else:
+        data_folder = sys.argv[1]
 
-    latus.logger.init(temp_folder)
+    latus.logger.init(data_folder)
     latus.logger.set_console_log_level(logging.INFO)
     latus.logger.set_file_log_level(logging.DEBUG)
 
+    latus.logger.log.info('data_folder : %s' % data_folder)
+
     app = QtWidgets.QApplication(sys.argv)
-    app_gui_wizard = GUIWizard(temp_folder)
+    app_gui_wizard = GUIWizard(data_folder)
     app_gui_wizard.exec_()
-    my_pref = latus.preferences.Preferences(temp_folder)
+    my_pref = latus.preferences.Preferences(data_folder)
     print(my_pref.get_db_path())
     print(my_pref.get_node_id())
     print(my_pref.get_cloud_root())

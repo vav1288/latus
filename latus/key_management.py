@@ -30,12 +30,10 @@ g_is_gui = False  # True = GUI, False = CLI
 g_allow_always = False  # set to True to not ask for permission to provide crypto key (for testing purposes only)
 
 
-def session_maker(app_data_folder):
-    pref = latus.preferences.Preferences(app_data_folder)
-    cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-    if not os.path.exists(cloud_folders.keys):
-        os.mkdir(cloud_folders.keys)
-    sqlite_path = 'sqlite:///' + os.path.abspath(os.path.join(cloud_folders.keys, KEY_MANAGEMENT_FILE))
+def keys_session_maker(cloud_key_folder):
+    if not os.path.exists(cloud_key_folder):
+        os.mkdir(cloud_key_folder)
+    sqlite_path = 'sqlite:///' + os.path.abspath(os.path.join(cloud_key_folder, KEY_MANAGEMENT_FILE))
     db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
     session = sqlalchemy.orm.sessionmaker(bind=db_engine)
     Base.metadata.create_all(db_engine)
@@ -68,28 +66,11 @@ class DBUpdateHandler(watchdog.events.FileSystemEventHandler):
     def dispatch(self, event):
         if os.path.basename(event.src_path) == KEY_MANAGEMENT_FILE:
             pref = latus.preferences.Preferences(self.app_data_folder)
-            cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
             this_node_id = pref.get_node_id()
             latus.logger.log.info('dispatch src_path : %s : %s' % (this_node_id, str(event.src_path)))
-            session = session_maker(self.app_data_folder)
+            cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+            session = keys_session_maker(cloud_folders.keys)
             s = session()
-
-            # if we don't have a key try to get one from other nodes
-            if not pref.get_crypto_key():
-                latus_keys = set()
-                sources = set()
-                latus.logger.log.info('%s : looking for key' % this_node_id)
-                for row in s.query(KeyManagementTable).filter_by(destination=this_node_id):
-                    private_key = RsaKeypair(pref.get_private_key())
-                    latus_key = private_key.decrypt(row.encrypted_latus_key)
-                    if latus_key not in latus_keys:
-                        latus_keys.add(latus_key)
-                        sources.add(row.source)
-                if len(latus_keys) > 0:
-                    latus.logger.log.info('%s : got latus key from %s' % (this_node_id, str(sources)))
-                    pref.set_crypto_key(min(latus_keys))  # if more than one, take the first one in order
-                else:
-                    latus.logger.log.info('%s : no latus key found' % this_node_id)
 
             # respond to key requests
             for row in s.query(KeyRequestTable):
@@ -103,10 +84,10 @@ class DBUpdateHandler(watchdog.events.FileSystemEventHandler):
                             latus.logger.log.info('%s : answering key request from %s' % (this_node_id, row.requester))
 
                             # give the requester the key (encrypted, of course)
-                            requester_public_key = RsaPublicKey(requester_node_db.get_public_key())
-                            crypto_key = pref.get_crypto_key()
-                            if crypto_key:
-                                encrypted_latus_key = requester_public_key.encrypt(crypto_key)
+                            requester_public_key = requester_node_db.get_public_key()
+                            if requester_public_key:
+                                requester_rsa_public_key = RsaPublicKey(requester_public_key)
+                                encrypted_latus_key = requester_rsa_public_key.encrypt(pref.get_crypto_key())
                                 kmt = KeyManagementTable(source=this_node_id, destination=row.requester,
                                                          encrypted_latus_key=encrypted_latus_key,
                                                          datetime=datetime.datetime.utcnow())
@@ -116,7 +97,7 @@ class DBUpdateHandler(watchdog.events.FileSystemEventHandler):
                                 s.add(kmt)
                                 s.commit()
                             else:
-                                latus.logger.log.error('%s : no crypto key' % this_node_id)
+                                latus.logger.log.warn('requester has no public key')
                         else:
                             latus.logger.log.warn('%s : denied request from %s' % (this_node_id, row.requester))
             s.close()
@@ -155,7 +136,9 @@ class KeyManagement(threading.Thread):
         self.handler = None
 
         # creates the DB if it doesn't already exist
-        session = session_maker(self.app_data_folder)
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+        session = keys_session_maker(cloud_folders.keys)
         s = session()
         s.commit()
         s.close()
@@ -163,11 +146,10 @@ class KeyManagement(threading.Thread):
         super().__init__()
 
     def run(self):
-        pref = latus.preferences.Preferences(self.app_data_folder)
-        latus.logger.log.info('starting key management : %s' % pref.get_node_id())
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
 
         self.handler = DBUpdateHandler(self.app_data_folder)
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
 
         # process the existing database once before we start the file observer
         class Event:
@@ -177,67 +159,52 @@ class KeyManagement(threading.Thread):
 
         self.observer.schedule(self.handler, cloud_folders.keys)
         self.observer.start()
-        if not pref.get_crypto_key():
-            self.request_key()
 
     def request_exit(self):
         self.observer.stop()
         self.observer.join(latus.const.TIME_OUT)
         return self.observer.is_alive()
 
-    if False:
-        def get_requesters(self):
-            # delete really old (> 1 day) requests
-            session = session_maker(self.app_data_folder)
-            s = session()
-            q = s.query(KeyRequestTable).all()
-            if q:
-                for row in q:
-                    if row.datetime < datetime.datetime.utcnow() - datetime.timedelta(days=1):
-                        s.delete(row)
-            s.commit()
-            requesters = []
-            rows = s.query(KeyRequestTable).all()
-            for row in rows:
-                requesters.append(row.requester)
-            s.close()
-            return requesters
+def request_key(this_node_id, cloud_key_folder, timestamp=datetime.datetime.utcnow()):
+    latus.logger.log.info('request_key : this_node_id = %s , cloud_key_folder = %s' % (this_node_id, cloud_key_folder))
+    session = keys_session_maker(cloud_key_folder)
+    s = session()
+    request_table = KeyRequestTable(requester=this_node_id, datetime=timestamp)
+    q = s.query(KeyRequestTable).filter_by(requester=this_node_id).first()
+    if q:
+        s.delete(q)
+    s.add(request_table)
+    s.commit()
+    s.close()
 
-    if False:
-        def get_requester_info(self, requester):
-            pref = latus.preferences.Preferences(self.app_data_folder)
-            cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-            requester_node_db = latus.nodedb.NodeDB(cloud_folders.nodes, requester)
-            return requester_node_db.get_user(), requester_node_db.get_computer()
-
-    def request_key(self, timestamp=datetime.datetime.utcnow()):
-        session = session_maker(self.app_data_folder)
-        s = session()
-        pref = latus.preferences.Preferences(self.app_data_folder)
-        this_node_id = pref.get_node_id()
-        request_table = KeyRequestTable(requester=this_node_id, datetime=timestamp)
-        q = s.query(KeyRequestTable).filter_by(requester=this_node_id).first()
-        if q:
-            s.delete(q)
-        s.add(request_table)
-        s.commit()
-        s.close()
-
-
-if False:
-    def create_pref_and_node_db(app_data_folder):
-        pref = latus.preferences.Preferences(app_data_folder)
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), pref.get_public_key(), True)
-        return pref, node_db
+def get_latus_key(this_node_id, cloud_key_folder, private_key):
+    latus_keys = set()
+    sources = set()
+    latus.logger.log.info('%s : looking for key' % this_node_id)
+    session = keys_session_maker(cloud_key_folder)
+    s = session()
+    for row in s.query(KeyManagementTable).filter_by(destination=this_node_id):
+        private_key = RsaKeypair(private_key)
+        latus_key = private_key.decrypt(row.encrypted_latus_key)
+        if latus_key not in latus_keys:
+            latus_keys.add(latus_key)
+            sources.add(row.source)
+    if len(latus_keys) > 0:
+        latus.logger.log.info('latus_keys %s' % str(latus_keys))
+        latus_key = min(latus_keys)  # if more than one, take the first one in order
+        latus.logger.log.info('%s : got latus key %s from %s' % (this_node_id, latus_key, str(sources)))
+    else:
+        latus.logger.log.info('%s : no latus key found' % this_node_id)
+        latus_key = None
+    return latus_key
 
 if __name__ == '__main__':
     # just for debugging ...
     # this uses the files set up by test_key_manangement.py, so you have to run that first
+    node_id = 'b'  # we are the responding node (node 'b')
     root = os.path.join('test_latus', 'data', 'key_management')
+    app_data_folder = os.path.join(root, 'app_data')
     latus.logger.init(os.path.join(root, 'log'))
     latus.logger.set_console_log_level(logging.INFO)
-    app_data_folder = os.path.join(root, 'b', 'appdata')  # we are the responding node (node 'b')
-    assert(os.path.exists(app_data_folder))
     km = KeyManagement(app_data_folder, True)
     km.start()
