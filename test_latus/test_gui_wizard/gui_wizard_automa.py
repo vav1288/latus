@@ -3,6 +3,7 @@
 # See http://www.getautoma.com/docs/python_integration .
 
 import os
+import time
 
 from automa.api import *
 
@@ -22,6 +23,8 @@ print('python_exe', python_exe)
 print('test_program', test_program)
 
 start(python_exe, test_program)
+
+time.sleep(5)
 
 # if you have a hard time finding the elements at this point, find_all() is handy, e.g.:
 # print(find_all(Window()))
