@@ -79,7 +79,7 @@ class PreferencesDialog(QtWidgets.QDialog):
     def ok(self):
         self.pref.set_latus_folder(self.latus_folder.get())
         self.pref.set_cloud_root(self.cloud_folder.get())
-        self.pref.set_new_private_key()
+        self.pref.set_new_keys()
         self.pref.set_crypto_key_string(self.key_ui.get())
         self.close()
 

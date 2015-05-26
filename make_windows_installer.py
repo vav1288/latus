@@ -53,6 +53,9 @@ with open('requirements.txt') as f:
 requirements.append(latus.const.NAME)  # we need to include ourselves too
 requirements.append('icons')  # and the icons code
 
+if not os.path.exists(nsis_build_dir):
+    os.makedirs(nsis_build_dir)
+
 shutil.copy(os.path.join('icons', 'glossyorb.ico'), nsis_build_dir)  # there should be a cleaner way to do this ...
 
 # Call pynsist to build the installer

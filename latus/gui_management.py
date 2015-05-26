@@ -82,7 +82,7 @@ if __name__ == '__main__':
         app_data_folders[node] = os.path.join(root, node, 'appdata')
         preferences[node] = latus.preferences.Preferences(app_data_folders[node], True)
         preferences[node].set_node_id(node)
-        preferences[node].set_new_private_key()
+        preferences[node].set_new_keys()
         preferences[node].set_cloud_root(cloud_folder)
         node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodes, node, preferences[node].get_public_key(), True)
         node_dbs[node].set_user(user_prefix + node)  # essentially override defaults

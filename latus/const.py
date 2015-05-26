@@ -12,6 +12,6 @@ MAIN_FILE = 'latus_main.py'
 
 BIG_FILE_SIZE = 1024 * 1024
 MAX_HASH_PERF_VALUES = 10  # determine how many longest hash times to store in the db
-ASYMMETRIC_KEY_LENGTH = 2048  # Asymmetric key size (in bits)
+ASYMMETRIC_KEY_LENGTH = 1024  # Asymmetric key size (in bits)
 TIME_OUT = 60  # seconds
 

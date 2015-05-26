@@ -39,7 +39,7 @@ def test_key_management():
         app_data_folder = os.path.join(get_key_management_root(), node, 'appdata')
         pref[node] = latus.preferences.Preferences(app_data_folder, True)
         pref[node].set_node_id(node)
-        pref[node].set_new_private_key()
+        pref[node].set_new_keys()
         pref[node].set_cloud_root(cloud_folder)
         public_key = pref[node].get_public_key()  # public key is contained in the private key which is in preferences
         node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodes, node, public_key, True)
@@ -51,6 +51,7 @@ def test_key_management():
         node_dbs[node].set_computer(computer_prefix + node)  # essentially override defaults
         kms[node] = latus.key_management.KeyManagement(app_data_folder, False, True)
         kms[node].start()
+        time.sleep(1)
 
     time_out = 20.0  # seconds
     timer_sec_per_iteration = 0.01  # seconds
@@ -69,8 +70,10 @@ def test_key_management():
     assert(key_0 is not None)
     assert(key_0 == key_1)
 
+    time.sleep(1)
     for node in nodes:
         kms[node].request_exit()
+    time.sleep(1)
     for node in nodes:
         kms[node].join()
 

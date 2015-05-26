@@ -10,7 +10,7 @@ import latus.logger
 def new_key():
     return cryptography.fernet.Fernet.generate_key()
 
-class CryptoFile():
+class CryptoFile:
 
     def __init__(self, path):
         self.__path = path

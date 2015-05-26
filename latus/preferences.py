@@ -6,7 +6,7 @@ import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.ext.declarative
 
-from simplecrypto import RsaKeypair, RsaPublicKey
+import rsa
 
 import latus.util
 import latus.const
@@ -34,6 +34,7 @@ class Preferences:
         self.__cloud_root_string = 'cloudroot'
         self.__latus_folder_string = 'latusfolder'
         self.__private_key_string = 'privatekey'
+        self.__public_key_string = 'publickey'
         self.__verbose_string = 'verbose'
 
         if not os.path.exists(latus_appdata_folder):
@@ -116,17 +117,16 @@ class Preferences:
     def get_node_id(self):
         return self.__pref_get(self.__id_string)
 
-    def set_new_private_key(self):
-        key_pair = RsaKeypair(latus.const.ASYMMETRIC_KEY_LENGTH)
-        key_pair_string = key_pair.serialize().decode("utf-8")
-        self.__pref_set(self.__private_key_string, key_pair_string)
+    def set_new_keys(self):
+        (pubkey, privkey) = rsa.newkeys(latus.const.ASYMMETRIC_KEY_LENGTH)
+        self.__pref_set(self.__private_key_string, privkey.save_pkcs1())
+        self.__pref_set(self.__public_key_string, pubkey.save_pkcs1())
 
     def get_private_key(self):
         return self.__pref_get(self.__private_key_string)
 
     def get_public_key(self):
-        public_key = RsaKeypair(self.get_private_key()).publickey
-        return public_key.serialize().decode("utf-8")
+        return self.__pref_get(self.__public_key_string)
 
     def get_db_path(self):
         return self._db_path

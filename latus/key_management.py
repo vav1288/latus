@@ -3,13 +3,13 @@ import os
 import datetime
 import threading
 import logging
-import glob
-
-from simplecrypto import RsaKeypair, RsaPublicKey
+import time
 
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.ext.declarative
+
+import rsa
 
 import watchdog.observers
 import watchdog.events
@@ -36,6 +36,11 @@ def keys_session_maker(cloud_key_folder):
     sqlite_path = 'sqlite:///' + os.path.abspath(os.path.join(cloud_key_folder, KEY_MANAGEMENT_FILE))
     db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
     session = sqlalchemy.orm.sessionmaker(bind=db_engine)
+
+    # todo: figure out why I need this ... if I don't have it I get a 'table already exists' error in my
+    # regression tests.
+    time.sleep(0.1)
+
     Base.metadata.create_all(db_engine)
     return session
 
@@ -86,8 +91,8 @@ class DBUpdateHandler(watchdog.events.FileSystemEventHandler):
                             # give the requester the key (encrypted, of course)
                             requester_public_key = requester_node_db.get_public_key()
                             if requester_public_key:
-                                requester_rsa_public_key = RsaPublicKey(requester_public_key)
-                                encrypted_latus_key = requester_rsa_public_key.encrypt(pref.get_crypto_key())
+                                requester_rsa_public_key = rsa.PublicKey.load_pkcs1(requester_public_key)
+                                encrypted_latus_key = rsa.encrypt(pref.get_crypto_key(), requester_rsa_public_key)
                                 kmt = KeyManagementTable(source=this_node_id, destination=row.requester,
                                                          encrypted_latus_key=encrypted_latus_key,
                                                          datetime=datetime.datetime.utcnow())
@@ -161,8 +166,9 @@ class KeyManagement(threading.Thread):
         self.observer.start()
 
     def request_exit(self):
-        self.observer.stop()
-        self.observer.join(latus.const.TIME_OUT)
+        if self.observer.is_alive():
+            self.observer.stop()
+            self.observer.join(latus.const.TIME_OUT)
         return self.observer.is_alive()
 
 def request_key(this_node_id, cloud_key_folder, timestamp=datetime.datetime.utcnow()):
@@ -177,15 +183,15 @@ def request_key(this_node_id, cloud_key_folder, timestamp=datetime.datetime.utcn
     s.commit()
     s.close()
 
-def get_latus_key(this_node_id, cloud_key_folder, private_key):
+def get_latus_key(this_node_id, cloud_key_folder, private_key_string):
     latus_keys = set()
     sources = set()
     latus.logger.log.info('%s : looking for key' % this_node_id)
     session = keys_session_maker(cloud_key_folder)
     s = session()
     for row in s.query(KeyManagementTable).filter_by(destination=this_node_id):
-        private_key = RsaKeypair(private_key)
-        latus_key = private_key.decrypt(row.encrypted_latus_key)
+        private_key = rsa.PrivateKey.load_pkcs1(private_key_string)
+        latus_key = rsa.decrypt(row.encrypted_latus_key, private_key)
         if latus_key not in latus_keys:
             latus_keys.add(latus_key)
             sources.add(row.source)
