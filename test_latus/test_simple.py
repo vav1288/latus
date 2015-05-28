@@ -42,7 +42,7 @@ def test_simple(setup):
     test_latus.util.wait_for_node(log_folder)
 
     for node in nodes:
-        sync[node].get_sync().request_exit
+        sync[node].get_sync().request_exit()
 
     local_folders = []
     file_names = []

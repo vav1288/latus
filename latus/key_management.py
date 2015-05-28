@@ -32,7 +32,7 @@ g_allow_always = False  # set to True to not ask for permission to provide crypt
 
 def keys_session_maker(cloud_key_folder):
     if not os.path.exists(cloud_key_folder):
-        os.mkdir(cloud_key_folder)
+        os.makedirs(cloud_key_folder)
     sqlite_path = 'sqlite:///' + os.path.abspath(os.path.join(cloud_key_folder, KEY_MANAGEMENT_FILE))
     db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
     session = sqlalchemy.orm.sessionmaker(bind=db_engine)

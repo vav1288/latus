@@ -23,7 +23,8 @@ LATUS_KEY_FIELD_STRING = 'latus_key'
 
 class GUIWizard(QtWidgets.QWizard):
 
-    def __init__(self, app_data_folder):
+    # cloud_folder parameter generally only used for testing
+    def __init__(self, app_data_folder, cloud_root_override=None):
         super().__init__()
         self.app_data_folder = app_data_folder
         latus.logger.log.info('starting GUIWizard : app_data_folder : %s' % app_data_folder)
@@ -31,7 +32,7 @@ class GUIWizard(QtWidgets.QWizard):
         self.folder_wizard = latus.wizard.FolderWizard()
 
         self.addPage(IntroPage())
-        self.addPage(CloudRootPage(self.folder_wizard))
+        self.addPage(CloudRootPage(self.folder_wizard, cloud_root_override))
         self.addPage(LatusFolderPage())
         self.addPage(LatusKeyPage())
         self.addPage(ConclusionPage())
@@ -84,7 +85,7 @@ class CloudRootPage(QtWidgets.QWizardPage):
     complete_trigger = QtCore.pyqtSignal()
     selection_trigger = QtCore.pyqtSignal()
 
-    def __init__(self, folder_wizard):
+    def __init__(self, folder_wizard, cloud_root_override=None):
         super().__init__()
         self.prior_time = 0
         self.prior_is_complete = None
@@ -93,7 +94,7 @@ class CloudRootPage(QtWidgets.QWizardPage):
         self.cloud_folder_list.SelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 
         self.folder_wizard = folder_wizard
-        self.cloud_folders = []
+        self.cloud_root_override = cloud_root_override
 
         self.folder_wizard.set_found_alert(self.wizard_alert)
         self.folder_wizard.set_progress(self.progress_method)
@@ -154,6 +155,8 @@ class CloudRootPage(QtWidgets.QWizardPage):
     def validatePage(self):
         if self.cloud_folder_list.currentItem():
             self.cloud_folder_line.setText(self.cloud_folder_list.currentItem().text())
+        if self.cloud_root_override:
+            self.cloud_folder_line.setText(self.cloud_root_override)
         return super().validatePage()
 
 
@@ -204,10 +207,13 @@ class LatusKeyPage(QtWidgets.QWizardPage):
         existing_nodes = latus.nodedb.get_existing_nodes(cloud_folders.nodes)
         latus.logger.log.info('existing nodes: %s' % str(existing_nodes))
         if len(existing_nodes) < 1:
-            self.setField(LATUS_KEY_FIELD_STRING, latus.crypto.new_key().decode())
+            latus_key = latus.crypto.new_key().decode()
+            latus.logger.log.info('new latus key')
+            self.setField(LATUS_KEY_FIELD_STRING, latus_key)
             self.setSubTitle('This is the first computer you are adding to Latus.  The Latus key has been created.')
         else:
-            latus.key_management.request_key()
+            key_folder = latus.folders.CloudFolders(self.field(CLOUD_FOLDER_FIELD_STRING))
+            latus.key_management.request_key(self.field(NODE_ID_FIELD_STRING), key_folder.keys)
             self.setSubTitle('Please go to one of your other computers running Latus and accept the key request.')
 
     # controls the if the 'next' button is enabled or not
