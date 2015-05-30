@@ -30,23 +30,26 @@ time.sleep(5)
 # print(find_all(Window()))
 # print(find_all(Button()))
 
-switch_to('Latus Setup')
+for node in range(0,2):
+    switch_to('Latus Setup')
 
-# intro
-click('Next Enter')  # not sure why it's Next Enter vs. Next, but that's what find_all(Button()) told me
+    # intro
+    click('Next Enter')  # not sure why it's Next Enter vs. Next, but that's what find_all(Button()) told me
 
-# cloud folder
-click(find_all(ListItem())[0])  # top item
-click('Next Enter')
+    # cloud folder
+    click(find_all(ListItem())[0])  # top item
+    click('Next Enter')
 
-# latus folder
-click('Next Enter')
+    # latus folder
+    click('Next Enter')
 
-# key
-click('Next Enter')
+    # key
+    click('Next Enter')
 
-# final
-click('Finish Enter')
+    # final
+    click('Finish Enter')
+
+    time.sleep(15)  # is there any way to test if the app is done instead of this sleep?
 
 os.putenv(pp, save_python_path_env_var)
 

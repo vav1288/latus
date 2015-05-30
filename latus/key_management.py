@@ -102,7 +102,7 @@ class DBUpdateHandler(watchdog.events.FileSystemEventHandler):
                                 s.add(kmt)
                                 s.commit()
                             else:
-                                latus.logger.log.warn('requester has no public key')
+                                latus.logger.log.warn('requester %s has no public key' % row.requester)
                         else:
                             latus.logger.log.warn('%s : denied request from %s' % (this_node_id, row.requester))
             s.close()
@@ -190,7 +190,9 @@ def get_latus_key(this_node_id, cloud_key_folder, private_key_string):
     session = keys_session_maker(cloud_key_folder)
     s = session()
     for row in s.query(KeyManagementTable).filter_by(destination=this_node_id):
-        private_key = rsa.PrivateKey.load_pkcs1(private_key_string)
+        private_key = rsa.PrivateKey.load_pkcs1(bytes(private_key_string))
+        latus.logger.log.info('private_key : %s' % private_key)
+        latus.logger.log.info('row.encrypted_latus_key : %s' % row.encrypted_latus_key)
         latus_key = rsa.decrypt(row.encrypted_latus_key, private_key)
         if latus_key not in latus_keys:
             latus_keys.add(latus_key)

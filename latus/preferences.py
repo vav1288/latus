@@ -67,25 +67,18 @@ class Preferences:
         session.close()
         return value
 
-    def set_crypto_key_string(self, key):
+    #def set_crypto_key_string(self, key):
+    #    self.__pref_set(self.__key_string, key)
+
+    def set_crypto_key(self, key):
         self.__pref_set(self.__key_string, key)
 
-    # Crypto keys are bytes, but we store them as a string.
-    def set_crypto_key(self, key):
-        s = key.decode()  # to string
-        self.__pref_set(self.__key_string, s)
-
     # string version
-    def get_crypto_key_string(self):
-        return self.__pref_get(self.__key_string)
+    #def get_crypto_key_string(self):
+    #    return self.__pref_get(self.__key_string)
 
-    # bytes version (for use by crypto routines)
     def get_crypto_key(self):
-        b = None
-        key = self.get_crypto_key_string()
-        if key:
-            b = key.encode()  # to bytes
-        return b
+        return self.__pref_get(self.__key_string)
 
     def set_cloud_root(self, folder):
         self.__pref_set(self.__cloud_root_string, os.path.abspath(folder))

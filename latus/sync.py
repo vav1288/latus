@@ -254,7 +254,7 @@ class Sync:
         pref = latus.preferences.Preferences(self.app_data_folder)
         latus.logger.log.info('node_id : %s' % pref.get_node_id())
         latus.logger.log.info('local_folder : %s' % pref.get_latus_folder())
-        latus.logger.log.info('crypto_key : %s' % pref.get_crypto_key_string())
+        latus.logger.log.info('crypto_key : %s' % pref.get_crypto_key())
         latus.logger.log.info('cloud_root : %s' % pref.get_cloud_root())
 
         self.local_sync = LocalSync(self.app_data_folder)
@@ -264,6 +264,7 @@ class Sync:
     def start(self):
         self.local_sync.start()
         self.cloud_sync.start()
+        self.key_management.start()
 
     def scan(self):
         self.local_sync.dispatch(None)

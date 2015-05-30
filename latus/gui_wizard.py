@@ -14,11 +14,10 @@ import latus.crypto
 import latus.util
 import latus.nodedb
 import latus.key_management
+import latus.node_management
 
 CLOUD_FOLDER_FIELD_STRING = 'cloud_folder'
 LATUS_FOLDER_FIELD_STRING = 'latus_folder'
-NODE_ID_FIELD_STRING = 'node_id'
-LATUS_KEY_FIELD_STRING = 'latus_key'
 
 
 class GUIWizard(QtWidgets.QWizard):
@@ -34,18 +33,10 @@ class GUIWizard(QtWidgets.QWizard):
         self.addPage(IntroPage())
         self.addPage(CloudRootPage(self.folder_wizard, cloud_root_override))
         self.addPage(LatusFolderPage())
-        self.addPage(LatusKeyPage())
+        self.addPage(LatusKeyPage(app_data_folder))
         self.addPage(ConclusionPage())
         self.setWindowTitle("Latus Setup")
         self.show()
-
-    def accept(self):
-        pref = latus.preferences.Preferences(self.app_data_folder)
-        pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
-        pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
-        pref.set_node_id(self.field(NODE_ID_FIELD_STRING))
-        pref.set_crypto_key_string(self.field(LATUS_KEY_FIELD_STRING))
-        super().accept()
 
     def done(self, result):
         self.folder_wizard.request_exit()
@@ -57,10 +48,6 @@ class IntroPage(QtWidgets.QWizardPage):
     def __init__(self):
         super().__init__()
         self.setTitle("Latus Setup Wizard")
-
-        self.node_id_line = QtWidgets.QLineEdit()  # non-visible
-        self.registerField(NODE_ID_FIELD_STRING, self.node_id_line)
-        self.node_id_line.setText(latus.util.new_node_id())
 
         label = QtWidgets.QLabel("This will guide you through the Latus setup process.")
         label.setWordWrap(True)
@@ -187,38 +174,38 @@ class LatusKeyPage(QtWidgets.QWizardPage):
 
     complete_trigger = QtCore.pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, app_data_folder):
         super().__init__()
-
+        self.app_data_folder = app_data_folder
         self.setTitle("Latus key")
-
         self.prior_is_complete = False
-
-        self.latus_key_line = QtWidgets.QLineEdit()  # non-visible
-        self.registerField(LATUS_KEY_FIELD_STRING, self.latus_key_line)
-        self.setField(LATUS_KEY_FIELD_STRING, None)
 
     def initializePage(self):
 
         self.setTitle('Latus Key Setup')
 
+        latus.node_management.create(self.app_data_folder, self.field(CLOUD_FOLDER_FIELD_STRING),
+                                     self.field(LATUS_FOLDER_FIELD_STRING))
+        pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folder_field = self.field(CLOUD_FOLDER_FIELD_STRING)
         cloud_folders = latus.folders.CloudFolders(cloud_folder_field)
         existing_nodes = latus.nodedb.get_existing_nodes(cloud_folders.nodes)
         latus.logger.log.info('existing nodes: %s' % str(existing_nodes))
-        if len(existing_nodes) < 1:
-            latus_key = latus.crypto.new_key().decode()
+        if len(existing_nodes) < 2:
+            pref.set_crypto_key(latus.crypto.new_key())
             latus.logger.log.info('new latus key')
-            self.setField(LATUS_KEY_FIELD_STRING, latus_key)
             self.setSubTitle('This is the first computer you are adding to Latus.  The Latus key has been created.')
         else:
             key_folder = latus.folders.CloudFolders(self.field(CLOUD_FOLDER_FIELD_STRING))
-            latus.key_management.request_key(self.field(NODE_ID_FIELD_STRING), key_folder.keys)
+            latus.key_management.request_key(pref.get_node_id(), key_folder.keys)
             self.setSubTitle('Please go to one of your other computers running Latus and accept the key request.')
 
     # controls the if the 'next' button is enabled or not
     def isComplete(self):
-        return self.field(LATUS_KEY_FIELD_STRING) is not None
+        return True
+        # todo: get this to work
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        return pref.get_crypto_key() is not None
 
 
 class ConclusionPage(QtWidgets.QWizardPage):

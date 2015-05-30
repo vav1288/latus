@@ -85,9 +85,9 @@ def set_from_args(args):
         if args.key is True:
             key = latus.crypto.new_key()  # generate if no key parameter given
             pref.set_crypto_key(key)
-            latus.logger.log.info('New crypto key : %s' % pref.get_crypto_key_string())
+            latus.logger.log.info('New crypto key : %s' % pref.get_crypto_key())
         else:
-            pref.set_crypto_key_string(args.key)  # command line is a string
+            pref.set_crypto_key(bytes(args.key, 'utf-8'))  # command line is a string
 
     # determine node id
     if args.node_id:
