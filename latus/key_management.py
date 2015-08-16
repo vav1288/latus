@@ -22,6 +22,8 @@ import latus.logger
 import latus.util
 import latus.crypto
 
+# todo: use http://www.keyczar.org/ instead of rsa?
+
 KEY_MANAGEMENT_FILE = 'keys' + latus.const.DB_EXTENSION
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -198,7 +200,6 @@ def get_latus_key(this_node_id, cloud_key_folder, private_key_string):
             latus_keys.add(latus_key)
             sources.add(row.source)
     if len(latus_keys) > 0:
-        latus.logger.log.info('latus_keys %s' % str(latus_keys))
         latus_key = min(latus_keys)  # if more than one, take the first one in order
         latus.logger.log.info('%s : got latus key %s from %s' % (this_node_id, latus_key, str(sources)))
     else:
