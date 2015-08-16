@@ -4,7 +4,6 @@ import uuid
 import datetime
 
 import win32con
-import pywintypes
 
 import latus.logger
 import latus.const
@@ -87,7 +86,7 @@ def is_hidden(in_path):
         long_abs_path = get_long_abs_path(in_path)
         try:
             attrib = win32api.GetFileAttributes(long_abs_path)
-        except pywintypes.error:
+        except: ## pywintypes.error:  todo: pywintypes.error seems to be wrong ... find the correct way to do this
             latus.logger.log.error(long_abs_path)
         is_hidden_flag = (attrib & win32con.FILE_ATTRIBUTE_HIDDEN > 0)
     return is_hidden_flag
@@ -100,7 +99,7 @@ def is_system(in_path):
         long_abs_path = get_long_abs_path(in_path)
         try:
             attrib = win32api.GetFileAttributes(long_abs_path)
-        except pywintypes.error:
+        except:  ## pywintypes.error:  todo: pywintypes.error seems to be wrong ... find the correct way to do this
             latus.logger.log.error(long_abs_path)
         is_system_flag = (attrib & win32con.FILE_ATTRIBUTE_SYSTEM > 0)
     return is_system_flag
