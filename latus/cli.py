@@ -7,11 +7,14 @@ import latus.util
 import latus.sync
 import latus.logger
 import latus.folders
+import latus.patch_crypto_be_discovery
 
 
 def main(latus_appdata_roaming_folder):
 
     latus.logger.log.info('cli')
+
+    latus.patch_crypto_be_discovery.patch_crypto_be_discovery()  # remove this when cryptography discovery gets fixed
 
     pref = latus.preferences.Preferences(latus_appdata_roaming_folder)
 
