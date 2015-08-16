@@ -1,6 +1,16 @@
 
-sqlalchemy
+# packages that relate to each other are grouped
+
 cryptography
+six
+cffi
+pycparser
+
+win32api
+win32con
+
+# various other packages
+sqlalchemy
 PyQt5
 send2trash
 pathtools
