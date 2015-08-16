@@ -1,4 +1,6 @@
 
+import time
+
 from PyQt5 import QtWidgets, QtCore
 
 import latus.key_management
@@ -14,15 +16,18 @@ class AllowButton(QtWidgets.QPushButton):
 
     def allow(self):
         latus.logger.log.info('allowing %s' % self.requester)
-        km = latus.key_management.KeyManagement(self.latus_app_data_folder)
-        km.respond_to_request(self.requester)
-
+        km = latus.key_management.KeyManagement(self.latus_app_data_folder, True)
+        km.start()
+        time.sleep(1)
+        if km.request_exit():
+            latus.logger.log.warn('request_exit() timed out')
+        km.join()
 
 class ManagementDialog(QtWidgets.QDialog):
     def __init__(self, latus_app_data_folder):
         latus.logger.log.info('starting ManagementDialog')
         super().__init__()
-        km = latus.key_management.KeyManagement(latus_app_data_folder)
+        km = latus.key_management.KeyManagement(latus_app_data_folder, True)
 
         pref = latus.preferences.Preferences(latus_app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
@@ -30,14 +35,14 @@ class ManagementDialog(QtWidgets.QDialog):
         grid_layout = QtWidgets.QGridLayout()
         lines = {}
         row = 0
-        for requester in km.get_requesters():
-            node_db = latus.nodedb.NodeDB(cloud_folders.nodes, requester)
-            lines[requester] = [QtWidgets.QLineEdit(node_db.get_user()), QtWidgets.QLineEdit(node_db.get_computer()),
-                                QtWidgets.QLineEdit(requester), AllowButton(latus_app_data_folder, requester)]
+        for node in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
+            node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node)
+            lines[node] = [QtWidgets.QLineEdit(node_db.get_user()), QtWidgets.QLineEdit(node_db.get_computer()),
+                                QtWidgets.QLineEdit(node), AllowButton(latus_app_data_folder, node)]
             for item_number in range(0, len(lines)-1):
-                lines[requester][item_number].setReadOnly(True)
+                lines[node][item_number].setReadOnly(True)
             column = 0
-            for item in lines[requester]:
+            for item in lines[node]:
                 item.setMinimumWidth(item.sizeHint().width())
                 grid_layout.addWidget(item, row, column)
                 column += 1
