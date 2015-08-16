@@ -90,15 +90,21 @@ class CloudRootPage(QtWidgets.QWizardPage):
         self.setTitle("Cloud storage folder")
         self.setSubTitle("We will now attempt to automatically find your cloud storage folder.  This is the folder you "
                          "use for Dropbox, Microsoft's OneDrive, Google Drive, etc.\n\nOnce your cloud storage folder"
-                         " is shown, please select it and hit 'Next'.")
+                         " is shown, please select it and hit 'Next'.  Alternatively, you can click the button below"
+                         " to manually provide the cloud storage path.")
+
+        self.manual_button = QtWidgets.QPushButton()
+        self.manual_button.setText('Click here to manually provide the cloud storage path')
+        self.manual_button.pressed.connect(self.manual_cloud_folder_enty)
 
         self.progress_line = QtWidgets.QLineEdit()
         self.progress_line.setReadOnly(True)
         self.progress_line.setText('...')
 
         layout = QtWidgets.QGridLayout()
-        layout.addWidget(self.progress_line, 0, 0)
-        layout.addWidget(self.cloud_folder_list, 1, 0)
+        layout.addWidget(self.manual_button, 0, 0)
+        layout.addWidget(self.progress_line, 1, 0)
+        layout.addWidget(self.cloud_folder_list, 2, 0)
         self.setLayout(layout)
 
         # use this for the value that's been selected
@@ -146,6 +152,11 @@ class CloudRootPage(QtWidgets.QWizardPage):
             self.cloud_folder_line.setText(self.cloud_root_override)
         return super().validatePage()
 
+    def manual_cloud_folder_enty(self):
+        dir = QtWidgets.QFileDialog.getExistingDirectory(None, 'Select a folder:', None, QtWidgets.QFileDialog.ShowDirsOnly)
+        self.cloud_folder_list.insertItem(0, dir)
+        self.cloud_folder_list.setCurrentItem(self.cloud_folder_list.item(0))
+        # todo: figure out how to just skip to the next page w/o having the user have to click on 'next'
 
 class LatusFolderPage(QtWidgets.QWizardPage):
 
@@ -238,5 +249,5 @@ if __name__ == '__main__':
     print(my_pref.get_node_id())
     print(my_pref.get_cloud_root())
     print(my_pref.get_latus_folder())
-    print(my_pref.get_crypto_key_string())
+    print(my_pref.get_crypto_key())
     sys.exit()
