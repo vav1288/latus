@@ -18,6 +18,7 @@
 """
 
 import os
+import sys
 import logging
 import argparse
 
@@ -31,6 +32,19 @@ import latus.logger
 
 
 def main():
+
+    # ensure the frozen app is execution on the version it needs.
+    is_64bits = sys.maxsize > 2**32
+    if not is_64bits:
+        not_64_bit_message = 'error:not a 64 bit interpreter - exiting'
+        print(not_64_bit_message)
+        sys.exit(not_64_bit_message)
+    req_version = (3,4)
+    if sys.version_info < req_version:
+        old_version_message = 'expected python version %s or better, got %s - exiting' % (str(req_version), str(sys.version))
+        print(old_version_message)
+        sys.exit(old_version_message)
+
     parser = argparse.ArgumentParser(description="efficient and secure cloud-based folder sync")
     parser.add_argument('-l', '--latus', metavar='path', help="latus folder")
     parser.add_argument('-c', '--cloud', metavar='path', help="cloud folder")
