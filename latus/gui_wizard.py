@@ -88,8 +88,9 @@ class CloudRootPage(QtWidgets.QWizardPage):
         self.folder_wizard.start()
 
         self.setTitle("Cloud storage folder")
-        self.setSubTitle("We will now attempt to automatically find your cloud storage folder.  This is the folder you "
-                         "use for Dropbox, Microsoft's OneDrive, Google Drive, etc.\n\nOnce your cloud storage folder"
+        self.setSubTitle("Please specify the folder you use for Dropbox, Microsoft's OneDrive, Google Drive, "
+                         "etc.\n\n"
+                         "Your computer is automatically being scanned for this folder.  Once your cloud storage folder"
                          " is shown, please select it and hit 'Next'.  Alternatively, you can click the button below"
                          " to manually provide the cloud storage path.")
 
@@ -153,8 +154,9 @@ class CloudRootPage(QtWidgets.QWizardPage):
         return super().validatePage()
 
     def manual_cloud_folder_enty(self):
-        dir = QtWidgets.QFileDialog.getExistingDirectory(None, 'Select a folder:', None, QtWidgets.QFileDialog.ShowDirsOnly)
-        self.cloud_folder_list.insertItem(0, dir)
+        cloud_folder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Select a folder:', None, QtWidgets.QFileDialog.ShowDirsOnly)
+        self.cloud_folder_line.setText(cloud_folder)
+        self.cloud_folder_list.insertItem(0, cloud_folder)
         self.cloud_folder_list.setCurrentItem(self.cloud_folder_list.item(0))
         # todo: figure out how to just skip to the next page w/o having the user have to click on 'next'
 

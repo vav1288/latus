@@ -17,6 +17,7 @@ import latus.folders
 import test_latus.create_files
 import test_latus.paths
 
+
 def get_gui_wizard_root():
     return os.path.join(test_latus.paths.get_data_root(), "gui_wizard")
 
