@@ -3,16 +3,24 @@ import os
 import sys
 import shutil
 import glob
+import datetime
+import pprint
 
 import latus.const
 import latus.util
 
 import nsist
 
+start_time = datetime.datetime.now()
+
 installer_string = 'installer'
 config_path = 'installer.cfg'
 nsis_build_dir = os.path.join('build', 'nsis')
 dist_dir = 'dist'
+
+if not os.path.exists(dist_dir):
+    os.mkdir (dist_dir)
+
 # 'automatically' create the version based on the date.
 # A day granularity is an (arbitrary) balance between version length and expected frequency of updates.
 # In other words, I don't expect to release more than one version in a day and that will all live on.
@@ -38,25 +46,18 @@ kwargs = {'appname': latus.const.NAME,
                                  'icon': os.path.join('icons', 'latus.ico'),
                                 },
           },
-
+          'packages': ['latus', 'cryptography', 'win32api', 'win32con', 'sqlalchemy', 'PyQt5', 'send2trash', 'pathtools',
+                       'watchdog', 'rsa', 'icons'],
           # use this Python's version for the build version
           'py_version': sys.version.split()[0],
          }
-
-# make the requirements list out of requirements.txt
-kwargs['packages'] = requirements = []
-with open('requirements.txt') as f:
-    for l in f:
-        l = l.strip()
-        if len(l) > 0:
-            requirements.append(l)
-requirements.append(latus.const.NAME)  # we need to include ourselves too
-requirements.append('icons')  # and the icons code
 
 if not os.path.exists(nsis_build_dir):
     os.makedirs(nsis_build_dir)
 
 shutil.copy(os.path.join('icons', 'glossyorb.ico'), nsis_build_dir)  # there should be a cleaner way to do this ...
+
+pprint.pprint(kwargs)
 
 # Call pynsist to build the installer
 ib = nsist.InstallerBuilder(**kwargs)
@@ -65,3 +66,6 @@ ib.run()
 # copy the installer over to the dist folder
 installer_path = latus.const.NAME + '_' + version + '.exe'
 shutil.copy(os.path.join(nsis_build_dir, installer_path), dist_dir)
+
+print()
+print("time to create installer : %s" % str(datetime.datetime.now() - start_time))
