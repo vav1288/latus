@@ -1,23 +1,24 @@
 
 import distutils.core
-#import py2exe
-#import cx_Freeze
 
 import latus.const
 import latus.util
 
-use_distutils = True
-use_py2exe = False
+use_distutils = False
+use_py2exe = True
 use_cx_freeze = False
 
 if use_cx_freeze:
 
+    import cx_Freeze
+    import sys
+
     # GUI applications require a different base on Windows (the default is for a console application).
-    base = None
+    #base = None
     # Right now, we use the same .exe for CLI and GUI.  This is kind of a problem since it pops up a console window
     # for both.  Eventually we'll make 2 executables - one GUI, one CLI - so we'll do the below for the GUI.
-    #if sys.platform == "win32":
-    #    base = "Win32GUI"
+    if sys.platform == "win32":
+        base = "Win32GUI"
 
     # make sure cx_freeze picks up these packages
     build_exe_options = {"packages": ["cryptography.fernet",
@@ -33,15 +34,16 @@ if use_cx_freeze:
         url=latus.const.URL,
         license='LICENSE', # points to the actual file
         description=latus.const.DESCRIPTION,
-        options={"build_exe": build_exe_options},
+
+        #options={"build_exe": build_exe_options},
 
         # make a single executable
         # PyQt version:
-        #options = {'py2exe': {'bundle_files': 1,
-        #                      'compressed': True,
-        #                      'optimize': 0,
-        #                      "includes" : ["sqlalchemy", "sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography",
-        #                                    "watchdog"]}},
+        options = {'py2exe': {'bundle_files': 1,
+                              'compressed': True,
+                              'optimize': 0,
+                              "includes" : ["sqlalchemy", "sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography",
+                                            "watchdog"]}},
 
         executables=[cx_Freeze.Executable(latus.const.MAIN_FILE, base=base)],
 
@@ -49,6 +51,8 @@ if use_cx_freeze:
     )
 
 if use_py2exe:
+    import py2exe
+
     distutils.core.setup(
 
         name=latus.const.NAME,
@@ -64,10 +68,10 @@ if use_py2exe:
         options = {'py2exe': {'bundle_files': 1,
                               'compressed': True,
                               'optimize': 0,
-                              "includes" : ["sqlalchemy", "sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography",
+                              "includes" : ["latus", "sqlalchemy", "sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography",
                                             "watchdog"]}},
-        console=['latus.py'],
-        windows=[latus.const.MAIN_FILE],
+        console=[latus.const.MAIN_FILE],
+        #windows=[latus.const.MAIN_FILE],
         zipfile=None,  # a single executable
     )
 
