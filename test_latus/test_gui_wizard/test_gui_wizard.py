@@ -11,7 +11,7 @@ def test_gui_wizard_with_automa():
     pp = 'PYTHONPATH'
     save_python_path_env_var = os.getenv(pp)
     os.putenv(pp, os.path.join('c:', os.sep, 'Automa', 'library.zip'))
-    python_27_exe = os.path.join('c:', os.sep, 'python27', 'python.exe')
+    python_27_exe = os.path.join('c:', os.sep, 'python27_32b', 'python.exe')
     check_call_parameters = [python_27_exe, automa_script]
     print('check_call parameters : %s' % str(check_call_parameters))
     subprocess.check_call(check_call_parameters)
