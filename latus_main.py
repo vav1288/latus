@@ -124,10 +124,6 @@ def set_from_args(args):
     if not node_id:
         pref.set_node_id(latus.util.new_node_id())
 
-    private_key = pref.get_private_key()
-    if not private_key:
-        pref.set_new_keys()
-
     return latus_appdata_roaming_folder
 
 

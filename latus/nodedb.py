@@ -14,7 +14,7 @@ import latus.util
 
 
 class NodeDB:
-    def __init__(self, cloud_node_db_folder, node_id, public_key=None, write_flag=False):
+    def __init__(self, cloud_node_db_folder, node_id, write_flag=False):
 
         self._node_id_string = 'nodeid'
         self._local_ip_string = 'localip'
@@ -259,12 +259,6 @@ class NodeDB:
     def set_port(self, port):
         self._set_general(self._port_string, port)
 
-    #def set_public_key(self, public_key):
-    #    self._set_general(self._public_key_string, public_key)
-
-    #def get_public_key(self):
-    #    return self._get_general(self._public_key_string)
-
     def set_user(self, user):
         self._set_general(self._user_string, user)
 
@@ -289,6 +283,7 @@ class NodeDB:
             last_seq = -1
         conn.close()
         return last_seq
+
 
 def get_existing_nodes(cloud_node_db_folder):
     node_db_files = glob.glob(os.path.join(cloud_node_db_folder, '*' + latus.const.DB_EXTENSION))

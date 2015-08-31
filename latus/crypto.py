@@ -10,6 +10,7 @@ import latus.logger
 def new_key():
     return cryptography.fernet.Fernet.generate_key()
 
+
 class CryptoFile:
 
     def __init__(self, path):
@@ -33,6 +34,7 @@ class CryptoFile:
         with open(self.__path) as f:
             key_info = json.load(f)
         return key_info
+
 
 class Crypto():
     def __init__(self, key, verbose = False):

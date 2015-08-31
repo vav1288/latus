@@ -108,7 +108,7 @@ class LocalSync(SyncBase):
             if local_hash:
                 # todo: encrypt the hash?
                 cloud_fernet_file = os.path.join(cloud_folders.cache, local_hash + self.fernet_extension)
-                fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), pref.get_public_key(), True)
+                fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), True)
                 fs_updated = False
                 while not fs_updated:
                     if fs_db.acquire_lock():
@@ -131,7 +131,7 @@ class LocalSync(SyncBase):
                 latus.logger.log.warn('could not calculate hash for %s' % local_full_path)
 
         # check for local deletions
-        fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), pref.get_public_key(), True)
+        fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), True)
         fs_updated = False
         while not fs_updated:
             if fs_db.acquire_lock():
@@ -259,12 +259,10 @@ class Sync:
 
         self.local_sync = LocalSync(self.app_data_folder)
         self.cloud_sync = CloudSync(self.app_data_folder)
-        self.key_management = latus.key_management.KeyManagement(self.app_data_folder, is_gui, allow_always)
 
     def start(self):
         self.local_sync.start()
         self.cloud_sync.start()
-        self.key_management.start()
 
     def scan(self):
         self.local_sync.dispatch(None)
@@ -275,7 +273,6 @@ class Sync:
         latus.logger.log.info('%s - sync - request_exit begin' % pref.get_node_id())
         timed_out = self.local_sync.request_exit()
         timed_out |= self.cloud_sync.request_exit()
-        timed_out |= self.key_management.request_exit()
         latus.logger.log.info('%s - sync - request_exit end' % pref.get_node_id())
         return timed_out
 

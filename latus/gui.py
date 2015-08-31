@@ -27,6 +27,10 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.latus_appdata_folder = latus_appdata_folder
 
         menu = QtWidgets.QMenu(parent)
+        about_action = menu.addAction("Import Latus Key")
+        about_action.triggered.connect(self.import_latus_key)
+        about_action = menu.addAction("Export Latus Key")
+        about_action.triggered.connect(self.export_latus_key)
         about_action = menu.addAction("Nodes")
         about_action.triggered.connect(self.nodes)
         about_action = menu.addAction("Preferences")
@@ -45,6 +49,16 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
 
     def show(self):
         QtWidgets.QSystemTrayIcon.show(self)
+
+    def import_latus_key(self):
+        key = latus.key_management.read_latus_key_gui()
+        if key:
+            pref = latus.preferences.Preferences(self.latus_appdata_folder)
+            pref.set_crypto_key(key)
+
+    def export_latus_key(self):
+        pref = latus.preferences.Preferences(self.latus_appdata_folder)
+        latus.key_management.write_latus_key_gui(pref.get_crypto_key())
 
     def about(self):
         QtWidgets.QMessageBox.about(QtWidgets.QMessageBox(), latus.const.NAME, latus.const.URL)

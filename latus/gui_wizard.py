@@ -2,7 +2,7 @@
 import time
 import os
 
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 
 import latus.wizard
 import latus.preferences
@@ -281,18 +281,15 @@ class LatusKeyPage(QtWidgets.QWizardPage):
         return bool(self.field(LATUS_KEY_FIELD_STRING) and len(self.field(LATUS_KEY_FIELD_STRING)) > 0)
 
     def new_latus_key(self):
-        self.setField(LATUS_KEY_FIELD_STRING, latus.crypto.new_key())
-        save_file_name = QtWidgets.QFileDialog.getSaveFileName(None, 'Save Latus key file:', filter='*.lky')
-        if save_file_name and len(save_file_name[0]) > 0:
-            key_file_path = save_file_name[0]
-            latus.key_management.write_latus_key_to_file(self.field(LATUS_KEY_FIELD_STRING), key_file_path)
+        new_key = latus.crypto.new_key()
+        self.setField(LATUS_KEY_FIELD_STRING, new_key)
+        latus.key_management.write_latus_key_gui(new_key)
         self.completeChanged.emit()
 
     def existing_latus_key(self):
-        key_file_name = QtWidgets.QFileDialog.getOpenFileName(None, 'Latus key file:', filter='*.lky')
-        if key_file_name and len(key_file_name[0]) > 0:
-            key = latus.key_management.read_latus_key(key_file_name[0])
-            self.setField(LATUS_KEY_FIELD_STRING, key['key'])
+        key = latus.key_management.read_latus_key_gui()
+        if key:
+            self.setField(LATUS_KEY_FIELD_STRING, key)
         self.completeChanged.emit()
 
     def restart_latus_key_setup(self):

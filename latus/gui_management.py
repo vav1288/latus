@@ -27,7 +27,6 @@ class ManagementDialog(QtWidgets.QDialog):
     def __init__(self, latus_app_data_folder):
         latus.logger.log.info('starting ManagementDialog')
         super().__init__()
-        km = latus.key_management.KeyManagement(latus_app_data_folder, True)
 
         pref = latus.preferences.Preferences(latus_app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())

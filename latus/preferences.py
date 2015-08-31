@@ -33,8 +33,6 @@ class Preferences:
         self.__most_recent_key_folder_string = 'keyfolder'
         self.__cloud_root_string = 'cloudroot'
         self.__latus_folder_string = 'latusfolder'
-        #self.__private_key_string = 'privatekey'
-        #self.__public_key_string = 'publickey'
         self.__verbose_string = 'verbose'
 
         if not os.path.exists(latus_appdata_folder):
@@ -67,15 +65,8 @@ class Preferences:
         session.close()
         return value
 
-    #def set_crypto_key_string(self, key):
-    #    self.__pref_set(self.__key_string, key)
-
     def set_crypto_key(self, key):
         self.__pref_set(self.__key_string, key)
-
-    # string version
-    #def get_crypto_key_string(self):
-    #    return self.__pref_get(self.__key_string)
 
     def get_crypto_key(self):
         return self.__pref_get(self.__key_string)
@@ -109,17 +100,6 @@ class Preferences:
 
     def get_node_id(self):
         return self.__pref_get(self.__id_string)
-
-    #def set_new_keys(self):
-    #    (pubkey, privkey) = rsa.newkeys(latus.const.ASYMMETRIC_KEY_LENGTH)
-    #    self.__pref_set(self.__private_key_string, privkey.save_pkcs1())
-    #    self.__pref_set(self.__public_key_string, pubkey.save_pkcs1())
-
-    #def get_private_key(self):
-    #    return self.__pref_get(self.__private_key_string)
-
-    #def get_public_key(self):
-    #    return self.__pref_get(self.__public_key_string)
 
     def get_db_path(self):
         return self._db_path
