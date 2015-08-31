@@ -69,10 +69,12 @@ class NodeDB:
                 # todo: this is really odd ... it keeps throwing these errors and I don't know why.  I shouldn't need
                 # to do this since create_all() is supposed to check first.
                 latus.logger.log.warn(str(e))
-            self.set_node_id(node_id)
-            self.set_public_key(public_key)
-            self.set_user(getpass.getuser())
-            self.set_computer(platform.node())
+            self.set_all(node_id)
+
+    def set_all(self, node_id):
+        self.set_node_id(node_id)
+        self.set_user(getpass.getuser())
+        self.set_computer(platform.node())
 
     def update(self, seq, originator, file_path, size, hash, mtime):
         conn = self.db_engine.connect()
@@ -257,11 +259,11 @@ class NodeDB:
     def set_port(self, port):
         self._set_general(self._port_string, port)
 
-    def set_public_key(self, public_key):
-        self._set_general(self._public_key_string, public_key)
+    #def set_public_key(self, public_key):
+    #    self._set_general(self._public_key_string, public_key)
 
-    def get_public_key(self):
-        return self._get_general(self._public_key_string)
+    #def get_public_key(self):
+    #    return self._get_general(self._public_key_string)
 
     def set_user(self, user):
         self._set_general(self._user_string, user)

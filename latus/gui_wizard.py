@@ -2,7 +2,7 @@
 import time
 import os
 
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 import latus.wizard
 import latus.preferences
@@ -14,10 +14,10 @@ import latus.crypto
 import latus.util
 import latus.nodedb
 import latus.key_management
-import latus.node_management
 
 CLOUD_FOLDER_FIELD_STRING = 'cloud_folder'
 LATUS_FOLDER_FIELD_STRING = 'latus_folder'
+LATUS_KEY_FIELD_STRING = 'latus_key'
 
 
 class GUIWizard(QtWidgets.QWizard):
@@ -42,6 +42,22 @@ class GUIWizard(QtWidgets.QWizard):
         self.folder_wizard.request_exit()
         super().done(result)
 
+    def accept(self):
+        latus.logger.log.info('accept')
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
+        pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
+        pref.set_crypto_key(self.field(LATUS_KEY_FIELD_STRING))
+        if not pref.get_node_id():
+            pref.set_node_id(latus.util.new_node_id())
+        folders = latus.folders.CloudFolders(pref.get_cloud_root())
+        node = latus.nodedb.NodeDB(folders.nodes, pref.get_node_id(), write_flag=True)
+        node.set_all(pref.get_node_id())
+
+        # todo: write node info out to 'state' that this node is on Latus, even if it hasn't sync'd yet
+
+        super().accept()
+
 
 class IntroPage(QtWidgets.QWizardPage):
 
@@ -49,7 +65,9 @@ class IntroPage(QtWidgets.QWizardPage):
         super().__init__()
         self.setTitle("Latus Setup Wizard")
 
-        label = QtWidgets.QLabel("This will guide you through the Latus setup process.")
+        label = QtWidgets.QLabel("This will guide you through the Latus setup process.  Please make sure you are "
+                                 "connected to the internet and your cloud storage application (such as Dropbox, "
+                                 "Microsoft's OneDrive, Google Drive, etc.) is running.")
         label.setWordWrap(True)
 
         layout = QtWidgets.QVBoxLayout()
@@ -73,9 +91,10 @@ class CloudRootPage(QtWidgets.QWizardPage):
     selection_trigger = QtCore.pyqtSignal()
 
     def __init__(self, folder_wizard, cloud_root_override=None):
-        super().__init__()
         self.prior_time = 0
         self.prior_is_complete = None
+
+        super().__init__()
 
         self.cloud_folder_list = WizardFolderListWidget(self.isComplete)
         self.cloud_folder_list.SelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -96,10 +115,11 @@ class CloudRootPage(QtWidgets.QWizardPage):
 
         self.manual_button = QtWidgets.QPushButton()
         self.manual_button.setText('Click here to manually provide the cloud storage path')
-        self.manual_button.pressed.connect(self.manual_cloud_folder_enty)
+        self.manual_button.pressed.connect(self.manual_cloud_folder_entry)
 
         self.progress_line = QtWidgets.QLineEdit()
         self.progress_line.setReadOnly(True)
+
         self.progress_line.setText('...')
 
         layout = QtWidgets.QGridLayout()
@@ -114,7 +134,6 @@ class CloudRootPage(QtWidgets.QWizardPage):
 
         self.cloud_folder_list.show()
 
-    # controls the if the 'next' button is enabled or not
     def isComplete(self):
         if self.cloud_folder_list.currentItem():
             is_complete = True
@@ -153,15 +172,15 @@ class CloudRootPage(QtWidgets.QWizardPage):
             self.cloud_folder_line.setText(self.cloud_root_override)
         return super().validatePage()
 
-    def manual_cloud_folder_enty(self):
+    def manual_cloud_folder_entry(self):
         cloud_folder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Select a folder:', None, QtWidgets.QFileDialog.ShowDirsOnly)
         self.cloud_folder_line.setText(cloud_folder)
         self.cloud_folder_list.insertItem(0, cloud_folder)
         self.cloud_folder_list.setCurrentItem(self.cloud_folder_list.item(0))
         # todo: figure out how to just skip to the next page w/o having the user have to click on 'next'
 
-class LatusFolderPage(QtWidgets.QWizardPage):
 
+class LatusFolderPage(QtWidgets.QWizardPage):
     def __init__(self):
         super().__init__()
         self.latus_folder_box = QtWidgets.QLineEdit()
@@ -185,40 +204,100 @@ class LatusFolderPage(QtWidgets.QWizardPage):
 
 class LatusKeyPage(QtWidgets.QWizardPage):
 
-    complete_trigger = QtCore.pyqtSignal()
-
     def __init__(self, app_data_folder):
         super().__init__()
         self.app_data_folder = app_data_folder
+        self.key_widget = QtWidgets.QLabel('*')
+        self.registerField(LATUS_KEY_FIELD_STRING, self.key_widget)
         self.setTitle("Latus key")
-        self.prior_is_complete = False
 
     def initializePage(self):
 
         self.setTitle('Latus Key Setup')
 
-        latus.node_management.create(self.app_data_folder, self.field(CLOUD_FOLDER_FIELD_STRING),
-                                     self.field(LATUS_FOLDER_FIELD_STRING))
-        pref = latus.preferences.Preferences(self.app_data_folder)
+        first_time = True
+
         cloud_folder_field = self.field(CLOUD_FOLDER_FIELD_STRING)
         cloud_folders = latus.folders.CloudFolders(cloud_folder_field)
         existing_nodes = latus.nodedb.get_existing_nodes(cloud_folders.nodes)
         latus.logger.log.info('existing nodes: %s' % str(existing_nodes))
-        if len(existing_nodes) < 2:
-            pref.set_crypto_key(latus.crypto.new_key())
-            latus.logger.log.info('new latus key')
-            self.setSubTitle('This is the first computer you are adding to Latus.  The Latus key has been created.')
-        else:
-            key_folder = latus.folders.CloudFolders(self.field(CLOUD_FOLDER_FIELD_STRING))
-            latus.key_management.request_key(pref.get_node_id(), key_folder.keys)
-            self.setSubTitle('Please go to one of your other computers running Latus and accept the key request.')
+        if len(existing_nodes) > 0:
+            first_time = False
+        latus.logger.log.info('first_time: %s' % first_time)
 
-    # controls the if the 'next' button is enabled or not
+        first_time_intro = QtWidgets.QLabel()
+        first_time_intro.setWordWrap(True)
+        first_time_intro_text = \
+            "This seems to be your first time setting up Latus.  We will now create a new Latus key " \
+            "for you.  You will use this key to 'connect' all of your computers to Latus.  You will also be " \
+            "prompted to write this key to a USB stick or some other secure medium you can later take " \
+            "to your other computers in order to set them up."
+        first_time_intro.setText(first_time_intro_text)
+
+        not_first_time_intro = QtWidgets.QLabel()
+        not_first_time_intro.setWordWrap(True)
+        not_first_time_intro_text = \
+            "You seem to already be a Latus user on your other computers.  When you set up Latus " \
+            "previously you created a Latus key and wrote it to a USB stick or some" \
+            "other secure medium. Please use that now to load into this computer.  Alternately, " \
+            "go to one of your other computers running Latus and write the Latus " \
+            "key to a new USB stick."
+        not_first_time_intro.setText(not_first_time_intro_text)
+
+        restart_latus_key_setup = QtWidgets.QLabel()
+        restart_latus_key_setup.setWordWrap(True)
+        restart_latus_key_setup_text = \
+            "If you can't get to your previous key or any of your computers that already have Latus " \
+            "installed, alternatively you can restart the setup process.  While this is not " \
+            "recommended since you'll have to re-load they key on you all of our computers, you " \
+            "may restart the Latus key setup now."
+        restart_latus_key_setup.setText(restart_latus_key_setup_text)
+
+        new_key_button = QtWidgets.QPushButton()
+        new_key_button.setText('Create new Latus key')
+        new_key_button.pressed.connect(self.new_latus_key)
+
+        existing_key_button = QtWidgets.QPushButton()
+        existing_key_button.setText('Load existing Latus key')
+        existing_key_button.pressed.connect(self.existing_latus_key)
+
+        restart_setup_button = QtWidgets.QPushButton()
+        restart_setup_button.setText('Restart Latus key setup')
+        restart_setup_button.pressed.connect(self.restart_latus_key_setup)
+
+        layout = QtWidgets.QGridLayout()
+        if first_time:
+            layout.addWidget(first_time_intro, 0, 0)
+            layout.addWidget(new_key_button, 1, 0)
+        else:
+            layout.addWidget(not_first_time_intro, 0, 0)
+            layout.addWidget(existing_key_button, 1, 0)
+            layout.addWidget(QtWidgets.QLabel(), 2, 0)  # spacer
+            layout.addWidget(restart_latus_key_setup, 3, 0)
+            layout.addWidget(restart_setup_button, 5, 0)
+        self.setLayout(layout)
+
     def isComplete(self):
-        return True
-        # todo: get this to work
-        pref = latus.preferences.Preferences(self.app_data_folder)
-        return pref.get_crypto_key() is not None
+        return bool(self.field(LATUS_KEY_FIELD_STRING) and len(self.field(LATUS_KEY_FIELD_STRING)) > 0)
+
+    def new_latus_key(self):
+        self.setField(LATUS_KEY_FIELD_STRING, latus.crypto.new_key())
+        save_file_name = QtWidgets.QFileDialog.getSaveFileName(None, 'Save Latus key file:', filter='*.lky')
+        if save_file_name and len(save_file_name[0]) > 0:
+            key_file_path = save_file_name[0]
+            latus.key_management.write_latus_key_to_file(self.field(LATUS_KEY_FIELD_STRING), key_file_path)
+        self.completeChanged.emit()
+
+    def existing_latus_key(self):
+        key_file_name = QtWidgets.QFileDialog.getOpenFileName(None, 'Latus key file:', filter='*.lky')
+        if key_file_name and len(key_file_name[0]) > 0:
+            key = latus.key_management.read_latus_key(key_file_name[0])
+            self.setField(LATUS_KEY_FIELD_STRING, key['key'])
+        self.completeChanged.emit()
+
+    def restart_latus_key_setup(self):
+        latus.logger.log.error('Not yet implemented.')
+        print('Not yet implemented.')
 
 
 class ConclusionPage(QtWidgets.QWizardPage):
@@ -230,26 +309,53 @@ class ConclusionPage(QtWidgets.QWizardPage):
 if __name__ == '__main__':
 
     import sys
+    import shutil
     import logging
 
-    if len(sys.argv) < 2:
-        data_folder = os.path.join('temp', 'wizardgui')
-    else:
-        data_folder = sys.argv[1]
+    def print_pref(pref):
+        print('db_path : %s' % pref.get_db_path())
+        print('node_id : %s' % pref.get_node_id())
+        print('cloud_root : %s' % pref.get_cloud_root())
+        print('latus_folder : %s' % pref.get_latus_folder())
+        print('crypto_key : %s' % pref.get_crypto_key())
 
-    latus.logger.init(data_folder)
+    if len(sys.argv) < 2:
+        data_folder_root = os.path.join('temp', 'wizardgui')
+        if os.path.exists(data_folder_root):
+            shutil.rmtree(data_folder_root)
+    else:
+        data_folder_root = sys.argv[1]
+
+    if os.path.exists(data_folder_root):
+        error_string = 'error: %s must be empty - exiting' % data_folder_root
+        print(error_string)
+        sys.exit(error_string)
+
+    data_folder_a = os.path.join(data_folder_root, 'a')
+    os.makedirs(os.path.join(data_folder_root, 'cloud'))  # both nodes should use this
+
+    latus.logger.init(data_folder_a)
     latus.logger.set_console_log_level(logging.INFO)
     latus.logger.set_file_log_level(logging.DEBUG)
 
-    latus.logger.log.info('data_folder : %s' % data_folder)
+    latus.logger.log.info('data_folder : %s' % data_folder_a)
 
+    my_pref_a = latus.preferences.Preferences(data_folder_a, True)
+
+    # run once after init (no data)
     app = QtWidgets.QApplication(sys.argv)
-    app_gui_wizard = GUIWizard(data_folder)
+    app_gui_wizard = GUIWizard(data_folder_a)
     app_gui_wizard.exec_()
-    my_pref = latus.preferences.Preferences(data_folder)
-    print(my_pref.get_db_path())
-    print(my_pref.get_node_id())
-    print(my_pref.get_cloud_root())
-    print(my_pref.get_latus_folder())
-    print(my_pref.get_crypto_key())
+
+    print_pref(my_pref_a)
+
+    data_folder_b = os.path.join(data_folder_root, 'b')
+
+    my_pref_b = latus.preferences.Preferences(data_folder_b, True)
+    # run again to emulate a 2nd node
+    app_gui_wizard = GUIWizard(data_folder_b)
+    app_gui_wizard.exec_()
+
+    print_pref(my_pref_b)
+
     sys.exit()
