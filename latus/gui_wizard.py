@@ -305,6 +305,8 @@ class ConclusionPage(QtWidgets.QWizardPage):
 
 if __name__ == '__main__':
 
+    # a manual test of the Wizard
+
     import sys
     import shutil
     import logging
@@ -329,7 +331,9 @@ if __name__ == '__main__':
         sys.exit(error_string)
 
     data_folder_a = os.path.join(data_folder_root, 'a')
-    os.makedirs(os.path.join(data_folder_root, 'cloud'))  # both nodes should use this
+    cloud_folder = os.path.join(data_folder_root, 'cloud')
+    os.makedirs(cloud_folder)  # both nodes should use this
+    print('NOTE: make sure you select "%s" as the cloud folder in the GUI!!!' % os.path.abspath(cloud_folder))
 
     latus.logger.init(data_folder_a)
     latus.logger.set_console_log_level(logging.INFO)

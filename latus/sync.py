@@ -270,9 +270,14 @@ class Sync:
 
     def request_exit(self):
         pref = latus.preferences.Preferences(self.app_data_folder)
-        latus.logger.log.info('%s - sync - request_exit begin' % pref.get_node_id())
+        cloud_folder = latus.folders.CloudFolders(pref.get_cloud_root())
+        node_id = pref.get_node_id()
+        node = latus.nodedb.NodeDB(cloud_folder.nodes, node_id)
+        latus.logger.log.info('%s - sync - request_exit begin' % node_id)
         timed_out = self.local_sync.request_exit()
         timed_out |= self.cloud_sync.request_exit()
-        latus.logger.log.info('%s - sync - request_exit end' % pref.get_node_id())
+        node.set_login(False)
+        node.set_heartbeat()
+        latus.logger.log.info('%s - sync - request_exit end' % node_id)
         return timed_out
 

@@ -22,6 +22,8 @@ class NodeDB:
         self._public_key_string = 'publickey'
         self._user_string = 'user'
         self._computer_string = 'computer'
+        self._login_string = 'login'
+        self._heartbeat_string = 'heartbeat'
 
         if not os.path.exists(cloud_node_db_folder):
             latus.util.make_dirs(cloud_node_db_folder)
@@ -47,6 +49,7 @@ class NodeDB:
         self.general_table = sqlalchemy.Table('general', self.sa_metadata,
                                               sqlalchemy.Column('key', sqlalchemy.String, primary_key=True),
                                               sqlalchemy.Column('value', sqlalchemy.String),
+                                              sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
                                               )
 
         # 'seq' is intended to be monotonically increasing (across all nodes) for this user.  It is used to
@@ -72,6 +75,8 @@ class NodeDB:
             self.set_all(node_id)
 
     def set_all(self, node_id):
+        self.set_login(True)
+        self.get_heartbeat()
         self.set_node_id(node_id)
         self.set_user(getpass.getuser())
         self.set_computer(platform.node())
@@ -162,12 +167,14 @@ class NodeDB:
             lock_state = self.get_lock_state(conn)
             if lock_state is False:
                 lock_state = True
-                command = self.general_table.update().where(self.general_table.c.key == 'lock').values(value=str(True))
+                command = self.general_table.update().where(self.general_table.c.key == 'lock').\
+                    values(value=str(True), timestamp=datetime.datetime.utcnow())
                 result = conn.execute(command)
                 not_yet_acquired = False
             elif lock_state is None:
                 lock_state = True
-                command = self.general_table.insert().values(key='lock', value=str(True))
+                command = self.general_table.insert().values(key='lock', value=str(True),
+                                                             timestamp=datetime.datetime.utcnow())
                 result = conn.execute(command)
                 not_yet_acquired = False
         trans.commit()
@@ -179,7 +186,8 @@ class NodeDB:
         lock_state = self.get_lock_state(conn)
         if lock_state:
             trans = conn.begin()
-            command = self.general_table.update().where(self.general_table.c.key == 'lock').values(value=str(False))
+            command = self.general_table.update().where(self.general_table.c.key == 'lock').\
+                values(value=str(False), timestamp=datetime.datetime.utcnow())
             result = conn.execute(command)
             trans.commit()
             conn.close()
@@ -212,14 +220,16 @@ class NodeDB:
             return None
         conn = self.db_engine.connect()
         val = None
+        timestamp = None
         command = self.general_table.select().where(self.general_table.c.key == key)
         result = conn.execute(command)
         if result:
             row = result.fetchone()
             if row:
                 val = row[1]
+                timestamp = row[2]
         conn.close()
-        return val
+        return val, timestamp
 
     def _set_general(self, key, value):
         if self.db_engine is None:
@@ -234,42 +244,55 @@ class NodeDB:
             if row:
                 db_value = row[1]
         if not db_value:
-            command = self.general_table.insert().values(key=key, value=value)
+            command = self.general_table.insert().values(key=key, value=value, timestamp=datetime.datetime.utcnow())
             result = conn.execute(command)
         elif db_value != value:
-            command = self.general_table.update().where(self.general_table.c.key == key).values(value=value)
+            command = self.general_table.update().where(self.general_table.c.key == key).\
+                values(value=value, timestamp=datetime.datetime.utcnow())
             result = conn.execute(command)
         conn.close()
-
-    def get_node_id(self):
-        return self._get_general(self._node_id_string)
 
     def set_node_id(self, node_id):
         self._set_general(self._node_id_string, node_id)
 
-    def get_local_ip(self):
-        return self._get_general(self._local_ip_string)
+    def get_node_id(self):
+        return self._get_general(self._node_id_string)[0]
 
     def set_local_ip(self, ip):
         self._set_general(self._local_ip_string, ip)
 
-    def get_port(self):
-        return self._get_general(self._port_string)
+    def get_local_ip(self):
+        return self._get_general(self._local_ip_string)[0]
 
     def set_port(self, port):
         self._set_general(self._port_string, port)
+
+    def get_port(self):
+        return self._get_general(self._port_string)[0]
 
     def set_user(self, user):
         self._set_general(self._user_string, user)
 
     def get_user(self):
-        return self._get_general(self._user_string)
+        return self._get_general(self._user_string)[0]
 
     def set_computer(self, computer):
         self._set_general(self._computer_string, computer)
 
     def get_computer(self):
-        return self._get_general(self._computer_string)
+        return self._get_general(self._computer_string)[0]
+
+    def set_login(self, login):
+        self._set_general(self._login_string, str(login))
+
+    def get_login(self):
+        return self._get_general(self._login_string)  # tuple of (is_logged_in, login_timestamp)
+
+    def set_heartbeat(self):
+        self._set_general(self._heartbeat_string, None)
+
+    def get_heartbeat(self):
+        return self._get_general(self._heartbeat_string)[1]  # for heartbeat, value is irrelevant
 
     def get_last_seq(self, file_path):
         conn = self.db_engine.connect()
