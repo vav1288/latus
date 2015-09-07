@@ -76,7 +76,7 @@ class NodeDB:
 
     def set_all(self, node_id):
         self.set_login(True)
-        self.get_heartbeat()
+        self.set_heartbeat()
         self.set_node_id(node_id)
         self.set_user(getpass.getuser())
         self.set_computer(platform.node())
@@ -158,63 +158,23 @@ class NodeDB:
         conn.close()
         return file_hash
 
-    def acquire_lock(self):
-        lock_state = None
-        conn = self.db_engine.connect()
-        trans = conn.begin()
-        not_yet_acquired = True
-        while not_yet_acquired:
-            lock_state = self.get_lock_state(conn)
-            if lock_state is False:
-                lock_state = True
-                command = self.general_table.update().where(self.general_table.c.key == 'lock').\
-                    values(value=str(True), timestamp=datetime.datetime.utcnow())
-                result = conn.execute(command)
-                not_yet_acquired = False
-            elif lock_state is None:
-                lock_state = True
-                command = self.general_table.insert().values(key='lock', value=str(True),
-                                                             timestamp=datetime.datetime.utcnow())
-                result = conn.execute(command)
-                not_yet_acquired = False
-        trans.commit()
-        conn.close()
-        return lock_state
-
-    def release_lock(self):
-        conn = self.db_engine.connect()
-        lock_state = self.get_lock_state(conn)
-        if lock_state:
-            trans = conn.begin()
-            command = self.general_table.update().where(self.general_table.c.key == 'lock').\
-                values(value=str(False), timestamp=datetime.datetime.utcnow())
-            result = conn.execute(command)
-            trans.commit()
-            conn.close()
-        else:
-            latus.logger.log.warn('%s : lock already released' % self.node_id)
-            raise Exception('lock already released')
-
-    def get_lock_state(self, conn_param=None):
-        conn = conn_param
-        if conn is None:
-            conn = self.db_engine.connect()
-        lock_state = None
+    # tolerate situations where multiple nodes try to access one DB (this will happen in normal operation)
+    def _execute_with_retry(self, conn, command, msg = None):
         result = None
-        command = self.general_table.select().where(self.general_table.c.key == 'lock')
-        try:
-            result = conn.execute(command)
-        except sqlalchemy.exc.OperationalError as e:
-            latus.logger.log.warn('%s : %s' % (self.node_id, e))
-        if result:
-            row = result.fetchone()
-            if row:
-                lock_state = row[1] == str(True)  # we store the state as a string
-        if conn_param is None:
-            conn.close()
-        return lock_state
+        timeout_counter = latus.const.TIME_OUT
+        while result is None and timeout_counter > 0:
+            try:
+                result = conn.execute(command)
+            except sqlalchemy.exc.OperationalError:
+                timeout_counter -= 1
+                latus.logger.log.info('execute retry : %s' % str(msg))
+                result = None
+        if result is None:
+            latus.logger.log.error('execute error : %s' % str(msg))
+        return result
 
     def _get_general(self, key):
+        val_is_valid = False
         if self.db_engine is None:
             latus.logger.log.warn('db_engine is None')
             return None
@@ -222,13 +182,16 @@ class NodeDB:
         val = None
         timestamp = None
         command = self.general_table.select().where(self.general_table.c.key == key)
-        result = conn.execute(command)
+        result = self._execute_with_retry(conn, command, ('node DB get', key))
         if result:
             row = result.fetchone()
             if row:
+                val_is_valid = True
                 val = row[1]
                 timestamp = row[2]
         conn.close()
+        if not val_is_valid:
+            latus.logger.log.error('node DB: %s : could not read %s' % (self.node_id, key))
         return val, timestamp
 
     def _set_general(self, key, value):
@@ -236,20 +199,22 @@ class NodeDB:
             latus.logger.log.warn('db_engine is None')
             return None
         conn = self.db_engine.connect()
-        db_value = None
         command = self.general_table.select().where(self.general_table.c.key == key)
-        result = conn.execute(command)
+        result = self._execute_with_retry(conn, command, ('set', key, value))
+        do_insert = True
         if result:
             row = result.fetchone()
             if row:
                 db_value = row[1]
-        if not db_value:
+                if db_value != value:
+                    command = self.general_table.update().where(self.general_table.c.key == key).\
+                        values(value=value, timestamp=datetime.datetime.utcnow())
+                    self._execute_with_retry(conn, command, ('node DB update', key, value))
+            else:
+                do_insert = False
+        if do_insert:
             command = self.general_table.insert().values(key=key, value=value, timestamp=datetime.datetime.utcnow())
-            result = conn.execute(command)
-        elif db_value != value:
-            command = self.general_table.update().where(self.general_table.c.key == key).\
-                values(value=value, timestamp=datetime.datetime.utcnow())
-            result = conn.execute(command)
+            self._execute_with_retry(conn, command, ('node DB insert', key, value))
         conn.close()
 
     def set_node_id(self, node_id):

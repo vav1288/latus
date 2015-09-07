@@ -105,15 +105,6 @@ def is_system(in_path):
     return is_system_flag
 
 
-def is_locked(in_path):
-    try:
-        open(in_path, 'r')
-        locked = False
-    except(IOError):
-        locked = True
-    return locked
-
-
 def make_hidden(in_path):
     win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
 
@@ -175,3 +166,10 @@ def new_node_id():
 
 def version_string():
     return datetime.datetime.utcnow().strftime("%y%m%d")
+
+
+def wait_random_avg_1_sec():
+    import random
+    import time
+
+    time.sleep(0.5 + random.random())

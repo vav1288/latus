@@ -108,44 +108,29 @@ class LocalSync(SyncBase):
             if local_hash:
                 # todo: encrypt the hash?
                 cloud_fernet_file = os.path.join(cloud_folders.cache, local_hash + self.fernet_extension)
-                fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), True)
-                fs_updated = False
-                while not fs_updated:
-                    if fs_db.acquire_lock():
-                        most_recent_hash = fs_db.get_most_recent_hash(partial_path)
-                        if os.path.exists(local_full_path):
-                            if local_hash != most_recent_hash:
-                                mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(local_full_path))
-                                size = os.path.getsize(local_full_path)
-                                latus.logger.log.info('%s : %s updated %s' % (pref.get_node_id(), local_full_path, local_hash))
-                                fs_db.update(latus.miv.next_miv(cloud_folders.miv), pref.get_node_id(), partial_path,
-                                             size, local_hash, mtime)
-                        if not os.path.exists(cloud_fernet_file):
-                            latus.logger.log.info('%s : writing %s (%s)' % (pref.get_node_id(), partial_path, cloud_fernet_file))
-                            crypto.compress(pref.get_latus_folder(), partial_path, os.path.abspath(cloud_fernet_file))
-                        fs_updated = True
-                        fs_db.release_lock()
-                    else:
-                        time.sleep(random.random(1.0))
+                node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), True)
+                most_recent_hash = node_db.get_most_recent_hash(partial_path)
+                if os.path.exists(local_full_path):
+                    if local_hash != most_recent_hash:
+                        mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(local_full_path))
+                        size = os.path.getsize(local_full_path)
+                        latus.logger.log.info('%s : %s updated %s' % (pref.get_node_id(), local_full_path, local_hash))
+                        node_db.update(latus.miv.next_miv(cloud_folders.miv), pref.get_node_id(), partial_path,
+                                     size, local_hash, mtime)
+                if not os.path.exists(cloud_fernet_file):
+                    latus.logger.log.info('%s : writing %s (%s)' % (pref.get_node_id(), partial_path, cloud_fernet_file))
+                    crypto.compress(pref.get_latus_folder(), partial_path, os.path.abspath(cloud_fernet_file))
             else:
                 latus.logger.log.warn('could not calculate hash for %s' % local_full_path)
 
         # check for local deletions
-        fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), True)
-        fs_updated = False
-        while not fs_updated:
-            if fs_db.acquire_lock():
-                for partial_path in fs_db.get_paths():
-                    local_full_path = os.path.abspath(os.path.join(pref.get_latus_folder(), partial_path))
-                    db_fs_info = fs_db.get_latest_file_info(partial_path)
-                    if not os.path.exists(local_full_path) and db_fs_info['hash']:
-                        latus.logger.log.info('%s : %s deleted' % (pref.get_node_id(), local_full_path))
-                        fs_db.update(latus.miv.next_miv(cloud_folders.miv), pref.get_node_id(), partial_path, None, None, None)
-                fs_updated = True
-                fs_db.release_lock()
-            else:
-                time.sleep(random.random(1.0))
-
+        node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), True)
+        for partial_path in node_db.get_paths():
+            local_full_path = os.path.abspath(os.path.join(pref.get_latus_folder(), partial_path))
+            db_fs_info = node_db.get_latest_file_info(partial_path)
+            if not os.path.exists(local_full_path) and db_fs_info['hash']:
+                latus.logger.log.info('%s : %s deleted' % (pref.get_node_id(), local_full_path))
+                node_db.update(latus.miv.next_miv(cloud_folders.miv), pref.get_node_id(), partial_path, None, None, None)
 
 class CloudSync(SyncBase):
     """
@@ -183,37 +168,23 @@ class CloudSync(SyncBase):
                 latus.logger.log.info('no crypto_key yet')
                 return
             crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
-            fs_db_this_node = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
+            this_node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
             # for each file path, determine the 'winning' node (which could be this node)
-            looking = True  # set to False when we have a full set of winners
-            while looking:
-                winners = {}
-                any_locked = False
-                for db_file in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
-                    if not any_locked:
-                        file_name = os.path.basename(db_file)
-                        db_node_id = file_name.split('.')[0]
-                        fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, db_node_id)
-                        if fs_db.get_lock_state():
-                            # one of the DBs is locked - we can't use this
-                            winners = {}
-                            latus.logger.log.info('%s : DB locked' % fs_db.get_node_id())
-                            any_locked = True
-                        else:
-                            for partial_path in fs_db.get_paths():
-                                file_info = fs_db.get_latest_file_info(partial_path)
-                                file_info['node'] = db_node_id  # this isn't in the db
-                                if partial_path in winners:
-                                    # got file info that is later than we've seen so far
-                                    if file_info['seq'] > winners[partial_path]['seq']:
-                                        winners[partial_path] = file_info
-                                else:
-                                    # init winner for this file
-                                    winners[partial_path] = file_info
-                if any_locked:
-                    time.sleep(random.random())
-                else:
-                    looking = False  # got a full set of winners
+            winners = {}
+            for db_file in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
+                file_name = os.path.basename(db_file)
+                db_node_id = file_name.split('.')[0]
+                fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, db_node_id)
+                for partial_path in fs_db.get_paths():
+                    file_info = fs_db.get_latest_file_info(partial_path)
+                    file_info['node'] = db_node_id  # this isn't in the db
+                    if partial_path in winners:
+                        # got file info that is later than we've seen so far
+                        if file_info['seq'] > winners[partial_path]['seq']:
+                            winners[partial_path] = file_info
+                    else:
+                        # init winner for this file
+                        winners[partial_path] = file_info
 
             for partial_path in winners:
                 winning_file_info = winners[partial_path]
@@ -224,28 +195,24 @@ class CloudSync(SyncBase):
                     local_file_hash = None
                 if winning_file_info['hash']:
                     if winning_file_info['hash'] != local_file_hash:
-                        fs_db_this_node.acquire_lock()  # make expand of new file and update of this DB atomic
                         cloud_fernet_file = os.path.abspath(os.path.join(cloud_folders.cache, winning_file_info['hash'] + self.fernet_extension))
                         latus.logger.log.info('%s : %s changed %s - propagating to %s %s' % (pref.get_node_id(), db_node_id, partial_path, local_file_abs_path, winning_file_info['hash']))
                         expand_ok = crypto.expand(cloud_fernet_file, local_file_abs_path)
-                        last_seq = fs_db_this_node.get_last_seq(partial_path)
+                        last_seq = this_node_db.get_last_seq(partial_path)
                         if winning_file_info['seq'] != last_seq:
-                            fs_db_this_node.update(winning_file_info['seq'], winning_file_info['originator'],
+                            this_node_db.update(winning_file_info['seq'], winning_file_info['originator'],
                                                    winning_file_info['path'], winning_file_info['size'],
                                                    winning_file_info['hash'], winning_file_info['mtime'])
-                        fs_db_this_node.release_lock()
                 elif local_file_hash:
                     latus.logger.log.info('%s : %s deleted %s' % (pref.get_node_id(), db_node_id, partial_path))
-                    fs_db_this_node.acquire_lock()  # make delete of file and update of this DB atomic
                     try:
                         if os.path.exists(local_file_abs_path):
                             send2trash.send2trash(local_file_abs_path)
                     except OSError:
                         # fallback
                         latus.logger.log.warn('%s : send2trash failed on %s' % (pref.get_node_id(), local_file_abs_path))
-                    fs_db_this_node.update(winning_file_info['seq'], winning_file_info['originator'],
-                                           winning_file_info['path'], None, None, None)
-                    fs_db_this_node.release_lock()
+                    this_node_db.update(winning_file_info['seq'], winning_file_info['originator'],
+                                        winning_file_info['path'], None, None, None)
 
 
 class Sync:

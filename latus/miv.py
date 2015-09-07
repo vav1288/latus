@@ -1,7 +1,5 @@
 import os
 import datetime
-import time
-import random
 
 import sqlalchemy
 import sqlalchemy.exc
@@ -9,6 +7,7 @@ import sqlalchemy.ext.declarative
 
 import latus.logger
 import latus.const
+import latus.util
 
 """
     Monotonically Increasing Value (miv)
@@ -82,7 +81,7 @@ def next_miv(folder):
             miv.close()
         except sqlalchemy.exc.OperationalError:
             latus.logger.log.info('db retry %s' % time_out_counter)
-            time.sleep(0.5 + random.random())  # 1 sec on average
+            latus.util.wait_random_avg_1_sec()
     if value is None:
         latus.logger.log.error('monotonically increasing value could not be determined')
     return value
