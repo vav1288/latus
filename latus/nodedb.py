@@ -24,6 +24,9 @@ class NodeDB:
         self._computer_string = 'computer'
         self._login_string = 'login'
         self._heartbeat_string = 'heartbeat'
+        self._max_retry_count_string = 'maxretries'
+
+        self.retry_count = None
 
         if not os.path.exists(cloud_node_db_folder):
             latus.util.make_dirs(cloud_node_db_folder)
@@ -158,22 +161,28 @@ class NodeDB:
         conn.close()
         return file_hash
 
-    # tolerate situations where multiple nodes try to access one DB (this will happen in normal operation)
-    def _execute_with_retry(self, conn, command, msg = None):
+    # useful for testing DB access contention
+    def get_retry_count(self):
+        return self.retry_count
+
+    # Tolerate situations where multiple nodes try to access one DB (this will happen, albeit rarely, in
+    # normal operation).
+    def _execute_with_retry(self, conn, command, msg=None):
         result = None
-        timeout_counter = latus.const.TIME_OUT
-        while result is None and timeout_counter > 0:
+        while result is None:
             try:
                 result = conn.execute(command)
             except sqlalchemy.exc.OperationalError:
-                timeout_counter -= 1
+                self.retry_count += 1
                 latus.logger.log.info('execute retry : %s' % str(msg))
                 result = None
+                latus.util.wait_random_avg_1_sec()
         if result is None:
             latus.logger.log.error('execute error : %s' % str(msg))
         return result
 
     def _get_general(self, key):
+        self.retry_count = 0
         val_is_valid = False
         if self.db_engine is None:
             latus.logger.log.warn('db_engine is None')
@@ -198,23 +207,24 @@ class NodeDB:
         if self.db_engine is None:
             latus.logger.log.warn('db_engine is None')
             return None
+        self.retry_count = 0
         conn = self.db_engine.connect()
-        command = self.general_table.select().where(self.general_table.c.key == key)
-        result = self._execute_with_retry(conn, command, ('set', key, value))
+        select_command = self.general_table.select().where(self.general_table.c.key == key)
+        select_result = self._execute_with_retry(conn, select_command, ('set', key, value))
         do_insert = True
-        if result:
-            row = result.fetchone()
+        if select_result:
+            row = select_result.fetchone()
             if row:
+                do_insert = False
                 db_value = row[1]
                 if db_value != value:
-                    command = self.general_table.update().where(self.general_table.c.key == key).\
+                    update_command = self.general_table.update().where(self.general_table.c.key == key).\
                         values(value=value, timestamp=datetime.datetime.utcnow())
-                    self._execute_with_retry(conn, command, ('node DB update', key, value))
-            else:
-                do_insert = False
+                    self._execute_with_retry(conn, update_command, ('node DB update', key, value))
         if do_insert:
-            command = self.general_table.insert().values(key=key, value=value, timestamp=datetime.datetime.utcnow())
-            self._execute_with_retry(conn, command, ('node DB insert', key, value))
+            insert_command = self.general_table.insert().values(key=key, value=value,
+                                                                timestamp=datetime.datetime.utcnow())
+            self._execute_with_retry(conn, insert_command, ('node DB insert', key, value))
         conn.close()
 
     def set_node_id(self, node_id):
@@ -254,7 +264,7 @@ class NodeDB:
         return self._get_general(self._login_string)  # tuple of (is_logged_in, login_timestamp)
 
     def set_heartbeat(self):
-        self._set_general(self._heartbeat_string, None)
+        self._set_general(self._heartbeat_string, datetime.datetime.utcnow())
 
     def get_heartbeat(self):
         return self._get_general(self._heartbeat_string)[1]  # for heartbeat, value is irrelevant
