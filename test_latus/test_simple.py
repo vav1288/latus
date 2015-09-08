@@ -1,7 +1,5 @@
 
 import os
-import time
-from cryptography.fernet import Fernet
 
 import latus.const
 import latus.sync
