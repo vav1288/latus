@@ -12,9 +12,10 @@ import latus.logger
 
 
 def get_node_db_retries_root():
-    # todo: create this folder if it doesn't already exist
-    return os.path.join('c:', os.sep, 'temp')  # some place fast
-    #return os.path.join(test_latus.paths.get_data_root(), "node_db_retries")
+    retries_root = os.path.join('c:', os.sep, 'temp')  # some place fast
+    if not os.path.exists(retries_root):
+        os.makedirs(retries_root)
+    return retries_root
 
 
 def writer(node_id, label):
@@ -40,14 +41,17 @@ def reader(node_id, label):
 
 
 def test_node_db_retries():
+    log_folder = os.path.join(get_node_db_retries_root(), 'log')
+    test_latus.util.logger_init(log_folder)
     node_id = 'abc'
     w = multiprocessing.Process(target=writer, args=(node_id, 'w', ))
     w.start()
     time.sleep(1)  # todo: make this some sort of pole
     read_processes = []
-    for r in range(0, 10):
+    for r in range(0, 20):
         read_processes.append(multiprocessing.Process(target=reader, args=(node_id, str(r), )))
     [r.start() for r in read_processes]
+    latus.logger.log.info('all processes started')
     while all(r.is_alive() for r in read_processes):
         time.sleep(1)
     w.terminate()
