@@ -24,7 +24,6 @@ class NodeDB:
         self._computer_string = 'computer'
         self._login_string = 'login'
         self._heartbeat_string = 'heartbeat'
-        self._max_retry_count_string = 'maxretries'
 
         self.retry_count = None
 
