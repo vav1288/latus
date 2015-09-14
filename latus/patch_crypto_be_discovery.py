@@ -7,6 +7,8 @@ import latus.logger
 
 def patch_crypto_be_discovery():
 
+    return  # this now fails for some reason
+
     """
     Monkey patches cryptography's backend detection.
     Objective: support pyinstaller freezing.
