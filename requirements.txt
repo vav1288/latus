@@ -11,8 +11,8 @@ win32con
 
 # various other packages
 sqlalchemy
-PyQt5
 send2trash
 pathtools
 watchdog
 rsa
+pyside
