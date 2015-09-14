@@ -1,13 +1,13 @@
 
 import time
 
-from PyQt5 import QtWidgets, QtCore
+from PySide import *
 
 import latus.key_management
 import latus.logger
 
 
-class AllowButton(QtWidgets.QPushButton):
+class AllowButton(QtGui.QPushButton):
     def __init__(self, latus_app_data_folder, requester):
         self.requester = requester
         self.latus_app_data_folder = latus_app_data_folder
@@ -23,7 +23,7 @@ class AllowButton(QtWidgets.QPushButton):
             latus.logger.log.warn('request_exit() timed out')
         km.join()
 
-class ManagementDialog(QtWidgets.QDialog):
+class ManagementDialog(QtGui.QDialog):
     def __init__(self, latus_app_data_folder):
         latus.logger.log.info('starting ManagementDialog')
         super().__init__()
@@ -31,13 +31,13 @@ class ManagementDialog(QtWidgets.QDialog):
         pref = latus.preferences.Preferences(latus_app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
 
-        grid_layout = QtWidgets.QGridLayout()
+        grid_layout = QtGui.QGridLayout()
         lines = {}
         row = 0
         for node in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
             node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node)
-            lines[node] = [QtWidgets.QLineEdit(node_db.get_user()), QtWidgets.QLineEdit(node_db.get_computer()),
-                                QtWidgets.QLineEdit(node), AllowButton(latus_app_data_folder, node)]
+            lines[node] = [QtGui.QLineEdit(node_db.get_user()), QtGui.QLineEdit(node_db.get_computer()),
+                                QtGui.QLineEdit(node), AllowButton(latus_app_data_folder, node)]
             for item_number in range(0, len(lines)-1):
                 lines[node][item_number].setReadOnly(True)
             column = 0
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     kms['b'].request_key()
     kms['c'].request_key()
 
-    app = QtWidgets.QApplication(sys.argv)
+    app = QtGui.QApplication(sys.argv)
     dialog = ManagementDialog(app_data_folders['a'])
     dialog.show()
     dialog.exec_()

@@ -1,6 +1,6 @@
 import sys
-import os
-from PyQt5 import QtWidgets, QtCore, QtGui
+
+from PySide import *
 
 import latus.logger
 import latus.sync
@@ -15,7 +15,7 @@ import latus.key_management
 import latus.patch_crypto_be_discovery
 
 
-class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
+class LatusSystemTrayIcon(QtGui.QSystemTrayIcon):
 
     def __init__(self, app, latus_appdata_folder, parent=None):
         latus.logger.log.info('starting LatusSystemTrayIcon')
@@ -26,7 +26,7 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         super().__init__(icon, parent)
         self.latus_appdata_folder = latus_appdata_folder
 
-        menu = QtWidgets.QMenu(parent)
+        menu = QtGui.QMenu(parent)
         about_action = menu.addAction("Import Latus Key")
         about_action.triggered.connect(self.import_latus_key)
         about_action = menu.addAction("Export Latus Key")
@@ -48,7 +48,7 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.sync.start()
 
     def show(self):
-        QtWidgets.QSystemTrayIcon.show(self)
+        QtGui.QSystemTrayIcon.show(self)
 
     def import_latus_key(self):
         key = latus.key_management.read_latus_key_gui()
@@ -61,7 +61,7 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         latus.key_management.write_latus_key_gui(pref.get_crypto_key())
 
     def about(self):
-        QtWidgets.QMessageBox.about(QtWidgets.QMessageBox(), latus.const.NAME, latus.const.URL)
+        QtGui.QMessageBox.about(QtGui.QMessageBox(), latus.const.NAME, latus.const.URL)
 
     def preferences(self):
         preferences_dialog = latus.gui_preferences.PreferencesDialog(self.latus_appdata_folder)
@@ -76,7 +76,7 @@ class LatusSystemTrayIcon(QtWidgets.QSystemTrayIcon):
         self.hide()
         if self.sync:
             self.sync.request_exit()
-        QtWidgets.QApplication.exit()
+        QtGui.QApplication.exit()
 
 
 def main(latus_appdata_folder):
@@ -88,7 +88,7 @@ def main(latus_appdata_folder):
     pref = latus.preferences.Preferences(latus_appdata_folder)
     latus.logger.log.info("latus_app_data: %s" % latus_appdata_folder)
 
-    app = QtWidgets.QApplication(sys.argv)  # need this even for the GUIWizard
+    app = QtGui.QApplication(sys.argv)  # need this even for the GUIWizard
 
     if not pref.folders_are_set():
         latus.logger.log.info('not all preferences are set - starting WizardGUI')
@@ -104,7 +104,7 @@ def main(latus_appdata_folder):
     else:
         msg = 'Incomplete configuration.\n\nPlease re-run Latus and complete the Latus Setup Wizard.\n\nExiting ...'
 
-        w = QtWidgets.QMessageBox()
+        w = QtGui.QMessageBox()
         w.setWindowTitle(latus.const.NAME)
         w.setText(msg)
         w.exec()

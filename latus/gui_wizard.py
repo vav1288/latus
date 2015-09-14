@@ -2,7 +2,7 @@
 import time
 import os
 
-from PyQt5 import QtWidgets, QtCore
+from PySide import *
 
 import latus.wizard
 import latus.preferences
@@ -20,7 +20,7 @@ LATUS_FOLDER_FIELD_STRING = 'latus_folder'
 LATUS_KEY_FIELD_STRING = 'latus_key'
 
 
-class GUIWizard(QtWidgets.QWizard):
+class GUIWizard(QtGui.QWizard):
 
     # cloud_folder parameter generally only used for testing
     def __init__(self, app_data_folder, cloud_root_override=None):
@@ -59,23 +59,23 @@ class GUIWizard(QtWidgets.QWizard):
         super().accept()
 
 
-class IntroPage(QtWidgets.QWizardPage):
+class IntroPage(QtGui.QWizardPage):
 
     def __init__(self):
         super().__init__()
         self.setTitle("Latus Setup Wizard")
 
-        label = QtWidgets.QLabel("This will guide you through the Latus setup process.  Please make sure you are "
+        label = QtGui.QLabel("This will guide you through the Latus setup process.  Please make sure you are "
                                  "connected to the internet and your cloud storage application (such as Dropbox, "
                                  "Microsoft's OneDrive, Google Drive, etc.) is running.")
         label.setWordWrap(True)
 
-        layout = QtWidgets.QVBoxLayout()
+        layout = QtGui.QVBoxLayout()
         layout.addWidget(label)
         self.setLayout(layout)
 
 
-class WizardFolderListWidget(QtWidgets.QListWidget):
+class WizardFolderListWidget(QtGui.QListWidget):
     def __init__(self, change_method):
         self.change_method = change_method
         super().__init__()
@@ -85,19 +85,20 @@ class WizardFolderListWidget(QtWidgets.QListWidget):
         super().selectionChanged(a, b)
 
 
-class CloudRootPage(QtWidgets.QWizardPage):
-
-    complete_trigger = QtCore.pyqtSignal()
-    selection_trigger = QtCore.pyqtSignal()
+class CloudRootPage(QtGui.QWizardPage):
 
     def __init__(self, folder_wizard, cloud_root_override=None):
+
+        self.complete_trigger = QtCore.pyqtSignal()
+        self.selection_trigger = QtCore.pyqtSignal()
+
         self.prior_time = 0
         self.prior_is_complete = None
 
         super().__init__()
 
         self.cloud_folder_list = WizardFolderListWidget(self.isComplete)
-        self.cloud_folder_list.SelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.cloud_folder_list.SelectionMode(QtGui.QAbstractItemView.SingleSelection)
 
         self.folder_wizard = folder_wizard
         self.cloud_root_override = cloud_root_override
@@ -113,23 +114,23 @@ class CloudRootPage(QtWidgets.QWizardPage):
                          " is shown, please select it and hit 'Next'.  Alternatively, you can click the button below"
                          " to manually provide the cloud storage path.")
 
-        self.manual_button = QtWidgets.QPushButton()
+        self.manual_button = QtGui.QPushButton()
         self.manual_button.setText('Click here to manually provide the cloud storage path')
         self.manual_button.pressed.connect(self.manual_cloud_folder_entry)
 
-        self.progress_line = QtWidgets.QLineEdit()
+        self.progress_line = QtGui.QLineEdit()
         self.progress_line.setReadOnly(True)
 
         self.progress_line.setText('...')
 
-        layout = QtWidgets.QGridLayout()
+        layout = QtGui.QGridLayout()
         layout.addWidget(self.manual_button, 0, 0)
         layout.addWidget(self.progress_line, 1, 0)
         layout.addWidget(self.cloud_folder_list, 2, 0)
         self.setLayout(layout)
 
         # use this for the value that's been selected
-        self.cloud_folder_line = QtWidgets.QLineEdit()
+        self.cloud_folder_line = QtGui.QLineEdit()
         self.registerField(CLOUD_FOLDER_FIELD_STRING, self.cloud_folder_line)
 
         self.cloud_folder_list.show()
@@ -173,17 +174,17 @@ class CloudRootPage(QtWidgets.QWizardPage):
         return super().validatePage()
 
     def manual_cloud_folder_entry(self):
-        cloud_folder = QtWidgets.QFileDialog.getExistingDirectory(None, 'Select a folder:', None, QtWidgets.QFileDialog.ShowDirsOnly)
+        cloud_folder = QtGui.QFileDialog.getExistingDirectory(None, 'Select a folder:', None, QtWidgets.QFileDialog.ShowDirsOnly)
         self.cloud_folder_line.setText(cloud_folder)
         self.cloud_folder_list.insertItem(0, cloud_folder)
         self.cloud_folder_list.setCurrentItem(self.cloud_folder_list.item(0))
         # todo: figure out how to just skip to the next page w/o having the user have to click on 'next'
 
 
-class LatusFolderPage(QtWidgets.QWizardPage):
+class LatusFolderPage(QtGui.QWizardPage):
     def __init__(self):
         super().__init__()
-        self.latus_folder_box = QtWidgets.QLineEdit()
+        self.latus_folder_box = QtGui.QLineEdit()
         self.latus_folder_box.setReadOnly(True)
 
         self.setTitle("Latus folder")
@@ -191,7 +192,7 @@ class LatusFolderPage(QtWidgets.QWizardPage):
 
         self.latus_folder_box.show()
 
-        layout = QtWidgets.QGridLayout()
+        layout = QtGui.QGridLayout()
         layout.addWidget(self.latus_folder_box, 0, 1)
         self.setLayout(layout)
 
@@ -202,12 +203,12 @@ class LatusFolderPage(QtWidgets.QWizardPage):
         self.latus_folder_box.setText(latus_folder)
 
 
-class LatusKeyPage(QtWidgets.QWizardPage):
+class LatusKeyPage(QtGui.QWizardPage):
 
     def __init__(self, app_data_folder):
         super().__init__()
         self.app_data_folder = app_data_folder
-        self.key_widget = QtWidgets.QLabel('*')
+        self.key_widget = QtGui.QLabel('*')
         self.registerField(LATUS_KEY_FIELD_STRING, self.key_widget)
         self.setTitle("Latus key")
 
@@ -225,7 +226,7 @@ class LatusKeyPage(QtWidgets.QWizardPage):
             first_time = False
         latus.logger.log.info('first_time: %s' % first_time)
 
-        first_time_intro = QtWidgets.QLabel()
+        first_time_intro = QtGui.QLabel()
         first_time_intro.setWordWrap(True)
         first_time_intro_text = \
             "This seems to be your first time setting up Latus.  We will now create a new Latus key " \
@@ -234,7 +235,7 @@ class LatusKeyPage(QtWidgets.QWizardPage):
             "to your other computers in order to set them up."
         first_time_intro.setText(first_time_intro_text)
 
-        not_first_time_intro = QtWidgets.QLabel()
+        not_first_time_intro = QtGui.QLabel()
         not_first_time_intro.setWordWrap(True)
         not_first_time_intro_text = \
             "You seem to already be a Latus user on your other computers.  When you set up Latus " \
@@ -244,7 +245,7 @@ class LatusKeyPage(QtWidgets.QWizardPage):
             "key to a new USB stick."
         not_first_time_intro.setText(not_first_time_intro_text)
 
-        restart_latus_key_setup = QtWidgets.QLabel()
+        restart_latus_key_setup = QtGui.QLabel()
         restart_latus_key_setup.setWordWrap(True)
         restart_latus_key_setup_text = \
             "If you can't get to your previous key or any of your computers that already have Latus " \
@@ -253,26 +254,26 @@ class LatusKeyPage(QtWidgets.QWizardPage):
             "may restart the Latus key setup now."
         restart_latus_key_setup.setText(restart_latus_key_setup_text)
 
-        new_key_button = QtWidgets.QPushButton()
+        new_key_button = QtGui.QPushButton()
         new_key_button.setText('Create new Latus key')
         new_key_button.pressed.connect(self.new_latus_key)
 
-        existing_key_button = QtWidgets.QPushButton()
+        existing_key_button = QtGui.QPushButton()
         existing_key_button.setText('Load existing Latus key')
         existing_key_button.pressed.connect(self.existing_latus_key)
 
-        restart_setup_button = QtWidgets.QPushButton()
+        restart_setup_button = QtGui.QPushButton()
         restart_setup_button.setText('Restart Latus key setup')
         restart_setup_button.pressed.connect(self.restart_latus_key_setup)
 
-        layout = QtWidgets.QGridLayout()
+        layout = QtGui.QGridLayout()
         if first_time:
             layout.addWidget(first_time_intro, 0, 0)
             layout.addWidget(new_key_button, 1, 0)
         else:
             layout.addWidget(not_first_time_intro, 0, 0)
             layout.addWidget(existing_key_button, 1, 0)
-            layout.addWidget(QtWidgets.QLabel(), 2, 0)  # spacer
+            layout.addWidget(QtGui.QLabel(), 2, 0)  # spacer
             layout.addWidget(restart_latus_key_setup, 3, 0)
             layout.addWidget(restart_setup_button, 5, 0)
         self.setLayout(layout)
@@ -297,7 +298,7 @@ class LatusKeyPage(QtWidgets.QWizardPage):
         print('Not yet implemented.')
 
 
-class ConclusionPage(QtWidgets.QWizardPage):
+class ConclusionPage(QtGui.QWizardPage):
     def __init__(self):
         super().__init__()
         self.setTitle("Congratulations - Latus setup is now complete!")
@@ -344,7 +345,7 @@ if __name__ == '__main__':
     my_pref_a = latus.preferences.Preferences(data_folder_a, True)
 
     # run once after init (no data)
-    app = QtWidgets.QApplication(sys.argv)
+    app = QtGui.QApplication(sys.argv)
     app_gui_wizard = GUIWizard(data_folder_a)
     app_gui_wizard.exec_()
 

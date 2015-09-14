@@ -2,7 +2,7 @@
 import os
 import logging
 
-from PyQt5 import QtWidgets, QtCore
+from PySide import *
 
 import latus.logger
 import latus.sync
@@ -41,26 +41,26 @@ class CheckBoxUI:
     Set up a check box widgets
     """
     def __init__(self, name, value, method=None):
-        self.check_box = QtWidgets.QCheckBox(name)
+        self.check_box = QtGui.QCheckBox(name)
         if method:
             self.check_box.stateChanged.connect(method)
 
 
-class PreferencesDialog(QtWidgets.QDialog):
+class PreferencesDialog(QtGui.QDialog):
     def __init__(self, latus_appdata_folder):
         latus.logger.log.info('starting PreferencesDialog')
         super().__init__()
-        grid_layout = QtWidgets.QGridLayout()
+        grid_layout = QtGui.QGridLayout()
 
         self.pref = latus.preferences.Preferences(latus_appdata_folder)
         self.latus_folder = LineUI('Latus folder', self.pref.get_latus_folder(), self.new_folder)
         self.cloud_folder = LineUI('Cloud Folder', self.pref.get_cloud_root(), self.new_folder)
         self.node_id = LineUI('Node ID', self.pref.get_node_id())
-        self.blank = QtWidgets.QLabel('')
+        self.blank = QtGui.QLabel('')
 
-        ok_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
+        ok_buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
         ok_buttonBox.accepted.connect(self.ok)
-        cancel_buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel)
+        cancel_buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Cancel)
         cancel_buttonBox.rejected.connect(self.cancel)
 
         self.latus_folder.layout(grid_layout, 0)
@@ -84,7 +84,7 @@ class PreferencesDialog(QtWidgets.QDialog):
         self.close()
 
     def new_folder(self):
-        f = QtWidgets.QFileDialog.getExistingDirectory()
+        f = QtGui.QFileDialog.getExistingDirectory()
         return f
 
 
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     latus.logger.init(os.path.join(temp_dir, 'log'))
     latus.logger.set_console_log_level(logging.INFO)
 
-    app = QtWidgets.QApplication(sys.argv)
+    app = QtGui.QApplication(sys.argv)
 
     preferences_dialog = PreferencesDialog('temp')
     preferences_dialog.show()
