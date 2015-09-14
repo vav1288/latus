@@ -17,6 +17,7 @@ installer_string = 'installer'
 config_path = 'installer.cfg'
 nsis_build_dir = os.path.join('build', 'nsis')
 dist_dir = 'dist'
+python_root = os.path.join('c:', os.sep, 'Python34')
 
 if not os.path.exists(dist_dir):
     os.mkdir (dist_dir)
@@ -46,8 +47,14 @@ kwargs = {'appname': latus.const.NAME,
                                  'icon': os.path.join('icons', 'latus.ico'),
                                 },
           },
-          'packages': ['latus', 'cryptography', 'win32api', 'win32con', 'sqlalchemy', 'PyQt5', 'send2trash', 'pathtools',
-                       'watchdog', 'rsa', 'icons'],
+          'packages': ['latus', 'cryptography', 'win32api', 'win32con', 'sqlalchemy', 'PyQt5', 'send2trash',
+                       'pathtools', 'watchdog', 'rsa', 'icons',
+                       # Special cryptography packages ... I don't know why just specifying 'cryptography' doesn't
+                       # pick these up.
+                       'six', 'cffi', '_cffi_backend',
+                       #
+                       'sip',  # needed for PyQt, apparently
+                       ],
           # use this Python's version for the build version
           'py_version': sys.version.split()[0],
          }
@@ -56,6 +63,9 @@ if not os.path.exists(nsis_build_dir):
     os.makedirs(nsis_build_dir)
 
 shutil.copy(os.path.join('icons', 'glossyorb.ico'), nsis_build_dir)  # there should be a cleaner way to do this ...
+
+# Qt platform plugin "windows"
+shutil.copy(os.path.join(python_root, 'Lib', 'site-packages', 'PyQt5', 'libEGL.dll'), nsis_build_dir)
 
 pprint.pprint(kwargs)
 
