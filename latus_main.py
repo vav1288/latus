@@ -22,6 +22,7 @@ import sys
 import logging
 import argparse
 
+import latus
 import latus.cli
 import latus.gui
 import latus.util
