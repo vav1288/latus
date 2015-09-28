@@ -55,7 +55,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	DWORD exitCode = 0;
 
-	g_show_display = wcslen(lpCmdLine) > 0; // shop the window on any command line option
+	g_show_display = wcslen(lpCmdLine) > 0; // show the window on any command line option
 	if (g_show_display)
 	{
 		nCmdShow = TRUE;

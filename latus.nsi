@@ -110,6 +110,9 @@ section "uninstall"
 	rmDir "$SMPROGRAMS\${COMPANYNAME}"
 
 	# Remove files
+	RMDir  $INSTDIR\python
+	RMDir  $INSTDIR\latus
+	RMDir  $INSTDIR\icons
 	delete $INSTDIR\*.*
 
 	# Always delete uninstaller as the last action
