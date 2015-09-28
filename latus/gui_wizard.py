@@ -3,6 +3,7 @@ import time
 import os
 
 from PySide import *
+from PySide.QtCore import Signal as pyqtSignal
 
 import latus.wizard
 import latus.preferences
@@ -87,21 +88,27 @@ class WizardFolderListWidget(QtGui.QListWidget):
 
 class CloudRootPage(QtGui.QWizardPage):
 
-    def __init__(self, folder_wizard, cloud_root_override=None):
+    complete_trigger = pyqtSignal()
+    selection_trigger = pyqtSignal()
 
-        self.complete_trigger = QtCore.pyqtSignal()
-        self.selection_trigger = QtCore.pyqtSignal()
+    def __init__(self, folder_wizard, cloud_root_override=None):
+        super().__init__()
+
+
 
         self.prior_time = 0
         self.prior_is_complete = None
-
-        super().__init__()
 
         self.cloud_folder_list = WizardFolderListWidget(self.isComplete)
         self.cloud_folder_list.SelectionMode(QtGui.QAbstractItemView.SingleSelection)
 
         self.folder_wizard = folder_wizard
         self.cloud_root_override = cloud_root_override
+
+        self.progress_line = QtGui.QLineEdit()
+        self.progress_line.setReadOnly(True)
+
+        self.progress_line.setText('...')
 
         self.folder_wizard.set_found_alert(self.wizard_alert)
         self.folder_wizard.set_progress(self.progress_method)
@@ -117,11 +124,6 @@ class CloudRootPage(QtGui.QWizardPage):
         self.manual_button = QtGui.QPushButton()
         self.manual_button.setText('Click here to manually provide the cloud storage path')
         self.manual_button.pressed.connect(self.manual_cloud_folder_entry)
-
-        self.progress_line = QtGui.QLineEdit()
-        self.progress_line.setReadOnly(True)
-
-        self.progress_line.setText('...')
 
         layout = QtGui.QGridLayout()
         layout.addWidget(self.manual_button, 0, 0)
@@ -149,8 +151,7 @@ class CloudRootPage(QtGui.QWizardPage):
     def progress_method(self, folder):
         t = time.time()
         if folder:
-            # todo: figure out why this can cause a crash if 'rate' is too small
-            rate = 1.0  # if this rate is too low (too frequent), Python (or PyQT) will crash ... I don't know why
+            rate = 1.0
             if t - self.prior_time > rate:
                 self.progress_line.setText('Searching: ' + folder)
                 self.progress_line.setCursorPosition(0)  # left justify
@@ -208,7 +209,7 @@ class LatusKeyPage(QtGui.QWizardPage):
     def __init__(self, app_data_folder):
         super().__init__()
         self.app_data_folder = app_data_folder
-        self.key_widget = QtGui.QLabel('*')
+        self.key_widget = QtGui.QLabel(LATUS_KEY_FIELD_STRING)
         self.registerField(LATUS_KEY_FIELD_STRING, self.key_widget)
         self.setTitle("Latus key")
 
@@ -290,6 +291,8 @@ class LatusKeyPage(QtGui.QWizardPage):
     def existing_latus_key(self):
         key = latus.key_management.read_latus_key_gui()
         if key:
+            # todo: this seems to cause the message below to be logged, even though things seem work - figure out why
+            # QWizard::setField: Couldn't write to property ''
             self.setField(LATUS_KEY_FIELD_STRING, key)
         self.completeChanged.emit()
 

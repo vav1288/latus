@@ -44,9 +44,7 @@ if use_cx_freeze:
         options = {'py2exe': {'bundle_files': 1,
                               'compressed': True,
                               'optimize': 0,
-                              "includes" : ["sqlalchemy", "sip", "PyQt5.QtGui", "PyQt5.QtCore", "cryptography",
-                                            "watchdog",
-                                            "_cffi_backend",
+                              "includes" : ["cffi", "sqlalchemy", "PySide", "cryptography", "watchdog",
                                             ]}},
 
         executables=[cx_Freeze.Executable(latus.const.MAIN_FILE, base=base)],

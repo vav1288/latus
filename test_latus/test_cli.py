@@ -14,7 +14,7 @@ def test_sync_cli_invocation(setup):
     Just test that the CLI version can be run at all.
     """
     sync_folder = os.path.join(get_cli_root(), 'a')
-    python_exe = os.path.join('c:', '/', 'python34', 'python.exe')
+    python_exe = os.path.join('python', 'python.exe')
     print('python_exe', python_exe)
     cmd = [python_exe, 'latus_main.py']
     cmd += ['-l', os.path.join(sync_folder, 'latus')]

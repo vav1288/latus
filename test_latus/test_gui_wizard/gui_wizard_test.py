@@ -4,7 +4,7 @@ import shutil
 import time
 import sys
 
-from PyQt5 import QtWidgets, QtCore
+from PySide import *
 
 import latus.gui_wizard
 import latus.util
@@ -32,7 +32,7 @@ def run_one(node_id):
     folders = get_folders(node_id)
     latus.logger.log.info('test_gui_wizard : start')
 
-    app = QtWidgets.QApplication([])
+    app = QtGui.QApplication([])
     # ignore the cloud folder from the GUI - force the cloud folder to this test area
     app_gui_wizard = latus.gui_wizard.GUIWizard(folders['app_data'], folders['cloud'])
     app_gui_wizard.exec_()

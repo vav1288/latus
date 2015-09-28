@@ -37,8 +37,8 @@ class ManagementDialog(QtGui.QDialog):
         for node in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
             node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node)
             lines[node] = [QtGui.QLineEdit(node_db.get_user()), QtGui.QLineEdit(node_db.get_computer()),
-                                QtGui.QLineEdit(node), AllowButton(latus_app_data_folder, node)]
-            for item_number in range(0, len(lines)-1):
+                           QtGui.QLineEdit(node)]
+            for item_number in range(0, len(lines[node])):
                 lines[node][item_number].setReadOnly(True)
             column = 0
             for item in lines[node]:

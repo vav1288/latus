@@ -24,7 +24,9 @@ __pycache__/
 MANIFEST
 #
 # this is programmatically created
-installer.cfg
+installers/installer.cfg
 #
 # don't put the big dist files in the repo
 dist/
+
+python34\

@@ -12,7 +12,6 @@ import latus.gui_wizard
 import latus.gui_preferences
 import latus.gui_management
 import latus.key_management
-import latus.patch_crypto_be_discovery
 
 
 class LatusSystemTrayIcon(QtGui.QSystemTrayIcon):
@@ -81,8 +80,6 @@ class LatusSystemTrayIcon(QtGui.QSystemTrayIcon):
 
 def main(latus_appdata_folder):
     latus.logger.log.info('gui')
-
-    latus.patch_crypto_be_discovery.patch_crypto_be_discovery()  # remove this when cryptography discovery gets fixed
 
     # check if we should run the setup wizard first
     pref = latus.preferences.Preferences(latus_appdata_folder)

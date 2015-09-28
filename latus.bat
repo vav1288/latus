@@ -1,0 +1,1 @@
+python34\python.exe latus_main.py

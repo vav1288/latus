@@ -18,13 +18,13 @@ class LineUI:
     Set up the folder widgets
     """
     def __init__(self, name, value, method=None, button_text='Select...'):
-        self.label = QtWidgets.QLabel(name + ':')
-        self.line = QtWidgets.QLineEdit(value)
+        self.label = QtGui.QLabel(name + ':')
+        self.line = QtGui.QLineEdit(value)
         self.line.setMinimumWidth(600)  # swag
-        self.select_button = QtWidgets.QDialogButtonBox()
+        self.select_button = QtGui.QDialogButtonBox()
         self.line.setReadOnly(True)  # guide user via dialog boxes - don't allow them to just type anything in
         if method:
-            self.select_button.addButton(button_text, QtWidgets.QDialogButtonBox.AcceptRole)
+            self.select_button.addButton(button_text, QtGui.QDialogButtonBox.AcceptRole)
             self.select_button.accepted.connect(method)
 
     def layout(self, grid, column):

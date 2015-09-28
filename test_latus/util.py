@@ -87,7 +87,7 @@ def start_cmd_line(node_id, test_name):
     cloud_folder = os.path.join(test_folder, 'dropbox')  # all nodes use the same cloud folder to emulate cloud sync
     appdata_folder = os.path.join(node_folder, 'appdata')
     log_folder = os.path.join(node_folder, 'log')
-    python_exe = os.path.join('c:', '/', 'python34', 'python.exe')
+    python_exe = os.path.join('python', 'python.exe')
     #print('python_exe', python_exe)
     cmd = [python_exe, 'latus_main.py']
     cmd += ['-l', latus_folder]

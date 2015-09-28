@@ -1,0 +1,1 @@
+c:\python34\python.exe make_windows_installer.py

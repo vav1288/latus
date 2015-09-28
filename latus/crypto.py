@@ -6,10 +6,6 @@ import cryptography.fernet
 import latus.util
 import latus.logger
 
-import latus.patch_crypto_be_discovery
-
-latus.patch_crypto_be_discovery.patch_crypto_be_discovery()  # remove this when cryptography discovery gets fixed
-
 
 def new_key():
     return cryptography.fernet.Fernet.generate_key()
