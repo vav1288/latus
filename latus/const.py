@@ -8,7 +8,7 @@ URL = 'www.lat.us'
 EMAIL = 'j@abel.co'
 AUTHOR = 'James Abel'
 DESCRIPTION = 'Secure file sync with low impact to cloud storage.'
-MAIN_FILE = 'latus_main.py'
+MAIN_FILE = 'main.py'
 
 BIG_FILE_SIZE = 1024 * 1024
 MAX_HASH_PERF_VALUES = 10  # determine how many longest hash times to store in the db

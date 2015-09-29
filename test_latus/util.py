@@ -89,7 +89,7 @@ def start_cmd_line(node_id, test_name):
     log_folder = os.path.join(node_folder, 'log')
     python_exe = os.path.join('python', 'python.exe')
     #print('python_exe', python_exe)
-    cmd = [python_exe, 'latus_main.py']
+    cmd = [python_exe, 'main.py']
     cmd += ['-l', latus_folder]
     # all nodes use same folder to emulate cloud sync
     cmd += ['-c', cloud_folder]

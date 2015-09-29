@@ -16,7 +16,7 @@ def test_sync_cli_invocation(setup):
     sync_folder = os.path.join(get_cli_root(), 'a')
     python_exe = os.path.join('python', 'python.exe')
     print('python_exe', python_exe)
-    cmd = [python_exe, 'latus_main.py']
+    cmd = [python_exe, 'main.py']
     cmd += ['-l', os.path.join(sync_folder, 'latus')]
     cmd += ['-c', os.path.join(sync_folder, 'dropbox')]
     cmd += ['-a', os.path.join(sync_folder, 'appdata')]
