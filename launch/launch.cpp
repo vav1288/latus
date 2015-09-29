@@ -1,4 +1,4 @@
-// launch.cpp : Launches the latus app.
+// launch.cpp : Launches a python app.
 //
 
 #include "stdafx.h"
@@ -16,6 +16,7 @@ using namespace std;
 #define RETURN_SUCCESS 0
 #define RETURN_PROCESS_FAILED 1
 #define RETURN_LOG_FAILED 2
+#define RETURN_SOURCE_NOT_FOUND 4
 int g_return_code = RETURN_SUCCESS;
 
 class Logger
@@ -42,7 +43,7 @@ Logger::Logger(void)
 	}
 	else
 	{
-		swprintf(log_file_path, BIG_MAX_PATH, L"%s\\latus\\latus_launch.log", app_data_string);
+		swprintf(log_file_path, BIG_MAX_PATH, L"%s\\latus\\launch.log", app_data_string);
 		// clear the log file
 		wofstream log_file(log_file_path);
 		log_file.close();
@@ -102,19 +103,33 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Create the process
 	PROCESS_INFORMATION processInformation = { 0 };
 	STARTUPINFO startupInfo = { 0 };
-	wchar_t latus_cmd_line[] = L"python\\python.exe main.py";
-	BOOL result = CreateProcess(NULL, latus_cmd_line,
+	static wchar_t python_exe[] = L"python\\python.exe";
+	static wchar_t python_source[] = L"main.py";
+
+	// Check that the source exists since we don't redirect stdout from python.exe anywhere so
+	// if there's an error we won't see it.  This is at least a basic check.
+	struct _stat stat_buffer;
+	int stat_return = _wstat(python_source, &stat_buffer);
+	if (stat_return != 0)
+	{
+		log.out(L"Source file not found:");
+		log.out(python_source);
+		g_return_code |= RETURN_SOURCE_NOT_FOUND;
+	}
+
+#define MAX_COMMAND_LINE_SIZE 256
+	wchar_t cmd_line[MAX_COMMAND_LINE_SIZE] = L"";
+	swprintf(cmd_line, MAX_COMMAND_LINE_SIZE, L"%s %s", python_exe, python_source);
+	BOOL result = CreateProcess(NULL, cmd_line,
 		NULL, NULL, FALSE,
 		NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW,
 		NULL, NULL, &startupInfo, &processInformation);
 
-	// todo: output an error of the .py file isn't found by python.exe.
-	// Currently it's silent.
 
 	if (result)
 	{
 		log.out(L"CreateProcess success.");
-		log.out(latus_cmd_line);
+		log.out(cmd_line);
 	}
 	else
 	{
@@ -127,7 +142,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		// Display the error
 		log.out(L"Failed at CreateProcess():");
-		log.out(latus_cmd_line);
+		log.out(cmd_line);
 		log.out((LPTSTR)lpMsgBuf);
 
 		g_return_code |= RETURN_PROCESS_FAILED;
