@@ -77,7 +77,6 @@ class PreferencesDialog(QtGui.QDialog):
     def ok(self):
         self.pref.set_latus_folder(self.latus_folder.get())
         self.pref.set_cloud_root(self.cloud_folder.get())
-        self.pref.set_new_keys()
         self.close()
 
     def cancel(self):
@@ -90,12 +89,16 @@ class PreferencesDialog(QtGui.QDialog):
 
 if __name__ == '__main__':
     import sys
-    temp_dir = 'temp'
-    latus.logger.init(os.path.join(temp_dir, 'log'))
+
+    latus.logger.init()
     latus.logger.set_console_log_level(logging.INFO)
 
     app = QtGui.QApplication(sys.argv)
 
-    preferences_dialog = PreferencesDialog('temp')
+    app_data_folder = latus.util.get_latus_appdata_roaming_folder()
+    preferences = latus.preferences.Preferences(app_data_folder)
+    if not preferences.get_node_id():
+        preferences.set_node_id(latus.util.new_node_id())
+    preferences_dialog = PreferencesDialog(app_data_folder)
     preferences_dialog.show()
     preferences_dialog.exec_()
