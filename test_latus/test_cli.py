@@ -3,6 +3,7 @@ import time
 import subprocess
 import test_latus.create_files
 import test_latus.paths
+import test_latus.util
 
 
 def get_cli_root():
@@ -14,11 +15,11 @@ def test_sync_cli_invocation(setup):
     Just test that the CLI version can be run at all.
     """
     sync_folder = os.path.join(get_cli_root(), 'a')
-    python_exe = os.path.join('python', 'python.exe')
+    python_exe = test_latus.util.get_python_exe()
     print('python_exe', python_exe)
     cmd = [python_exe, 'main.py']
     cmd += ['-l', os.path.join(sync_folder, 'latus')]
-    cmd += ['-c', os.path.join(sync_folder, 'dropbox')]
+    cmd += ['-c', os.path.join(sync_folder, 'cloud')]
     cmd += ['-a', os.path.join(sync_folder, 'appdata')]
     cmd += ['-k', 'dQf6js1s-CcVRQMnt6t4w7fOdVJAzqhvcQNsHnvuQNQ=']
     cmd += ['-n', 'x']
