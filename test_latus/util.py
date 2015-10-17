@@ -36,8 +36,8 @@ def wait_for_node(log_folder):
     # returns True if stability found, False if we merely timed out and gave up
 
     sleep_time = 0.5  # sec
-    time_out = 60/sleep_time  # sec to timeout
-    stable_time = 4/sleep_time  # number of seconds we need to see stable files to declare it stable
+    time_out = 600/sleep_time  # sec to timeout
+    stable_time = 5/sleep_time  # number of seconds we need to see stable files to declare it stable
     time_out_count = time_out
     stable_count = stable_time
     unstable_file = None
@@ -79,15 +79,19 @@ def wait_for_node(log_folder):
         latus.logger.log.warn('timeout : %s' % unstable_file)
     return time_out_count > 0
 
+
+def get_python_exe():
+    return os.path.join('venv', 'Scripts', 'python.exe')
+
 def start_cmd_line(node_id, test_name):
     test_folder = os.path.join(test_latus.paths.get_data_root(), test_name)
     node_folder = os.path.join(test_folder, node_id)
     latus.util.make_dirs(node_folder)
     latus_folder = os.path.join(node_folder, 'latus')
-    cloud_folder = os.path.join(test_folder, 'dropbox')  # all nodes use the same cloud folder to emulate cloud sync
+    cloud_folder = os.path.join(test_folder, 'cloud')  # all nodes use the same cloud folder to emulate cloud sync
     appdata_folder = os.path.join(node_folder, 'appdata')
     log_folder = os.path.join(node_folder, 'log')
-    python_exe = os.path.join('python', 'python.exe')
+    python_exe = get_python_exe()
     #print('python_exe', python_exe)
     cmd = [python_exe, 'main.py']
     cmd += ['-l', latus_folder]
