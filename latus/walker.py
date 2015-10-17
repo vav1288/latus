@@ -37,11 +37,12 @@ class Walker:
                 if folder in dirnames:
                     dirnames.remove(folder)
 
-            # do the directories/folders first
-            for name in dirnames:
-                # note the separator delineates a folder/directory
-                partial_path = self.create_partial_path(name, dirpath) + util.get_folder_sep()
-                yield partial_path
+            if self.do_dirs:
+                # do the directories/folders first
+                for name in dirnames:
+                    # note the separator delineates a folder/directory
+                    partial_path = self.create_partial_path(name, dirpath) + util.get_folder_sep()
+                    yield partial_path
 
             for name in filenames:
                 partial_path = self.create_partial_path(name, dirpath)
