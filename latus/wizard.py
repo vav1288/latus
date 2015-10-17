@@ -80,6 +80,7 @@ class FolderWizard(threading.Thread):
 def latus_folder_from_cloud_folder(path):
     return os.path.join(os.path.dirname(path), latus.const.NAME)
 
+
 if __name__ == "__main__":
     def my_alert(folders):
         print(folders)
