@@ -34,16 +34,16 @@ class NodeDB:
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
         # writing to the DB since there is only one writer.
         self.database_file_name = node_id + latus.const.DB_EXTENSION
-        sqlite_file_path = os.path.join(cloud_node_db_folder, self.database_file_name)
+        self.sqlite_file_path = os.path.join(cloud_node_db_folder, self.database_file_name)
 
-        if not os.path.exists(sqlite_file_path) and not write_flag:
-            latus.logger.log.error('DB does not exist and write_flag not set, can not initialize : %s' % sqlite_file_path)
+        if not os.path.exists(self.sqlite_file_path) and not write_flag:
+            latus.logger.log.error('DB does not exist and write_flag not set, can not initialize : %s' % self.sqlite_file_path)
             self.db_engine = None
             return
 
         # the 'bind' and 'connection' seem to be redundant - what do I really need????
         # (I seem to need the bind, so perhaps I can get rid of the connection?)
-        self.db_engine = sqlalchemy.create_engine('sqlite:///' + os.path.abspath(sqlite_file_path))  # , echo=True)
+        self.db_engine = sqlalchemy.create_engine('sqlite:///' + os.path.abspath(self.sqlite_file_path))  # , echo=True)
         self.sa_metadata = sqlalchemy.MetaData()
         self.sa_metadata.bind = self.db_engine
 
@@ -59,7 +59,7 @@ class NodeDB:
         # they both make changes.
         self.change_table = sqlalchemy.Table('change', self.sa_metadata,
                                              sqlalchemy.Column('index', sqlalchemy.Integer, primary_key=True),
-                                             sqlalchemy.Column('seq', sqlalchemy.Integer, index=True),
+                                             sqlalchemy.Column('seq', sqlalchemy.Float, index=True),
                                              sqlalchemy.Column('originator', sqlalchemy.String),
                                              sqlalchemy.Column('path', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('size', sqlalchemy.Integer),
@@ -75,6 +75,15 @@ class NodeDB:
                 # to do this since create_all() is supposed to check first.
                 latus.logger.log.warn(str(e))
             self.set_all(node_id)
+
+    def delete(self):
+        if os.path.exists(self.sqlite_file_path):
+            try:
+                os.remove(self.sqlite_file_path)
+            except OSError:
+                latus.logger.log.error('could not remove : %s' % self.sqlite_file_path)
+        else:
+            latus.logger.log.warn('already deleted : %s' % self.sqlite_file_path)
 
     def set_all(self, node_id):
         self.set_login(True)
@@ -266,7 +275,7 @@ class NodeDB:
         self._set_general(self._heartbeat_string, datetime.datetime.utcnow())
 
     def get_heartbeat(self):
-        return self._get_general(self._heartbeat_string)[1]  # for heartbeat, value is irrelevant
+        return self._get_general(self._heartbeat_string)[0]
 
     def get_last_seq(self, file_path):
         conn = self.db_engine.connect()
