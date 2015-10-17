@@ -1,27 +1,37 @@
 
-import time
+import collections
+import datetime
+import dateutil.parser
 
 from PySide import *
 
 import latus.key_management
 import latus.logger
+import latus.preferences
+import latus.folders
+import latus.nodedb
 
 
-class AllowButton(QtGui.QPushButton):
-    def __init__(self, latus_app_data_folder, requester):
-        self.requester = requester
-        self.latus_app_data_folder = latus_app_data_folder
-        super().__init__('Allow')
-        self.clicked.connect(self.allow)
+class ForgetButton(QtGui.QPushButton):
+    def __init__(self, node, node_db, row_widgets):
+        super().__init__('Forget')
+        self.node = node
+        self.node_db = node_db
+        self.row_widgets = row_widgets
+        self.clicked.connect(self.do_forget)
 
-    def allow(self):
-        latus.logger.log.info('allowing %s' % self.requester)
-        km = latus.key_management.KeyManagement(self.latus_app_data_folder, True)
-        km.start()
-        time.sleep(1)
-        if km.request_exit():
-            latus.logger.log.warn('request_exit() timed out')
-        km.join()
+    def do_forget(self):
+        reply = QtGui.QMessageBox.question(self, 'Verify Forget',
+                                           'Are you sure you want to forget the Latus node from user "%s" on computer "%s"?' %
+                                           (self.row_widgets[0].text(), self.row_widgets[1].text()),
+                                           QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes:
+            latus.logger.log.info('forgetting : %s' % self.node)
+            self.node_db.delete()  # the database (file)
+            self.hide()  # this button
+            for row_widget in self.row_widgets[2:4]:
+                row_widget.setText('< Forgotten >')  # the rest of the row
+
 
 class ManagementDialog(QtGui.QDialog):
     def __init__(self, latus_app_data_folder):
@@ -32,25 +42,39 @@ class ManagementDialog(QtGui.QDialog):
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
 
         grid_layout = QtGui.QGridLayout()
-        lines = {}
-        row = 0
+        cells = [[QtGui.QLabel('User Name'), QtGui.QLabel('Computer Name'), QtGui.QLabel('Latus Node ID'),
+                  QtGui.QLabel('How Long Since Last Seen'), QtGui.QLabel(''), datetime.timedelta.max]]
+
         for node in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
             node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node)
-            lines[node] = [QtGui.QLineEdit(node_db.get_user()), QtGui.QLineEdit(node_db.get_computer()),
-                           QtGui.QLineEdit(node)]
-            for item_number in range(0, len(lines[node])):
-                lines[node][item_number].setReadOnly(True)
-            column = 0
-            for item in lines[node]:
-                item.setMinimumWidth(item.sizeHint().width())
-                grid_layout.addWidget(item, row, column)
-                column += 1
-            row += 1
+            last_seen = datetime.datetime.utcnow() - dateutil.parser.parse(node_db.get_heartbeat())
+            row_widgets = [QtGui.QLineEdit(node_db.get_user()), QtGui.QLineEdit(node_db.get_computer()),
+                           QtGui.QLineEdit(node), QtGui.QLineEdit(str(last_seen))]
+            button = ForgetButton(node, node_db, row_widgets)
+            row_widgets += [button, last_seen]
+            cells.append(row_widgets)
+
+        cells = sorted(cells, key=lambda cell : cell[-1], reverse=True)
+
+        widths = collections.defaultdict(int)
+        for row in range(0, len(cells)):
+            for column in range(0, len(cells[row]) - 1):
+                text = cells[row][column].text()
+                width = QtGui.QFontMetrics(QtGui.QFont()).width(text) * 1.05
+                widths[column] = max(widths[column], width)
+                if row > 0 and column < len(cells[row]) - 2:
+                    cells[row][column].setReadOnly(True)
+                grid_layout.addWidget(cells[row][column], row, column)
+        for width in widths:
+            grid_layout.setColumnMinimumWidth(width, widths[width])
+        for row in range(0, len(cells)):
+            for column in range(0, len(cells[row]) - 2):
+                cells[row][column].setMinimumWidth(widths[column])
         self.setLayout(grid_layout)
-        self.setWindowTitle("Management")
+        self.setWindowTitle("Latus Node Management")
 
 
-if __name__ == '__main__':
+def main():
     import sys
     import os
     import shutil
@@ -62,7 +86,6 @@ if __name__ == '__main__':
     import latus.nodedb
 
     root = os.path.join('temp', 'gui_management')
-    app_data_folders = os.path.join(root, 'appdata')
     if os.path.exists(root):
         shutil.rmtree(root)
 
@@ -76,28 +99,26 @@ if __name__ == '__main__':
     cloud_folder = os.path.join(root, 'cloud')
     cloud_folders = latus.folders.CloudFolders(cloud_folder)
 
-    user_prefix = 'user_'
-    computer_prefix = 'computer_'
     preferences = {}
     node_dbs = {}
-    kms = {}
     app_data_folders = {}
     for node in ['a', 'b', 'c']:
         app_data_folders[node] = os.path.join(root, node, 'appdata')
         preferences[node] = latus.preferences.Preferences(app_data_folders[node], True)
-        preferences[node].set_node_id(node)
-        preferences[node].set_new_keys()
+        node_id = latus.util.new_node_id()
+        preferences[node].set_node_id(node_id)
         preferences[node].set_cloud_root(cloud_folder)
-        node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodes, node, preferences[node].get_public_key(), True)
-        node_dbs[node].set_user(user_prefix + node)  # essentially override defaults
-        node_dbs[node].set_computer(computer_prefix + node)  # essentially override defaults
-        kms[node] = latus.key_management.KeyManagement(app_data_folders[node])
-    preferences['a'].set_crypto_key_string(latus_key)  # a has the latus key, b and c want it
-
-    kms['b'].request_key()
-    kms['c'].request_key()
+        node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodes, node_id, True)
+        node_dbs[node].set_user('user_' + node)  # essentially override defaults
+        node_dbs[node].set_computer('computer_' + node)  # essentially override defaults
+    preferences['a'].set_crypto_key(latus_key)  # a has the latus key, b and c want it
 
     app = QtGui.QApplication(sys.argv)
     dialog = ManagementDialog(app_data_folders['a'])
     dialog.show()
     dialog.exec_()
+    print(app.applicationName())
+
+
+if __name__ == '__main__':
+    main()
