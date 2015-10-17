@@ -32,12 +32,14 @@ def reader(node_id, label):
     test_latus.util.logger_init(log_folder)
     latus.logger.log.info('entering reader: %s' % node_id)
     db_reader = latus.nodedb.NodeDB(get_node_db_retries_root(), node_id)
-    no_retry = True
-    while no_retry:
+    # I'd rather not have a count down, but we're not guaranteed we'll ever get a retry
+    count_down = 1000
+    while count_down > 0:
         # print(label, db_reader.get_retry_count(), db_reader.get_heartbeat())
         db_reader.get_heartbeat()
         if db_reader.get_retry_count() > 0:
-            no_retry = False
+            count_down = 0
+        count_down -= 1
 
 
 def test_node_db_retries():
