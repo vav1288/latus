@@ -33,6 +33,7 @@ def test_delete(setup):
     test_latus.util.wait_on_nodes(log_folders)
     latus.logger.log.info("*************** ENDING WRITE *************")
 
+    time.sleep(1)
     assert(test_latus.util.wait_for_file(file_path_b))  # make sure it's on b
 
     latus.logger.log.info("*************** STARTING DELETE *************")
@@ -44,6 +45,7 @@ def test_delete(setup):
 
     test_latus.util.wait_on_nodes(log_folders)
 
+    time.sleep(1)
     assert(not os.path.exists(file_path_b))  # make sure it's gone on b
 
     # todo: make this some sort of control flow based
