@@ -8,7 +8,6 @@ import datetime
 import watchdog.observers
 import watchdog.events
 import send2trash
-import random
 
 import latus.logger
 import latus.util
@@ -26,7 +25,7 @@ import latus.key_management
 class SyncBase(watchdog.events.FileSystemEventHandler):
 
     def __init__(self, app_data_folder):
-        self.call_count = 0
+        self.call_count = 0  # for logging and design for testability
         self.fernet_extension = '.fer'
         self.app_data_folder = app_data_folder
         self.observer = watchdog.observers.Observer()
@@ -80,8 +79,10 @@ class LocalSync(SyncBase):
     def __init__(self, app_data_folder):
         super().__init__(app_data_folder)
         pref = latus.preferences.Preferences(app_data_folder)
-        latus.util.make_dirs(pref.get_latus_folder())
-        self.observer.schedule(self, pref.get_latus_folder(), recursive=True)
+        latus_folder = pref.get_latus_folder()
+        latus.util.make_dirs(latus_folder)
+        latus.util.make_dirs(latus.folders.latus_cloud_folder_from_latus_folder(latus_folder))
+        self.observer.schedule(self, latus_folder, recursive=True)
 
     def get_type(self):
         return 'local'
@@ -115,7 +116,7 @@ class LocalSync(SyncBase):
                         mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(local_full_path))
                         size = os.path.getsize(local_full_path)
                         latus.logger.log.info('%s : %s updated %s' % (pref.get_node_id(), local_full_path, local_hash))
-                        node_db.update(latus.miv.next_miv(cloud_folders.miv), pref.get_node_id(), partial_path,
+                        node_db.update(latus.miv.get_miv(), pref.get_node_id(), partial_path,
                                      size, local_hash, mtime)
                 if not os.path.exists(cloud_fernet_file):
                     latus.logger.log.info('%s : writing %s (%s)' % (pref.get_node_id(), partial_path, cloud_fernet_file))
@@ -130,7 +131,7 @@ class LocalSync(SyncBase):
             db_fs_info = node_db.get_latest_file_info(partial_path)
             if not os.path.exists(local_full_path) and db_fs_info['hash']:
                 latus.logger.log.info('%s : %s deleted' % (pref.get_node_id(), local_full_path))
-                node_db.update(latus.miv.next_miv(cloud_folders.miv), pref.get_node_id(), partial_path, None, None, None)
+                node_db.update(latus.miv.get_miv(), pref.get_node_id(), partial_path, None, None, None)
 
 class CloudSync(SyncBase):
     """
@@ -144,11 +145,9 @@ class CloudSync(SyncBase):
 
         latus.logger.log.info('cloud_nodedb : %s' % cloud_folders.nodes)
         latus.logger.log.info('cloud_cache : %s' % cloud_folders.cache)
-        latus.logger.log.info('cloud_miv : %s' % cloud_folders.miv)
 
         latus.util.make_dirs(cloud_folders.nodes)
         latus.util.make_dirs(cloud_folders.cache)
-        latus.util.make_dirs(cloud_folders.miv)
 
         self.observer.schedule(self, cloud_folders.nodes, recursive=True)
 
