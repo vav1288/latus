@@ -13,7 +13,8 @@ import latus.logger
 
 g_prior_miv = None
 
-def get_miv():
+
+def _get_miv():
     server = 'http://mono.lat.us'
     miv = None
     tries = 0
@@ -36,16 +37,27 @@ def get_miv():
     miv = time.time()
     latus.logger.log.warn('could not get miv from %s - using local time() : %s' % (server, str(miv)))
 
-    # checker
-    global g_prior_miv
-    if g_prior_miv and miv <= g_prior_miv:
-        latus.logger.log.error('miv <= g_prior_miv (%s <= %s)' % (str(miv), str(g_prior_miv)))
-    g_prior_miv = miv
-
     return miv
 
+
+def get_miv():
+    # make sure we are actually monotonically increasing
+    global g_prior_miv
+    miv = _get_miv()
+    retry_count = 10
+    while g_prior_miv and miv <= g_prior_miv and retry_count > 0:
+        time.sleep(10)
+        latus.logger.log.warn('miv retry')
+        miv = _get_miv()
+        retry_count -= 1
+    if retry_count <= 0:
+        miv = None
+        latus.logger.log.fatal('miv fatal')
+    return miv
 
 if __name__ == '__main__':
     latus.logger.init('temp')
     latus.logger.set_console_log_level(logging.INFO)
+    print(get_miv())
+    print(get_miv())
     print(get_miv())
