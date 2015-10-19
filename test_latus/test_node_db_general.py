@@ -2,6 +2,7 @@
 import os
 
 import latus.nodedb
+import latus.util
 
 import test_latus.paths
 import test_latus.util
@@ -15,5 +16,7 @@ def test_node_db_general():
     test_latus.util.logger_init(log_folder)
 
     node_id = 'a'
-    node_db = latus.nodedb.NodeDB(get_node_db_general_root(), node_id, True)
+    general_root = get_node_db_general_root()
+    latus.util.make_dirs(general_root)
+    node_db = latus.nodedb.NodeDB(general_root, node_id, True)
     assert(node_db.get_node_id() == node_id)
