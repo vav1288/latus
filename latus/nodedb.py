@@ -27,9 +27,6 @@ class NodeDB:
 
         self.retry_count = None
 
-        if not os.path.exists(cloud_node_db_folder):
-            latus.util.make_dirs(cloud_node_db_folder)
-
         self.node_id = node_id
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
         # writing to the DB since there is only one writer.
@@ -75,6 +72,7 @@ class NodeDB:
                 # to do this since create_all() is supposed to check first.
                 latus.logger.log.warn(str(e))
             self.set_all(node_id)
+            latus.util.make_hidden(self.sqlite_file_path)
 
     def delete(self):
         if os.path.exists(self.sqlite_file_path):
@@ -295,3 +293,6 @@ def get_existing_nodes(cloud_node_db_folder):
     node_db_files = glob.glob(os.path.join(cloud_node_db_folder, '*' + latus.const.DB_EXTENSION))
     return set(os.path.basename(p).split('.')[0] for p in node_db_files)
 
+
+def get_node_id_from_db_file_path(db_file_path):
+    return os.path.basename(db_file_path)[:-3]  # assumes end is .xx, e.g. .db

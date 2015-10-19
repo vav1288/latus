@@ -3,8 +3,6 @@ import platform
 import uuid
 import datetime
 
-import win32con
-
 import latus.logger
 import latus.const
 
@@ -32,6 +30,7 @@ def is_linux():
 
 if is_windows():
     import win32api
+    import win32con
 
 
 def get_folder_sep():
@@ -106,7 +105,9 @@ def is_system(in_path):
 
 
 def make_hidden(in_path):
-    win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
+    attribute = win32api.GetFileAttributes(in_path)
+    if not (attribute & win32con.FILE_ATTRIBUTE_HIDDEN):
+        win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
 
 
 def get_latus_appdata_roaming_folder():
@@ -147,6 +148,13 @@ def make_dirs(path):
         os.makedirs(path)
     except FileExistsError:
         pass
+
+
+def make_dir(path, hidden=False):
+    if not os.path.exists(path):
+        os.mkdir(path)
+    if hidden:
+        make_hidden(path)
 
 
 def get_latus_guid():
