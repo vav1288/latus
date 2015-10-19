@@ -27,6 +27,7 @@ def test_sync_cli_invocation(setup):
     cmd += ['-v']
     print('cmd', cmd)
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    subprocess.PIPE = '\n'
 
     # this is a kludge - I really want to test that the program ran and then send a CR to it to stop
     time.sleep(10) # long enough for the program to run
