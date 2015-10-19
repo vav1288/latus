@@ -13,18 +13,25 @@ import latus.sync
 import test_latus.create_files
 import test_latus.paths
 
+
 def logger_init(log_folder):
-    latus.logger.init(log_folder)
+    if latus.logger.log:
+        print('WARNING: logger already set up')
+    else:
+        latus.logger.init(log_folder)
     latus.logger.set_console_log_level(logging.INFO)
     latus.logger.set_file_log_level(logging.DEBUG)
+
 
 # get an mtime back in time
 def get_mtime_time():
     return time.mktime(time.strptime("12", "%y"))
 
+
 def make_dirs(p):
     if not os.path.exists(p):
         os.makedirs(p)
+
 
 def wait_on_nodes(log_folders_param):
     for log_folder in log_folders_param:
@@ -60,7 +67,7 @@ def wait_for_node(log_folder):
                     if prior_status[log_file]:
                         #print('status', status)
                         if status['count'] != prior_status[log_file]['count']:
-                            latus.logger.log.info('%s not yet stable %s : %s' % (file_path, status, prior_status[log_file]))
+                            latus.logger.log.debug('%s not yet stable %s : %s' % (file_path, status, prior_status[log_file]))
                             stable_flag = False
                             unstable_file = file_path
                     else:
