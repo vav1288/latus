@@ -51,9 +51,6 @@ class NodeDB:
                                               sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
                                               )
 
-        # 'seq' is intended to be monotonically increasing (across all nodes) for this user.  It is used to
-        # globally determine file modification order.  Exceptions can occur when 2 or more nodes are offline and
-        # they both make changes.
         self.change_table = sqlalchemy.Table('change', self.sa_metadata,
                                              sqlalchemy.Column('index', sqlalchemy.Integer, primary_key=True),
                                              sqlalchemy.Column('seq', sqlalchemy.Float, index=True),
@@ -64,6 +61,15 @@ class NodeDB:
                                              sqlalchemy.Column('mtime', sqlalchemy.DateTime),
                                              sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
                                              )
+
+        self.folders_table = sqlalchemy.Table('folders', self.sa_metadata,
+                                             sqlalchemy.Column('name', sqlalchemy.String, primary_key=True),
+                                             sqlalchemy.Column('encrypt', sqlalchemy.Boolean),
+                                             sqlalchemy.Column('shared', sqlalchemy.Boolean),
+                                             sqlalchemy.Column('cloud', sqlalchemy.Boolean),
+                                             sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
+                                             )
+
         if write_flag:
             try:
                 self.sa_metadata.create_all()
@@ -191,7 +197,7 @@ class NodeDB:
         self.retry_count = 0
         val_is_valid = False
         if self.db_engine is None:
-            latus.logger.log.warn('db_engine is None')
+            latus.logger.log.warn('_get_general: db_engine is None')
             return None
         conn = self.db_engine.connect()
         val = None
@@ -211,7 +217,7 @@ class NodeDB:
 
     def _set_general(self, key, value):
         if self.db_engine is None:
-            latus.logger.log.warn('db_engine is None')
+            latus.logger.log.warn('_set_general: db_engine is None')
             return None
         self.retry_count = 0
         conn = self.db_engine.connect()
@@ -288,6 +294,48 @@ class NodeDB:
         conn.close()
         return last_seq
 
+    def get_folder_preferences(self, name):
+        execute = None
+        shared = None
+        cloud = None
+        if self.db_engine:
+            conn = self.db_engine.connect()
+            command = self.folders_table.select().where(self.folders_table.c.name == name)
+            result = conn.execute(command)
+            if result:
+                row = result.fetchall()
+                if row:
+                    execute = row[1]
+                    shared = row[2]
+                    cloud = row[3]
+            conn.close()
+        else:
+            latus.logger.log.warn('get_folder_preferences: db_engine is None')
+        return execute, shared, cloud
+
+    def set_folder_preferences(self, name, encrypt, shared, cloud):
+        if self.db_engine is None:
+            latus.logger.log.warn('set_folder_preferences: db_engine is None')
+            return False
+        conn = self.db_engine.connect()
+        select_command = self.folders_table.select().where(self.folders_table.c.name == name)
+        select_result = conn.execute(select_command)
+        do_insert = True
+        if select_result:
+            row = select_result.fetchone()
+            if row:
+                do_insert = False
+                update_command = self.folders_table.update().where(self.folders_table.c.name == name).\
+                    values(name=name, encrypt=encrypt, shared=shared, cloud=cloud,
+                           timestamp=datetime.datetime.utcnow())
+                conn.execute(update_command)
+        if do_insert:
+            insert_command = self.folders_table.insert().values(name=name, encrypt=encrypt, shared=shared, cloud=cloud,
+                                                                timestamp=datetime.datetime.utcnow())
+            conn.execute(insert_command)
+        conn.close()
+        return True
+
 
 def get_existing_nodes(cloud_node_db_folder):
     node_db_files = glob.glob(os.path.join(cloud_node_db_folder, '*' + latus.const.DB_EXTENSION))
@@ -296,3 +344,4 @@ def get_existing_nodes(cloud_node_db_folder):
 
 def get_node_id_from_db_file_path(db_file_path):
     return os.path.basename(db_file_path)[:-3]  # assumes end is .xx, e.g. .db
+
