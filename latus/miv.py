@@ -1,5 +1,6 @@
 
 import requests
+import requests.exceptions
 import time
 import logging
 
@@ -19,8 +20,12 @@ def _get_miv():
     miv = None
     tries = 0
     while miv is None and tries < 3:
-        r = requests.get(server)
-        if r.status_code == 200:
+        r = None
+        try:
+            r = requests.get(server)
+        except requests.exceptions.ConnectionError:
+            pass
+        if r and r.status_code == 200:
             # do a 'try' in case we get some strange text back
             try:
                 miv = float(r.text)
