@@ -303,7 +303,7 @@ class NodeDB:
             command = self.folders_table.select().where(self.folders_table.c.name == name)
             result = conn.execute(command)
             if result:
-                row = result.fetchall()
+                row = result.fetchone()
                 if row:
                     execute = row[1]
                     shared = row[2]

@@ -11,6 +11,8 @@ import latus.util
 import latus.const
 import latus.crypto
 import latus.gui_wizard
+import latus.nodedb
+import latus.folders
 
 
 class LineUI:
@@ -39,6 +41,11 @@ class LineUI:
 class PreferencesDialog(QtGui.QDialog):
     def __init__(self, latus_appdata_folder):
         latus.logger.log.info('starting PreferencesDialog')
+
+        self.pref = latus.preferences.Preferences(latus_appdata_folder)
+        cloud_folders = latus.folders.CloudFolders(self.pref.get_cloud_root())
+        self.node_db = latus.nodedb.NodeDB(cloud_folders.nodes, self.pref.get_node_id())
+
         super().__init__()
         overall_layout = QtGui.QVBoxLayout()
 
@@ -50,17 +57,21 @@ class PreferencesDialog(QtGui.QDialog):
             folder_preferences_layout.addWidget(QtGui.QLabel(header), 0, col)
             col += 1
         row = 1
-        folders = {}  # DEBUG DEBUG DEBUG
-        for folder in folders:
+
+        self.folders = sorted(os.listdir(self.pref.get_latus_folder()))
+        self.check_boxes = {}
+        for folder in self.folders:
             folder_preferences_layout.addWidget(QtGui.QLabel(folder))
             col = 1
-            for attribute in folders[folder]:
+            self.check_boxes[folder] = []
+            for attribute in self.node_db.get_folder_preferences(folder):
                 s = QtCore.Qt.CheckState.Unchecked
                 if attribute:
                     s = QtCore.Qt.CheckState.Checked
                 cb = QtGui.QCheckBox()
                 cb.setCheckState(s)
                 folder_preferences_layout.addWidget(cb, row, col)
+                self.check_boxes[folder].append(cb)
                 col += 1
             row += 1
         folder_preferences_group_box.setLayout(folder_preferences_layout)
@@ -68,8 +79,7 @@ class PreferencesDialog(QtGui.QDialog):
 
         folder_locations_group_box = QtGui.QGroupBox("Folder Locations")
         folder_locations_layout = QtGui.QGridLayout()
-        self.pref = latus.preferences.Preferences(latus_appdata_folder)
-        self.latus_folder = LineUI('Latus folder', self.pref.get_latus_folder(), self.new_folder)
+        self.latus_folder = LineUI('Latus Folder', self.pref.get_latus_folder(), self.new_folder)
         self.cloud_folder = LineUI('Cloud Folder', self.pref.get_cloud_root(), self.new_folder)
         self.blank = QtGui.QLabel('')
 
@@ -91,8 +101,19 @@ class PreferencesDialog(QtGui.QDialog):
         self.setWindowTitle("Preferences")
 
     def ok(self):
-        self.pref.set_latus_folder(self.latus_folder.get())
-        self.pref.set_cloud_root(self.cloud_folder.get())
+        if self.pref.get_latus_folder() != self.latus_folder.get():
+            latus.logger.log.info('new latus folder location %s' % self.latus_folder.get())
+            self.pref.set_latus_folder(self.latus_folder.get())
+        if self.pref.get_cloud_root() != self.cloud_folder.get():
+            latus.logger.log.info('new cloud folder location %s' % self.cloud_folder.get())
+            self.pref.set_cloud_root(self.cloud_folder.get())
+        for folder in self.folders:
+            cb_states = tuple([cb.isChecked() for cb in self.check_boxes[folder]])
+            current_preferences = self.node_db.get_folder_preferences(folder)
+            print(cb_states)
+            if current_preferences != cb_states:
+                print('new prefernces for %s : %s --> %s' % (folder, str(current_preferences), str(cb_states)))
+                self.node_db.set_folder_preferences(folder, cb_states[0], cb_states[1], cb_states[2])
         self.close()
 
     def cancel(self):
