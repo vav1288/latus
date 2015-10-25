@@ -22,14 +22,3 @@ class CloudFolders:
         # file system database
         return os.path.join(self.__latus_cloud_folder, 'nodes')
 
-
-def latus_cloud_folder_from_latus_folder(path):
-    return os.path.join(path, latus.const.LATUS_CLOUD)
-
-
-def is_latus_cloud_folder(path):
-    # e.g. if path is latus/cloud/< something >
-    parts = pathlib.Path(path).parts
-    if len(parts) >= 2:
-        return parts[0] == latus.const.NAME and parts[1] == latus.const.LATUS_CLOUD
-    return False
