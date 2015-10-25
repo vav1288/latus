@@ -1,7 +1,6 @@
 
 # not sure if this is terribly pythonic, but it's pretty clean ...
 NAME = 'latus'
-LATUS_CLOUD = 'cloud'
 LOG_FILE = NAME + '.log'
 LATUS_KEY_FILE_NAME = 'latus.lky'
 DB_EXTENSION = '.db'
