@@ -36,26 +36,41 @@ class LineUI:
         return self.line.text()
 
 
-class CheckBoxUI:
-    """
-    Set up a check box widgets
-    """
-    def __init__(self, name, value, method=None):
-        self.check_box = QtGui.QCheckBox(name)
-        if method:
-            self.check_box.stateChanged.connect(method)
-
-
 class PreferencesDialog(QtGui.QDialog):
     def __init__(self, latus_appdata_folder):
         latus.logger.log.info('starting PreferencesDialog')
         super().__init__()
-        grid_layout = QtGui.QGridLayout()
+        overall_layout = QtGui.QVBoxLayout()
 
+        folder_preferences_group_box = QtGui.QGroupBox("Folder Preferences")
+        folder_preferences_layout = QtGui.QGridLayout()
+        headers = ['Folder', 'Encrypted', 'Shared', 'Cloud']
+        col = 0
+        for header in headers:
+            folder_preferences_layout.addWidget(QtGui.QLabel(header), 0, col)
+            col += 1
+        row = 1
+        folders = {}  # DEBUG DEBUG DEBUG
+        for folder in folders:
+            folder_preferences_layout.addWidget(QtGui.QLabel(folder))
+            col = 1
+            for attribute in folders[folder]:
+                s = QtCore.Qt.CheckState.Unchecked
+                if attribute:
+                    s = QtCore.Qt.CheckState.Checked
+                cb = QtGui.QCheckBox()
+                cb.setCheckState(s)
+                folder_preferences_layout.addWidget(cb, row, col)
+                col += 1
+            row += 1
+        folder_preferences_group_box.setLayout(folder_preferences_layout)
+        overall_layout.addWidget(folder_preferences_group_box)
+
+        folder_locations_group_box = QtGui.QGroupBox("Folder Locations")
+        folder_locations_layout = QtGui.QGridLayout()
         self.pref = latus.preferences.Preferences(latus_appdata_folder)
         self.latus_folder = LineUI('Latus folder', self.pref.get_latus_folder(), self.new_folder)
         self.cloud_folder = LineUI('Cloud Folder', self.pref.get_cloud_root(), self.new_folder)
-        self.node_id = LineUI('Node ID', self.pref.get_node_id())
         self.blank = QtGui.QLabel('')
 
         ok_buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
@@ -63,14 +78,15 @@ class PreferencesDialog(QtGui.QDialog):
         cancel_buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Cancel)
         cancel_buttonBox.rejected.connect(self.cancel)
 
-        self.latus_folder.layout(grid_layout, 0)
-        self.cloud_folder.layout(grid_layout, 1)
-        self.node_id.layout(grid_layout, 3)
-        grid_layout.addWidget(self.blank, 4, 0)
-        grid_layout.addWidget(ok_buttonBox, 5, 0)
-        grid_layout.addWidget(cancel_buttonBox, 5, 1, alignment=QtCore.Qt.AlignLeft)  # kind of cheating on the layout
-        grid_layout.setColumnStretch(1, 1)  # path column
-        self.setLayout(grid_layout)
+        self.latus_folder.layout(folder_locations_layout, row)
+        self.cloud_folder.layout(folder_locations_layout, row + 1)
+        folder_locations_group_box.setLayout(folder_locations_layout)
+        overall_layout.addWidget(folder_locations_group_box)
+
+        overall_layout.addWidget(ok_buttonBox, alignment=QtCore.Qt.AlignLeft)
+        overall_layout.addWidget(cancel_buttonBox, alignment=QtCore.Qt.AlignLeft)
+
+        self.setLayout(overall_layout)
 
         self.setWindowTitle("Preferences")
 
