@@ -108,6 +108,7 @@ def main():
         node_id = latus.util.new_node_id()
         preferences[node].set_node_id(node_id)
         preferences[node].set_cloud_root(cloud_folder)
+        latus.util.make_dirs(cloud_folders.nodes)
         node_dbs[node] = latus.nodedb.NodeDB(cloud_folders.nodes, node_id, True)
         node_dbs[node].set_user('user_' + node)  # essentially override defaults
         node_dbs[node].set_computer('computer_' + node)  # essentially override defaults
