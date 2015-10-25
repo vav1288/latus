@@ -129,6 +129,7 @@ def wait_for_file(file_path):
 def get_app_data_folder(root):
     return os.path.join(root, 'appdata')
 
+
 class SetupSyncNode:
     def __init__(self, setup_id, key, root, cloud):
         self.node_id = setup_id
@@ -142,7 +143,7 @@ class SetupSyncNode:
         pref.set_node_id(self.node_id)
         pref.set_crypto_key(key)
         pref.set_verbose(True)
-        self.sync = latus.sync.Sync(self.app_data_folder, allow_always=True)
+        self.sync = latus.sync.Sync(self.app_data_folder)
 
     def get_sync(self):
         return self.sync
