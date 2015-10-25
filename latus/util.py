@@ -151,8 +151,10 @@ def make_dirs(path):
 
 
 def make_dir(path, hidden=False):
-    if not os.path.exists(path):
+    try:
         os.mkdir(path)
+    except FileExistsError:
+        pass
     if hidden:
         make_hidden(path)
 
