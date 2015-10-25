@@ -84,7 +84,6 @@ class LocalSync(SyncBase):
         pref = latus.preferences.Preferences(app_data_folder)
         latus_folder = pref.get_latus_folder()
         latus.util.make_dir(latus_folder)
-        latus.util.make_dir(latus.folders.latus_cloud_folder_from_latus_folder(latus_folder))
         self.observer.schedule(self, latus_folder, recursive=True)
 
     def get_type(self):
@@ -140,6 +139,7 @@ class LocalSync(SyncBase):
                 latus.logger.log.info('%s : %s deleted' % (pref.get_node_id(), local_full_path))
                 node_db.update(latus.miv.get_miv(), pref.get_node_id(), partial_path, None, None, None)
 
+
 class CloudSync(SyncBase):
     """
     Cloud Sync folder
@@ -176,7 +176,6 @@ class CloudSync(SyncBase):
 
     def do_sync(self):
         super().do_sync()
-        # event = None means do a rescan
         pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
         this_node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
@@ -234,7 +233,7 @@ class CloudSync(SyncBase):
 
 
 class Sync:
-    def __init__(self, app_data_folder, is_gui=True, allow_always=False):
+    def __init__(self, app_data_folder):
         self.app_data_folder = app_data_folder
         pref = latus.preferences.Preferences(self.app_data_folder)
         latus.logger.log.info('node_id : %s' % pref.get_node_id())
@@ -248,10 +247,6 @@ class Sync:
     def start(self):
         self.local_sync.start()
         self.cloud_sync.start()
-
-    def scan(self):
-        self.local_sync.dispatch(None)
-        self.cloud_sync.dispatch(None)
 
     def request_exit(self):
         pref = latus.preferences.Preferences(self.app_data_folder)
