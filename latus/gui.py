@@ -10,8 +10,25 @@ import latus.const
 import latus.crypto
 import latus.gui_wizard
 import latus.gui_preferences
-import latus.gui_management
+import latus.gui_node_management
 import latus.key_management
+
+
+class About(QtGui.QDialog):
+
+    def __init__(self, node_id):
+        super().__init__()
+        self.setWindowTitle(latus.const.NAME)
+        layout = QtGui.QGridLayout(self)
+        self.setLayout(layout)
+        layout.addWidget(QtGui.QLabel(latus.const.URL), 0, 0)
+        layout.addWidget(QtGui.QLabel('Latus Node ID:'), 2, 0)
+        node_id_widget = QtGui.QLineEdit(node_id)
+        node_id_widget.setReadOnly(True)
+        width = QtGui.QFontMetrics(QtGui.QFont()).width(node_id) * 1.05
+        node_id_widget.setMinimumWidth(width)
+        layout.addWidget(node_id_widget, 3, 0)
+        self.show()
 
 
 class LatusSystemTrayIcon(QtGui.QSystemTrayIcon):
@@ -60,14 +77,16 @@ class LatusSystemTrayIcon(QtGui.QSystemTrayIcon):
         latus.key_management.write_latus_key_gui(pref.get_crypto_key())
 
     def about(self):
-        QtGui.QMessageBox.about(QtGui.QMessageBox(), latus.const.NAME, latus.const.URL)
+        pref = latus.preferences.Preferences(self.latus_appdata_folder)
+        about_box = About(pref.get_node_id())
+        about_box.exec()
 
     def preferences(self):
         preferences_dialog = latus.gui_preferences.PreferencesDialog(self.latus_appdata_folder)
         preferences_dialog.exec_()
 
     def nodes(self):
-        management_dialog = latus.gui_management.ManagementDialog(self.latus_appdata_folder)
+        management_dialog = latus.gui_node_management.ManagementDialog(self.latus_appdata_folder)
         management_dialog.exec_()
 
     def exit(self):
