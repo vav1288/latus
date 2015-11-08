@@ -112,7 +112,7 @@ class LocalSync(SyncBase):
         for partial_path in local_walker:
             local_full_path = local_walker.full_path(partial_path)
             node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node_id, True)
-            execute, shared, cloud = node_db.get_folder_preferences(os.path.basename(local_full_path))
+            encrypt, shared, cloud = node_db.get_folder_preferences(os.path.basename(local_full_path))
             local_hash, _ = latus.hash.calc_sha512(local_full_path)
             if local_hash:
                 # todo: encrypt the hash?
@@ -125,8 +125,8 @@ class LocalSync(SyncBase):
                         latus.logger.log.info('%s : %s updated, size=%s, hash=%s' %
                                               (node_id, local_full_path, size, local_hash))
                         node_db.update(latus.miv.get_miv(), node_id, partial_path, size, local_hash, mtime)
-                        latus.logger.log.info('%s : %s preferences : execute=%s, shared=%s, cloud=%s' %
-                                              (node_id, local_full_path, execute, shared, cloud))
+                        latus.logger.log.info('%s : %s preferences : encrypt=%s, shared=%s, cloud=%s' %
+                                              (node_id, local_full_path, encrypt, shared, cloud))
                 if not os.path.exists(cloud_fernet_file):
                     latus.logger.log.info('%s : writing %s' % (node_id, cloud_fernet_file))
                     crypto.encrypt(pref.get_latus_folder(), partial_path, os.path.abspath(cloud_fernet_file))

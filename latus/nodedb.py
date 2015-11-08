@@ -295,7 +295,7 @@ class NodeDB:
         return last_seq
 
     def get_folder_preferences(self, name):
-        execute = None
+        encrypt = None
         shared = None
         cloud = None
         if self.db_engine:
@@ -305,7 +305,7 @@ class NodeDB:
             if result:
                 row = result.fetchone()
                 if row:
-                    execute = row[1]
+                    encrypt = row[1]
                     shared = row[2]
                     cloud = row[3]
                 else:
@@ -315,7 +315,7 @@ class NodeDB:
             conn.close()
         else:
             latus.logger.log.warn('get_folder_preferences: %s : %s : db_engine error' % (self.get_node_id(), name))
-        return execute, shared, cloud
+        return encrypt, shared, cloud
 
     def set_folder_preferences(self, name, encrypt, shared, cloud):
         if self.db_engine is None:
