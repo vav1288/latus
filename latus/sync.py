@@ -129,7 +129,7 @@ class LocalSync(SyncBase):
                                               (node_id, local_full_path, encrypt, shared, cloud))
                 if not os.path.exists(cloud_fernet_file):
                     latus.logger.log.info('%s : writing %s' % (node_id, cloud_fernet_file))
-                    crypto.encrypt(pref.get_latus_folder(), partial_path, os.path.abspath(cloud_fernet_file))
+                    crypto.encrypt(local_full_path, os.path.abspath(cloud_fernet_file))
             else:
                 latus.logger.log.warn('could not calculate hash for %s' % local_full_path)
 
