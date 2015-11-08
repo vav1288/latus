@@ -15,10 +15,10 @@ class CloudFolders:
 
     @property
     def cache(self):
-        return os.path.join(self.__latus_cloud_folder, 'cache')
+        return os.path.join(self.__latus_cloud_folder, '.cache')
 
     @property
     def nodes(self):
         # file system database
-        return os.path.join(self.__latus_cloud_folder, 'nodes')
+        return os.path.join(self.__latus_cloud_folder, '.nodes')
 
