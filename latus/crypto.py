@@ -42,7 +42,7 @@ class Crypto():
         self.__verbose = verbose
         self.__fernet = cryptography.fernet.Fernet(self.__key)
 
-    def compress(self, cwd, partial_path, out_path):
+    def encrypt(self, cwd, partial_path, out_path):
         token = None
         full_path = os.path.join(cwd, partial_path)
         latus.logger.log.info('compress : %s to %s' % (full_path, out_path))
@@ -58,7 +58,7 @@ class Crypto():
         else:
             latus.logger.log.warn('does not exist : %s' % partial_path)
 
-    def expand(self, in_path, out_path):
+    def decrypt(self, in_path, out_path):
         latus.logger.log.info('expand : %s to %s' % (in_path, out_path))
         success = False
         if os.path.exists(in_path):
