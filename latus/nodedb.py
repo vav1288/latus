@@ -343,5 +343,6 @@ def get_existing_nodes(cloud_node_db_folder):
 
 
 def get_node_id_from_db_file_path(db_file_path):
-    return os.path.basename(db_file_path)[:-3]  # assumes end is .xx, e.g. .db
+    ext_len = len(latus.const.DB_EXTENSION)
+    return os.path.basename(db_file_path)[:-ext_len]
 
