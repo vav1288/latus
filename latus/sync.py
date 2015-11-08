@@ -105,28 +105,31 @@ class LocalSync(SyncBase):
             return
         crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+        node_id = pref.get_node_id()
 
         # created or updated local files
         local_walker = latus.walker.Walker(pref.get_latus_folder())
         for partial_path in local_walker:
-            # use the local _file_ name to create the cloud _folder_ where the fernet and metadata reside
             local_full_path = local_walker.full_path(partial_path)
+            node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node_id, True)
+            execute, shared, cloud = node_db.get_folder_preferences(os.path.basename(local_full_path))
             local_hash, _ = latus.hash.calc_sha512(local_full_path)
             if local_hash:
                 # todo: encrypt the hash?
                 cloud_fernet_file = os.path.join(cloud_folders.cache, local_hash + self.fernet_extension)
-                node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id(), True)
                 most_recent_hash = node_db.get_most_recent_hash(partial_path)
                 if os.path.exists(local_full_path):
                     if local_hash != most_recent_hash:
                         mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(local_full_path))
                         size = os.path.getsize(local_full_path)
-                        latus.logger.log.info('%s : %s updated %s' % (pref.get_node_id(), local_full_path, local_hash))
-                        node_db.update(latus.miv.get_miv(), pref.get_node_id(), partial_path,
-                                     size, local_hash, mtime)
+                        latus.logger.log.info('%s : %s updated, size=%s, hash=%s' %
+                                              (node_id, local_full_path, size, local_hash))
+                        node_db.update(latus.miv.get_miv(), node_id, partial_path, size, local_hash, mtime)
+                        latus.logger.log.info('%s : %s preferences : execute=%s, shared=%s, cloud=%s' %
+                                              (node_id, local_full_path, execute, shared, cloud))
                 if not os.path.exists(cloud_fernet_file):
-                    latus.logger.log.info('%s : writing %s (%s)' % (pref.get_node_id(), partial_path, cloud_fernet_file))
-                    crypto.compress(pref.get_latus_folder(), partial_path, os.path.abspath(cloud_fernet_file))
+                    latus.logger.log.info('%s : writing %s' % (node_id, cloud_fernet_file))
+                    crypto.encrypt(pref.get_latus_folder(), partial_path, os.path.abspath(cloud_fernet_file))
             else:
                 latus.logger.log.warn('could not calculate hash for %s' % local_full_path)
 
@@ -214,7 +217,7 @@ class CloudSync(SyncBase):
                 if winning_file_info['hash'] != local_file_hash:
                     cloud_fernet_file = os.path.abspath(os.path.join(cloud_folders.cache, winning_file_info['hash'] + self.fernet_extension))
                     latus.logger.log.info('%s : %s changed %s - propagating to %s %s' % (pref.get_node_id(), db_node_id, partial_path, local_file_abs_path, winning_file_info['hash']))
-                    expand_ok = crypto.expand(cloud_fernet_file, local_file_abs_path)
+                    expand_ok = crypto.decrypt(cloud_fernet_file, local_file_abs_path)
                     last_seq = this_node_db.get_last_seq(partial_path)
                     if winning_file_info['seq'] != last_seq:
                         this_node_db.update(winning_file_info['seq'], winning_file_info['originator'],
