@@ -295,9 +295,9 @@ class NodeDB:
         return last_seq
 
     def get_folder_preferences(self, name):
-        encrypt = None
-        shared = None
-        cloud = None
+        encrypt = True
+        shared = False
+        cloud = False
         if self.db_engine:
             conn = self.db_engine.connect()
             command = self.folders_table.select().where(self.folders_table.c.name == name)
