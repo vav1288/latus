@@ -308,9 +308,13 @@ class NodeDB:
                     execute = row[1]
                     shared = row[2]
                     cloud = row[3]
+                else:
+                    latus.logger.log.info('get_folder_preferences: %s : %s : no row' % (self.get_node_id(), name))
+            else:
+                latus.logger.log.warn('get_folder_preferences: %s : %s : no result' % (self.get_node_id(), name))
             conn.close()
         else:
-            latus.logger.log.warn('get_folder_preferences: db_engine is None')
+            latus.logger.log.warn('get_folder_preferences: %s : %s : db_engine error' % (self.get_node_id(), name))
         return execute, shared, cloud
 
     def set_folder_preferences(self, name, encrypt, shared, cloud):
