@@ -11,7 +11,6 @@ import latus.util
 import latus.crypto
 import latus.preferences
 import latus.sync
-import test_latus.paths
 
 SRC = "src"
 DEST = "dest"
@@ -114,7 +113,7 @@ def get_python_exe():
     return os.path.join('venv', 'Scripts', 'python.exe')
 
 def start_cmd_line(node_id, test_name):
-    test_folder = os.path.join(test_latus.paths.get_data_root(), test_name)
+    test_folder = os.path.join(get_data_root(), test_name)
     node_folder = os.path.join(test_folder, node_id)
     latus.util.make_dirs(node_folder)
     latus_folder = os.path.join(node_folder, 'latus')
@@ -195,7 +194,7 @@ def clean():
     clean up the test data
     :return:
     """
-    path = test_latus.paths.get_data_root()
+    path = get_data_root()
     try_count = 10
     while os.path.exists(path) and try_count:
         try:
@@ -217,3 +216,15 @@ def write_to_file(p, contents):
         f.write(contents)
         f.close()
 
+
+sha512 = {
+    'a' : "1f40fc92da241694750979ee6cf582f2d5d7d28e18335de05abc54d0560e0f5302860c652bf08d560252aa5e74210546f369fbbbce8c12cfc7957b2652fe9a75"
+}
+
+
+def get_data_root():
+    return os.path.abspath(os.path.join('test_latus', 'data'))
+
+
+def root_test_gui_wizard():
+    return os.path.join('test_latus', 'test_gui_wizard')

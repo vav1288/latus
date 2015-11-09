@@ -2,9 +2,7 @@
 import os
 import multiprocessing
 import time
-import logging
 
-import test_latus.paths
 import test_latus.util
 
 import latus.nodedb

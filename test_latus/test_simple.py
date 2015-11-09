@@ -9,10 +9,11 @@ import latus.folders
 import latus.crypto
 import latus.preferences
 import test_latus.util
-import test_latus.paths
+
 
 def get_simple_root():
-    return os.path.join(test_latus.paths.get_data_root(), "simple")
+    return os.path.join(test_latus.util.get_data_root(), "simple")
+
 
 def test_simple(setup):
     """

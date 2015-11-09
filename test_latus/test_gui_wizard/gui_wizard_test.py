@@ -14,11 +14,11 @@ import latus.sync
 import latus.key_management
 import latus.folders
 
-import test_latus.paths
+import test_latus.util
 
 
 def get_gui_wizard_root():
-    return os.path.join(test_latus.paths.get_data_root(), "gui_wizard")
+    return os.path.join(test_latus.util.get_data_root(), "gui_wizard")
 
 
 def get_folders(node):

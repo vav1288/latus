@@ -2,7 +2,7 @@
 import os
 import subprocess
 
-import test_latus.paths
+import test_latus.util
 
 
 def test_gui_wizard_with_automa():
@@ -12,7 +12,7 @@ def test_gui_wizard_with_automa():
 
     # run automa with the automa script
 
-    automa_script = os.path.abspath(os.path.join(test_latus.paths.root_test_gui_wizard(), 'gui_wizard_automa.py'))
+    automa_script = os.path.abspath(os.path.join(test_latus.util.root_test_gui_wizard(), 'gui_wizard_automa.py'))
     pp = 'PYTHONPATH'
     save_python_path_env_var = os.getenv(pp)
     os.putenv(pp, os.path.join('c:', os.sep, 'Automa', 'library.zip'))

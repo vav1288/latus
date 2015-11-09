@@ -4,11 +4,10 @@ import os
 import latus.nodedb
 import latus.util
 
-import test_latus.paths
 import test_latus.util
 
 def get_node_db_general_root():
-    return os.path.join(test_latus.paths.get_data_root(), "get_node_db_general")
+    return os.path.join(test_latus.util.get_data_root(), "get_node_db_general")
 
 
 def test_node_db_general():

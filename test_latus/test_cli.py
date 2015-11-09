@@ -1,12 +1,11 @@
 import os
 import time
 import subprocess
-import test_latus.paths
 import test_latus.util
 
 
 def get_cli_root():
-    return os.path.join(test_latus.paths.get_data_root(), "cli")
+    return os.path.join(test_latus.util.get_data_root(), "cli")
 
 
 def test_sync_cli_invocation(setup):

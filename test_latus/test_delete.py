@@ -3,13 +3,12 @@ import os
 import time
 
 import test_latus.test_write
-import test_latus.paths
 import test_latus.util
 import latus.logger
 
 
 def get_delete_root():
-    return os.path.join(test_latus.paths.get_data_root(), "delete")
+    return os.path.join(test_latus.util.get_data_root(), "delete")
 
 
 def test_delete(setup):
