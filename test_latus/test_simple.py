@@ -8,7 +8,6 @@ import latus.logger
 import latus.folders
 import latus.crypto
 import latus.preferences
-import test_latus.create_files
 import test_latus.util
 import test_latus.paths
 
@@ -33,7 +32,7 @@ def test_simple(setup):
     for node in nodes:
         sync[node] = test_latus.util.SetupSyncNode(node, key, get_simple_root(), cloud)
     for node in nodes:
-        test_latus.create_files.write_to_file(sync[node].get_file_path(), node)
+        test_latus.util.write_to_file(sync[node].get_file_path(), node)
     for node in nodes:
         sync[node].get_sync().start()
 

@@ -1,7 +1,6 @@
 import os
 import time
 import subprocess
-import test_latus.create_files
 import test_latus.paths
 import test_latus.util
 

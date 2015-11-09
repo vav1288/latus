@@ -3,7 +3,6 @@ import os
 
 import logging
 import latus.logger
-import test_latus.create_files
 import test_latus.paths
 
 

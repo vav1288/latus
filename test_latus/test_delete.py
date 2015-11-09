@@ -3,7 +3,6 @@ import os
 import time
 
 import test_latus.test_write
-import test_latus.create_files
 import test_latus.paths
 import test_latus.util
 import latus.logger
@@ -29,7 +28,7 @@ def test_delete(setup):
     file_path_b = os.path.join(folder_b, file_a)
 
     latus.logger.log.info("*************** STARTING WRITE *************")
-    test_latus.create_files.write_to_file(os.path.join(folder_a, file_a), 'a')
+    test_latus.util.write_to_file(os.path.join(folder_a, file_a), 'a')
     test_latus.util.wait_on_nodes(log_folders)
     latus.logger.log.info("*************** ENDING WRITE *************")
 
