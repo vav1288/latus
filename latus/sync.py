@@ -111,7 +111,7 @@ class LocalSync(SyncBase):
         for partial_path in local_walker:
             local_full_path = local_walker.full_path(partial_path)
             node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node_id, True)
-            encrypt, shared, cloud = node_db.get_folder_preferences(os.path.basename(local_full_path))
+            encrypt, shared, cloud = node_db.get_folder_preferences_from_path(local_full_path)
             local_hash, _ = latus.hash.calc_sha512(local_full_path)
             if local_hash:
                 # todo: encrypt the hash?
@@ -212,29 +212,34 @@ class CloudSync(SyncBase):
 
         for partial_path in winners:
             winning_file_info = winners[partial_path]
-            local_file_abs_path = os.path.abspath(os.path.join(pref.get_latus_folder(), partial_path))
-            if os.path.exists(local_file_abs_path):
-                local_file_hash, _ = latus.hash.calc_sha512(local_file_abs_path)  # todo: get this pre-computed from the db
+            local_file_path = os.path.join(pref.get_latus_folder(), partial_path)
+            if os.path.exists(local_file_path):
+                local_file_hash, _ = latus.hash.calc_sha512(local_file_path)  # todo: get this pre-computed from the db
             else:
                 local_file_hash = None
             if winning_file_info['hash']:
                 if winning_file_info['hash'] != local_file_hash:
                     cloud_fernet_file = os.path.abspath(os.path.join(cloud_folders.cache, winning_file_info['hash'] + latus.const.ENCRYPTION_EXTENSION))
-                    latus.logger.log.info('%s : %s changed %s - propagating to %s %s' % (pref.get_node_id(), db_node_id, partial_path, local_file_abs_path, winning_file_info['hash']))
-                    expand_ok = crypto.decrypt(cloud_fernet_file, local_file_abs_path)
+                    latus.logger.log.info('%s : %s changed %s - propagating to %s %s' % (pref.get_node_id(), db_node_id, partial_path, local_file_path, winning_file_info['hash']))
+                    encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(local_file_path)
+                    if encrypt:
+                        expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
+                    else:
+                        cloud_file = os.path.abspath(os.path.join(cloud_folders.cache, winning_file_info['hash'] + latus.const.UNENCRYPTED_EXTENSION))
+                        shutil.copy2(cloud_file, local_file_path)
                     last_seq = this_node_db.get_last_seq(partial_path)
                     if winning_file_info['seq'] != last_seq:
                         this_node_db.update(winning_file_info['seq'], winning_file_info['originator'],
-                                               winning_file_info['path'], winning_file_info['size'],
-                                               winning_file_info['hash'], winning_file_info['mtime'])
+                                            winning_file_info['path'], winning_file_info['size'],
+                                            winning_file_info['hash'], winning_file_info['mtime'])
             elif local_file_hash:
                 latus.logger.log.info('%s : %s deleted %s' % (pref.get_node_id(), db_node_id, partial_path))
                 try:
-                    if os.path.exists(local_file_abs_path):
-                        send2trash.send2trash(local_file_abs_path)
+                    if os.path.exists(local_file_path):
+                        send2trash.send2trash(local_file_path)
                 except OSError:
                     # fallback
-                    latus.logger.log.warn('%s : send2trash failed on %s' % (pref.get_node_id(), local_file_abs_path))
+                    latus.logger.log.warn('%s : send2trash failed on %s' % (pref.get_node_id(), local_file_path))
                 this_node_db.update(winning_file_info['seq'], winning_file_info['originator'],
                                     winning_file_info['path'], None, None, None)
 
