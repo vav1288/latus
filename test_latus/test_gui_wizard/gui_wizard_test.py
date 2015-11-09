@@ -14,7 +14,6 @@ import latus.sync
 import latus.key_management
 import latus.folders
 
-import test_latus.create_files
 import test_latus.paths
 
 
