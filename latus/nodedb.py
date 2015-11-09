@@ -294,13 +294,16 @@ class NodeDB:
         conn.close()
         return last_seq
 
-    def get_folder_preferences(self, name):
+    def get_folder_preferences_from_path(self, path):
+        return self.get_folder_preferences_from_folder(os.path.basename(path))
+
+    def get_folder_preferences_from_folder(self, folder):
         encrypt = True
         shared = False
         cloud = False
         if self.db_engine:
             conn = self.db_engine.connect()
-            command = self.folders_table.select().where(self.folders_table.c.name == name)
+            command = self.folders_table.select().where(self.folders_table.c.name == folder)
             result = conn.execute(command)
             if result:
                 row = result.fetchone()
@@ -309,12 +312,12 @@ class NodeDB:
                     shared = row[2]
                     cloud = row[3]
                 else:
-                    latus.logger.log.info('get_folder_preferences: %s : %s : no row' % (self.get_node_id(), name))
+                    latus.logger.log.info('get_folder_preferences: %s : %s : no row' % (self.get_node_id(), folder))
             else:
-                latus.logger.log.warn('get_folder_preferences: %s : %s : no result' % (self.get_node_id(), name))
+                latus.logger.log.warn('get_folder_preferences: %s : %s : no result' % (self.get_node_id(), folder))
             conn.close()
         else:
-            latus.logger.log.warn('get_folder_preferences: %s : %s : db_engine error' % (self.get_node_id(), name))
+            latus.logger.log.warn('get_folder_preferences: %s : %s : db_engine error' % (self.get_node_id(), folder))
         return encrypt, shared, cloud
 
     def set_folder_preferences(self, name, encrypt, shared, cloud):

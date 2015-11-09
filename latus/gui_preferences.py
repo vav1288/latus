@@ -64,7 +64,7 @@ class PreferencesDialog(QtGui.QDialog):
             folder_preferences_layout.addWidget(QtGui.QLabel(folder))
             col = 1
             self.check_boxes[folder] = []
-            for attribute in self.node_db.get_folder_preferences(folder):
+            for attribute in self.node_db.get_folder_preferences_from_folder(folder):
                 s = QtCore.Qt.CheckState.Unchecked
                 if attribute:
                     s = QtCore.Qt.CheckState.Checked
@@ -109,7 +109,7 @@ class PreferencesDialog(QtGui.QDialog):
             self.pref.set_cloud_root(self.cloud_folder.get())
         for folder in self.folders:
             cb_states = tuple([cb.isChecked() for cb in self.check_boxes[folder]])
-            current_preferences = self.node_db.get_folder_preferences(folder)
+            current_preferences = self.node_db.get_folder_preferences_from_folder(folder)
             print(cb_states)
             if current_preferences != cb_states:
                 print('new prefernces for %s : %s --> %s' % (folder, str(current_preferences), str(cb_states)))
