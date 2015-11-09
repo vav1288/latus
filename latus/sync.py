@@ -219,13 +219,17 @@ class CloudSync(SyncBase):
                 local_file_hash = None
             if winning_file_info['hash']:
                 if winning_file_info['hash'] != local_file_hash:
-                    cloud_fernet_file = os.path.abspath(os.path.join(cloud_folders.cache, winning_file_info['hash'] + latus.const.ENCRYPTION_EXTENSION))
-                    latus.logger.log.info('%s : %s changed %s - propagating to %s %s' % (pref.get_node_id(), db_node_id, partial_path, local_file_path, winning_file_info['hash']))
+                    cloud_fernet_file = os.path.join(cloud_folders.cache,
+                                                     winning_file_info['hash'] + latus.const.ENCRYPTION_EXTENSION)
+                    latus.logger.log.info('%s : %s changed %s - propagating to %s %s' %
+                                          (pref.get_node_id(), db_node_id, partial_path, local_file_path,
+                                           winning_file_info['hash']))
                     encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(local_file_path)
                     if encrypt:
                         expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
                     else:
-                        cloud_file = os.path.abspath(os.path.join(cloud_folders.cache, winning_file_info['hash'] + latus.const.UNENCRYPTED_EXTENSION))
+                        cloud_file = os.path.join(cloud_folders.cache,
+                                                  winning_file_info['hash'] + latus.const.UNENCRYPTED_EXTENSION)
                         shutil.copy2(cloud_file, local_file_path)
                     last_seq = this_node_db.get_last_seq(partial_path)
                     if winning_file_info['seq'] != last_seq:
