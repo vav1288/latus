@@ -11,6 +11,8 @@ import latus.util
 import latus.crypto
 import latus.preferences
 import latus.sync
+import latus.nodedb
+import latus.folders
 
 SRC = "src"
 DEST = "dest"
@@ -153,7 +155,8 @@ def get_app_data_folder(root):
 
 
 class SetupSyncNode:
-    def __init__(self, setup_id, key, root, cloud):
+    def __init__(self, setup_id, key, root, cloud, sub_folder=None):
+        self.sub_folder = sub_folder
         self.node_id = setup_id
         node_folder = os.path.join(root, self.node_id)  # give us our own folder
         self.app_data_folder = get_app_data_folder(node_folder)
@@ -180,13 +183,24 @@ class SetupSyncNode:
         return self.node_id + '.txt'
 
     def get_file_path(self):
-        return os.path.join(self.latus_folder, self.get_file_name())
+        if self.sub_folder:
+            p = os.path.join(self.latus_folder, self.sub_folder, self.get_file_name())
+        else:
+            p = os.path.join(self.latus_folder, self.get_file_name())
+        return p
 
     def get_latus_folder(self):
         return self.latus_folder
 
     def get_cloud_root(self):
         return self.cloud_root
+
+    def set_folder_preferences(self, encrypt, shared, cloud):
+        if self.sub_folder:
+            pref = latus.preferences.Preferences(self.app_data_folder)
+            folders = latus.folders.CloudFolders(pref.get_cloud_root())
+            node_db = latus.nodedb.NodeDB(folders.nodes, pref.get_node_id(), True)
+            node_db.set_folder_preferences(self.sub_folder, encrypt, shared, cloud)
 
 
 def clean():
