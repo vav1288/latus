@@ -1,4 +1,5 @@
 c:\Python34\python c:\Python34\Tools\Scripts\pyvenv.py --clear venv
+venv\Scripts\python -m pip install --upgrade pip
 call venv\Scripts\activate.bat
 pip install setuptools -U
 pip install sqlalchemy
