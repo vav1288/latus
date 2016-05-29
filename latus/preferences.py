@@ -6,8 +6,6 @@ import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.ext.declarative
 
-import rsa
-
 import latus.util
 import latus.const
 import latus.logger

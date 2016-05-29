@@ -1,20 +1,15 @@
 c:\Python34\python c:\Python34\Tools\Scripts\pyvenv.py --clear venv
+venv\Scripts\python -m pip install --upgrade pip
 call venv\Scripts\activate.bat
-pip.exe install cryptography
-pip.exe install sqlalchemy
-pip.exe install send2trash
-pip.exe install pathtools
-pip.exe install pathlib
-pip.exe install watchdog
-pip.exe install rsa
-pip.exe install pytest
-pip.exe install dirsync
-pip.exe install python-dateutil
-pip.exe install requests
-pip.exe install PyAutoGUI
-REM packages not in pypi (can not be installed with pip):
-easy_install.exe third_party_installers\pywin32-219.win-amd64-py3.4.exe
-REM
-REM PySide not installing this way so use PySide-1.2.2.win-amd64-py3.4.exe
-REM pip.exe install PySide
-easy_install.exe third_party_installers\PySide-1.2.2-py3.4-win-amd64.egg
+pip install setuptools -U
+pip install sqlalchemy
+pip install cryptography
+pip install watchdog
+pip install send2trash
+pip install requests
+pip install python-dateutil
+pip install pytest
+REM packages that can not be installed with pip:
+easy_install.exe third_party_installers\pywin32-220.win-amd64-py3.4.exe
+pip.exe install third_party_installers\PySide-1.2.2-cp34-none-win_amd64.whl
+deactivate

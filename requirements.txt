@@ -1,18 +1,2 @@
 
-# packages that relate to each other are grouped
-
-cryptography
-six
-cffi
-pycparser
-
-win32api
-win32con
-
-# various other packages
 sqlalchemy
-send2trash
-pathtools
-watchdog
-rsa
-pyside
