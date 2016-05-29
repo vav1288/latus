@@ -1,6 +1,5 @@
 
 import os
-import win32api
 import threading
 import time
 import glob
@@ -58,6 +57,7 @@ class FolderWizard(threading.Thread):
         # Search more possible locations (will take longer).
         roots = [home_folder]
         if latus.util.is_windows():
+            import win32api
             drives = win32api.GetLogicalDriveStrings().split('\0')[:-1]
             for drive in drives:
                 roots.append(os.path.join(drive, os.sep))
