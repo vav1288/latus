@@ -135,7 +135,14 @@ def __get_os_appdata_roaming_folder():
 def __get_os_appdata_local_folder():
     # Things stored here: logs, etc.
     # Can be larger files.
-    return os.environ['LOCALAPPDATA']
+    key = 'LOCALAPPDATA'
+    try:
+        local_app_data = os.environ[key]
+    except KeyError:
+        print('No %s' % key)
+        local_app_data = None
+        raise
+    return local_app_data
 
 
 def make_dirs(path):
