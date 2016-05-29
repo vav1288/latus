@@ -11,4 +11,5 @@ REM copy the launcher from wosnap and rename it to this project
 copy /Y ..\wosnap\launch\Debug\launch.exe latus.exe
 REM
 REM create the nsis installer
+mkdir dist
 "C:\Program Files (x86)\NSIS\makensis" latus.nsi
