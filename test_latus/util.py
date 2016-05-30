@@ -128,7 +128,7 @@ def start_cmd_line(node_id, test_name):
     cmd += ['-l', latus_folder]
     # all nodes use same folder to emulate cloud sync
     cmd += ['-c', cloud_folder]
-    cmd += ['-a', appdata_folder]
+    cmd += ['--config', appdata_folder]
     cmd += ['-k', 'dQf6js1s-CcVRQMnt6t4w7fOdVJAzqhvcQNsHnvuQNQ=']
     cmd += ['-n', node_id]
     cmd += ['-cli']
