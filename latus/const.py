@@ -1,5 +1,6 @@
 
 # not sure if this is terribly pythonic, but it's pretty clean ...
+COMPANY = 'abel'
 NAME = 'latus'
 LOG_FILE = NAME + '.log'
 LATUS_KEY_FILE_NAME = 'latus.lky'
