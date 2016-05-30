@@ -2,12 +2,13 @@ import os
 import platform
 import uuid
 import datetime
+import appdirs
 
 import latus.logger
 import latus.const
 
-WINDOWS_SEP = "\\"
-LINUX_SEP = '/'
+#WINDOWS_SEP = "\\"
+#LINUX_SEP = '/'
 
 
 def is_windows():
@@ -33,12 +34,12 @@ if is_windows():
     import win32con
 
 
-def get_folder_sep():
-    if is_windows():
-        sep = WINDOWS_SEP
-    else:
-        sep = LINUX_SEP
-    return sep[-1]
+#def get_folder_sep():
+#    if is_windows():
+#        sep = WINDOWS_SEP
+#    else:
+#        sep = LINUX_SEP
+#    return sep[-1]
 
 
 def get_long_abs_path(in_path):
@@ -52,7 +53,7 @@ def get_long_abs_path(in_path):
     else:
         abs_path = os.path.abspath(in_path)
     if os.path.isdir(abs_path):
-        abs_path += get_folder_sep()
+        abs_path += os.sep
     return abs_path
 
 
@@ -68,7 +69,7 @@ def get_abs_path_wo_drive(p):
     is_dir = os.path.isdir(p)
     p = remove_drive_spec(p)
     if is_dir:
-        p += get_folder_sep()
+        p += os.sep
     return p
 
 
@@ -110,39 +111,39 @@ def make_hidden(in_path):
         win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
 
 
-def get_latus_appdata_roaming_folder():
-    return os.path.join(__get_os_appdata_roaming_folder(), latus.const.NAME)
+#def get_latus_appdata_roaming_folder():
+#    return appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)
 
 
-def get_latus_appdata_local_folder():
-    return os.path.join(__get_os_appdata_local_folder(), latus.const.NAME)
+#def get_latus_appdata_local_folder():
+#    return appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)
+#    return os.path.join(__get_os_appdata_local_folder(), latus.const.NAME)
 
 
-def get_latus_log_folder():
-    # use appdata local (log files can get big, so they shouldn't be in roaming)
-    return os.path.join(__get_os_appdata_local_folder(), latus.const.NAME, 'log')
+#def get_latus_log_folder():
+#    # use appdata local (log files can get big, so they shouldn't be in roaming)
+#    return os.path.join(__get_os_appdata_local_folder(), latus.const.NAME, 'log')
 
 
-def __get_os_appdata_roaming_folder():
-    # Things stored here: preferences, etc.
-    # Usually smaller files.
-    #
-    # I'd like to use winpaths.get_local_appdata() but it doesn't seem to work with Python 3, so I'll
-    # rely on the environment variable.
-    return os.environ['APPDATA']
+#def __get_os_appdata_roaming_folder():
+#    # Things stored here: preferences, etc.
+#    #
+#    # I'd like to use winpaths.get_local_appdata() but it doesn't seem to work with Python 3, so I'll
+#    # rely on the environment variable.
+#    return os.environ['APPDATA']
 
 
-def __get_os_appdata_local_folder():
-    # Things stored here: logs, etc.
-    # Can be larger files.
-    key = 'LOCALAPPDATA'
-    try:
-        local_app_data = os.environ[key]
-    except KeyError:
-        print('No %s' % key)
-        local_app_data = None
-        raise
-    return local_app_data
+#def __get_os_appdata_local_folder():
+#    # Things stored here: logs, etc.
+#    # Can be larger files.
+#    key = 'LOCALAPPDATA'
+#    try:
+#        local_app_data = os.environ[key]
+#    except KeyError:
+#        print('No %s' % key)
+#        local_app_data = None
+#        raise
+#    return local_app_data
 
 
 def make_dirs(path):
