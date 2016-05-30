@@ -158,7 +158,7 @@ class CloudRootPage(QtGui.QWizardPage):
                 self.progress_line.setCursorPosition(0)  # left justify
                 self.prior_time = t
         else:
-            self.progress_line.setText('Search complete.  Please select a path below.')
+            self.progress_line.setText('Search complete.')
 
     def wizard_alert(self, folders):
         item_count = 0
