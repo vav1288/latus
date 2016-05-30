@@ -44,6 +44,7 @@ class Preferences:
         self.__Session = sqlalchemy.orm.sessionmaker(bind=self.__db_engine)
 
     def __pref_set(self, key, value):
+        latus.logger.log.debug('pref_set : %s to %s' % (str(key), str(value)))
         session = self.__Session()
         pref_table = PreferencesTable(key=key, value=value, datetime=datetime.datetime.utcnow())
         q = session.query(PreferencesTable).filter_by(key=key).first()
@@ -54,6 +55,7 @@ class Preferences:
         session.close()
 
     def __pref_get(self, key):
+        latus.logger.log.debug('pref_get : %s' % str(key))
         session = self.__Session()
         row = session.query(PreferencesTable).filter_by(key=key).first()
         if row:
@@ -61,6 +63,7 @@ class Preferences:
         else:
             value = None
         session.close()
+        latus.logger.log.debug('pref_get : %s' % str(value))
         return value
 
     def set_crypto_key(self, key):
