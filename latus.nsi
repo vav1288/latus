@@ -2,8 +2,8 @@
 # http://nsis.sourceforge.net/A_simple_installer_with_start_menu_shortcut_and_uninstaller
 
 !define APPNAME "latus"
-!define COMPANYNAME "latus"
-!define DESCRIPTION "secure and unlimited cloud storage"
+!define COMPANYNAME "abel"
+!define DESCRIPTION "secure and unlimited sync"
 # These three must be integers
 !define VERSIONMAJOR 0
 !define VERSIONMINOR 0
