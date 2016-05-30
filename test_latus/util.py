@@ -112,7 +112,12 @@ def wait_for_node(log_folder):
 
 
 def get_python_exe():
-    return os.path.join('venv', 'Scripts', 'python.exe')
+    if latus.util.is_windows():
+        bin_folder = 'Scripts'
+    else:
+        bin_folder = 'bin'
+    return os.path.join('venv', bin_folder, 'python')
+
 
 def start_cmd_line(node_id, test_name):
     test_folder = os.path.join(get_data_root(), test_name)
