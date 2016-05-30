@@ -30,3 +30,5 @@ installers/installer.cfg
 dist/
 
 python34\
+
+*.lky
