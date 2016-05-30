@@ -126,9 +126,10 @@ class CloudRootPage(QtGui.QWizardPage):
         self.manual_button.pressed.connect(self.manual_cloud_folder_entry)
 
         layout = QtGui.QGridLayout()
-        layout.addWidget(self.manual_button, 0, 0)
+        layout.addWidget(self.cloud_folder_list, 0, 0)
         layout.addWidget(self.progress_line, 1, 0)
-        layout.addWidget(self.cloud_folder_list, 2, 0)
+        layout.addWidget(self.manual_button, 2, 0)
+
         self.setLayout(layout)
 
         # use this for the value that's been selected
