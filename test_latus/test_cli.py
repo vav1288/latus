@@ -18,7 +18,7 @@ def test_sync_cli_invocation(setup):
     cmd = [python_exe, 'main.py']
     cmd += ['-l', os.path.join(sync_folder, 'latus')]
     cmd += ['-c', os.path.join(sync_folder, 'cloud')]
-    cmd += ['-a', os.path.join(sync_folder, 'appdata')]
+    cmd += ['--config', os.path.join(sync_folder, 'config')]
     cmd += ['-k', 'dQf6js1s-CcVRQMnt6t4w7fOdVJAzqhvcQNsHnvuQNQ=']
     cmd += ['-n', 'x']
     cmd += ['-cli']
