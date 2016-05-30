@@ -21,6 +21,7 @@ import os
 import sys
 import logging
 import argparse
+import appdirs
 
 import latus
 import latus.cli
@@ -49,7 +50,7 @@ def main():
     parser = argparse.ArgumentParser(description="efficient and secure cloud-based folder sync")
     parser.add_argument('-l', '--latus', metavar='path', help="latus folder")
     parser.add_argument('-c', '--cloud', metavar='path', help="cloud folder")
-    parser.add_argument('-a', '--appdata', metavar='path', help="OS's appdata folder")
+    parser.add_argument('--config', metavar='path', help="OS's config folder")
     parser.add_argument('-n', '--node_id', nargs='?', help="Node ID value (omit value to automatically generate new one)",
                         default=None, const=True)
     parser.add_argument('-i', '--init', action='store_true', help="initialize perferences")
@@ -83,15 +84,14 @@ def set_from_args(args):
         latus.logger.set_console_log_level(logging.INFO)
     latus.logger.log.info('log folder : %s' % log_folder)
 
-    # determine appdata (roaming) folder
-    if args.appdata:
-        # particularly useful for testing ( args.ar is the appdata roaming folder )
-        latus_appdata_roaming_folder = os.path.join(args.appdata, latus.const.NAME)
+    if args.config:
+        # useful for testing
+        latus_config_folder = os.path.join(args.config, latus.const.COMPANY, latus.const.NAME)
     else:
-        latus_appdata_roaming_folder = latus.util.get_latus_appdata_roaming_folder()  # default
-    latus.logger.log.info('latus_appdata_roaming_folder : %s' % latus_appdata_roaming_folder)
+        latus_config_folder = appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)  # default
+    latus.logger.log.info('latus_config_folder : %s' % latus_config_folder)
 
-    pref = latus.preferences.Preferences(latus_appdata_roaming_folder, args.init)
+    pref = latus.preferences.Preferences(latus_config_folder, args.init)
 
     # determine crypto key
     if args.key:
@@ -125,7 +125,7 @@ def set_from_args(args):
     if not node_id:
         pref.set_node_id(latus.util.new_node_id())
 
-    return latus_appdata_roaming_folder
+    return latus_config_folder
 
 
 if __name__ == "__main__":
