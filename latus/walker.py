@@ -3,8 +3,9 @@ import os
 from . import util
 from latus import const
 
+
 class Walker:
-    def __init__(self, root, do_dirs=False, ignore=[]):
+    def __init__(self, root, do_dirs=False, ignore=None):
         """
         root: the directory to start the walk from
         do_dirs: if True, return directories (as opposed to only files).
@@ -12,7 +13,10 @@ class Walker:
         """
         self.root = root
         self.do_dirs = do_dirs
-        self.ignore = ignore
+        if ignore is None:
+            self.ignore = []
+        else:
+            self.ignore = ignore
         self.keyboard_hit_exit = False
 
     def __iter__(self):
@@ -23,7 +27,7 @@ class Walker:
         full_abs_path = os.path.abspath(p)
         root_abs_path = os.path.abspath(self.root)
         partial_path = full_abs_path.replace(root_abs_path, "")
-        if partial_path[0] == util.get_folder_sep():
+        if partial_path[0] == os.sep:
             # Generally these strings end up with an extra separator at the start we need to remove.
             # This should cover both Windows and Linux.
             partial_path = partial_path[1:]
@@ -40,8 +44,8 @@ class Walker:
             if self.do_dirs:
                 # do the directories/folders first
                 for name in dirnames:
-                    # note the separator delineates a folder/directory
-                    partial_path = self.create_partial_path(name, dirpath) + util.get_folder_sep()
+                    # the separator delineates a folder/directory
+                    partial_path = self.create_partial_path(name, dirpath) + os.sep
                     yield partial_path
 
             for name in filenames:
