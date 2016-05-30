@@ -1,9 +1,11 @@
 
 import os
+import appdirs
 import logging
 import logging.handlers
 
 import latus.util
+import latus.const
 
 LOG_FILE_NAME = 'latus.log'
 LOGGER_NAME_BASE = 'latus'
@@ -19,7 +21,7 @@ def init(log_folder_param=None):
     log_folder = log_folder_param
 
     if not log_folder:
-        log_folder = latus.util.get_latus_log_folder()
+        log_folder = appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY)
 
     latus.util.make_dirs(log_folder)
 
