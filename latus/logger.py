@@ -20,6 +20,7 @@ log_folder = None
 #
 # message_type is things like sync, file_write, etc.
 
+
 def init(log_folder_param=None):
     global fh, ch, log, log_folder
     log_folder = log_folder_param

@@ -1,1 +1,1 @@
-venv\scripts\python create_osnapy.py
+venv\scripts\python -m osnap.osnapy

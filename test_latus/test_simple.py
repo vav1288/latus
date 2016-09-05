@@ -1,7 +1,6 @@
 
 import os
 import multiprocessing
-import time
 
 import latus.const
 import latus.sync
