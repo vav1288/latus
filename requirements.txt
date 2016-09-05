@@ -8,3 +8,4 @@ requests
 send2trash
 sqlalchemy
 watchdog
+pypiwin32 ; sys_platform == 'win32'

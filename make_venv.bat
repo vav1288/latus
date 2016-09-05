@@ -1,6 +1,3 @@
-REM minimum needed for osnap to run from this venv
-c:\Python35\python c:\Python35\Tools\Scripts\pyvenv.py --clear venv
-venv\Scripts\python -m pip install --upgrade pip
-call venv\Scripts\activate.bat
-pip install appdirs
-deactivate
+\Users\james\AppData\Local\Programs\Python\Python35\python.exe \Users\james\AppData\Local\Programs\Python\Python35\Tools\scripts\pyvenv.py --clear venv
+venv\Scripts\pip3 install -U pip
+venv\Scripts\pip3 install -U setuptools
