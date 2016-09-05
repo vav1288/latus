@@ -1,0 +1,10 @@
+appdirs
+cryptography
+osnap
+python-dateutil
+PyQt5
+pytest
+requests
+send2trash
+sqlalchemy
+watchdog

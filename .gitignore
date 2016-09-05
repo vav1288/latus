@@ -18,7 +18,6 @@ data/
 #
 # compiled files
 *.pyc
-__pycache__/
 #
 # using MANIFEST.in to drive builds (MANIFEST created programmatically)
 MANIFEST
@@ -29,6 +28,9 @@ installers/installer.cfg
 # don't put the big dist files in the repo
 dist/
 
-python34\
-
 *.lky
+osnapy
+cache
+venv
+.cache
+test_latus/data

@@ -1,6 +1,7 @@
 import sys
 
-from PySide import *
+from PyQt5.QtWidgets import QGridLayout, QLabel, QLineEdit, QSystemTrayIcon, QMenu, QDialog, QApplication, QMessageBox
+from PyQt5.QtGui import QFontMetrics, QFont, QIcon, QPixmap
 
 import latus.logger
 import latus.sync
@@ -14,35 +15,35 @@ import latus.gui_node_management
 import latus.key_management
 
 
-class About(QtGui.QDialog):
+class About(QDialog):
 
     def __init__(self, node_id):
-        super().__init__()
+        super().__init__()  # todo: fill in parameter?
         self.setWindowTitle(latus.const.NAME)
-        layout = QtGui.QGridLayout(self)
+        layout = QGridLayout(self)
         self.setLayout(layout)
-        layout.addWidget(QtGui.QLabel(latus.const.URL), 0, 0)
-        layout.addWidget(QtGui.QLabel('Latus Node ID:'), 2, 0)
-        node_id_widget = QtGui.QLineEdit(node_id)
+        layout.addWidget(QLabel(latus.const.URL), 0, 0)
+        layout.addWidget(QLabel('Latus Node ID:'), 2, 0)
+        node_id_widget = QLineEdit(node_id)
         node_id_widget.setReadOnly(True)
-        width = QtGui.QFontMetrics(QtGui.QFont()).width(node_id) * 1.05
+        width = QFontMetrics(QFont()).width(node_id) * 1.05
         node_id_widget.setMinimumWidth(width)
         layout.addWidget(node_id_widget, 3, 0)
         self.show()
 
 
-class LatusSystemTrayIcon(QtGui.QSystemTrayIcon):
+class LatusSystemTrayIcon(QSystemTrayIcon):
 
     def __init__(self, app, latus_appdata_folder, parent=None):
         latus.logger.log.info('starting LatusSystemTrayIcon')
         self.app = app
 
         import icons.icons  # actually used for QPixmap
-        icon = QtGui.QIcon(QtGui.QPixmap(':active.png'))
+        icon = QIcon(QPixmap(':active.png'))
         super().__init__(icon, parent)
         self.latus_appdata_folder = latus_appdata_folder
 
-        menu = QtGui.QMenu(parent)
+        menu = QMenu(parent)
         about_action = menu.addAction("Import Latus Key")
         about_action.triggered.connect(self.import_latus_key)
         about_action = menu.addAction("Export Latus Key")
@@ -64,7 +65,7 @@ class LatusSystemTrayIcon(QtGui.QSystemTrayIcon):
         self.sync.start()
 
     def show(self):
-        QtGui.QSystemTrayIcon.show(self)
+        QSystemTrayIcon.show(self)
 
     def import_latus_key(self):
         key = latus.key_management.read_latus_key_gui()
@@ -94,7 +95,7 @@ class LatusSystemTrayIcon(QtGui.QSystemTrayIcon):
         self.hide()
         if self.sync:
             self.sync.request_exit()
-        QtGui.QApplication.exit()
+        QApplication.exit()  # todo: what should this parameter be?
 
 
 def main(latus_appdata_folder):
@@ -104,7 +105,7 @@ def main(latus_appdata_folder):
     pref = latus.preferences.Preferences(latus_appdata_folder)
     latus.logger.log.info("latus_app_data: %s" % latus_appdata_folder)
 
-    app = QtGui.QApplication(sys.argv)  # need this even for the GUIWizard
+    app = QApplication(sys.argv)  # need this even for the GUIWizard
 
     if not pref.folders_are_set():
         latus.logger.log.info('not all preferences are set - starting WizardGUI')
@@ -120,7 +121,7 @@ def main(latus_appdata_folder):
     else:
         msg = 'Incomplete configuration.\n\nPlease re-run Latus and complete the Latus Setup Wizard.\n\nExiting ...'
 
-        w = QtGui.QMessageBox()
+        w = QMessageBox()
         w.setWindowTitle(latus.const.NAME)
         w.setText(msg)
         w.exec()

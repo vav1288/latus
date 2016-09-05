@@ -44,7 +44,7 @@ class Crypto():
 
     def encrypt(self, in_path, out_path):
         token = None
-        latus.logger.log.info('compress : %s to %s' % (in_path, out_path))
+        latus.logger.log.info('encrypt : %s to %s' % (in_path, out_path))
         if os.path.exists(in_path):
             with open(in_path, 'rb') as in_file:
                 try:
@@ -58,7 +58,7 @@ class Crypto():
             latus.logger.log.warn('does not exist : %s' % in_path)
 
     def decrypt(self, in_path, out_path):
-        latus.logger.log.info('expand : %s to %s' % (in_path, out_path))
+        latus.logger.log.info('decrypt : %s to %s' % (in_path, out_path))
         success = False
         if os.path.exists(in_path):
             with open(in_path, 'rb') as in_file:

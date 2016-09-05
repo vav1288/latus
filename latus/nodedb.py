@@ -4,11 +4,12 @@ import datetime
 import platform
 import getpass
 import glob
+import time
 
 import sqlalchemy
 import sqlalchemy.exc
 
-import latus.const
+from latus.const import DB_EXTENSION, ChangeAttributes
 import latus.logger
 import latus.util
 
@@ -30,7 +31,7 @@ class NodeDB:
         self.node_id = node_id
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
         # writing to the DB since there is only one writer.
-        self.database_file_name = node_id + latus.const.DB_EXTENSION
+        self.database_file_name = node_id + DB_EXTENSION
         self.sqlite_file_path = os.path.join(cloud_node_db_folder, self.database_file_name)
 
         if not os.path.exists(self.sqlite_file_path) and not write_flag:
@@ -55,6 +56,8 @@ class NodeDB:
                                              sqlalchemy.Column('index', sqlalchemy.Integer, primary_key=True),
                                              sqlalchemy.Column('seq', sqlalchemy.Float, index=True),
                                              sqlalchemy.Column('originator', sqlalchemy.String),
+                                             sqlalchemy.Column('event', sqlalchemy.Integer),
+                                             sqlalchemy.Column('detection', sqlalchemy.Integer),
                                              sqlalchemy.Column('path', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('size', sqlalchemy.Integer),
                                              sqlalchemy.Column('hash', sqlalchemy.String, index=True),
@@ -63,12 +66,12 @@ class NodeDB:
                                              )
 
         self.folders_table = sqlalchemy.Table('folders', self.sa_metadata,
-                                             sqlalchemy.Column('name', sqlalchemy.String, primary_key=True),
-                                             sqlalchemy.Column('encrypt', sqlalchemy.Boolean),
-                                             sqlalchemy.Column('shared', sqlalchemy.Boolean),
-                                             sqlalchemy.Column('cloud', sqlalchemy.Boolean),
-                                             sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
-                                             )
+                                              sqlalchemy.Column('name', sqlalchemy.String, primary_key=True),
+                                              sqlalchemy.Column('encrypt', sqlalchemy.Boolean),
+                                              sqlalchemy.Column('shared', sqlalchemy.Boolean),
+                                              sqlalchemy.Column('cloud', sqlalchemy.Boolean),
+                                              sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
+                                              )
 
         if write_flag:
             try:
@@ -91,23 +94,26 @@ class NodeDB:
 
     def set_all(self, node_id):
         self.set_login(True)
-        self.set_heartbeat()
         self.set_node_id(node_id)
         self.set_user(getpass.getuser())
         self.set_computer(platform.node())
+        self.set_heartbeat()
 
-    def update(self, seq, originator, file_path, size, hash, mtime):
+    def update(self, seq, originator, event, detection, file_path, size, hash, mtime):
         conn = self.db_engine.connect()
-        latus.logger.log.info('%s updating %s %s %s %s %s %s' % (self.node_id, seq, originator, file_path, size, hash, mtime))
+        latus.logger.log.info('%s updating %s %s %s %s %s %s %s %s' % (self.node_id, seq, originator, event, detection,
+                                                                       file_path, size, hash, mtime))
         command = self.change_table.select().where(self.change_table.c.seq == seq)
         result = conn.execute(command)
         if not result.fetchone():
             if mtime:
-                command = self.change_table.insert().values(seq=seq, originator=originator, path=file_path, size=size,
-                                                            hash=hash, mtime=mtime, timestamp=datetime.datetime.utcnow())
+                command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
+                                                            detection=detection, path=file_path, size=size, hash=hash,
+                                                            mtime=mtime, timestamp=datetime.datetime.utcnow())
             else:
                 # if file has been deleted, there's no mtime (but we can't pass None into a datetime)
-                command = self.change_table.insert().values(seq=seq, originator=originator, path=file_path,
+                command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
+                                                            detection=detection, path=file_path,
                                                             timestamp=datetime.datetime.utcnow())
             result = conn.execute(command)
         else:
@@ -116,15 +122,20 @@ class NodeDB:
 
     def db_row_to_info(self, row):
         entry = {}
-        entry['index'] = row[0]
-        entry['seq'] = row[1]
-        entry['originator'] = row[2]
-        entry['path'] = row[3]
-        entry['size'] = row[4]
-        entry['hash'] = row[5]
-        entry['mtime'] = row[6]
-        entry['timestamp'] = row[7]
+        entry['index'] = row[int(ChangeAttributes.index)]
+        entry['seq'] = row[int(ChangeAttributes.seq)]
+        entry['originator'] = row[int(ChangeAttributes.originator)]
+        entry['event'] = row[int(ChangeAttributes.event)]
+        entry['detection'] = row[int(ChangeAttributes.detection)]
+        entry['path'] = row[int(ChangeAttributes.path)]
+        entry['size'] = row[int(ChangeAttributes.size)]
+        entry['hash'] = row[int(ChangeAttributes.hash)]
+        entry['mtime'] = row[int(ChangeAttributes.mtime)]
+        entry['timestamp'] = row[int(ChangeAttributes.timestamp)]
         return entry
+
+    def get_database_file_name(self):
+        return self.database_file_name
 
     def get_file_info(self, file_path):
         conn = self.db_engine.connect()
@@ -146,6 +157,7 @@ class NodeDB:
         conn.close()
         return update
 
+    # todo: make an iterator
     def get_paths(self):
         conn = self.db_engine.connect()
         file_paths = set()
@@ -153,9 +165,9 @@ class NodeDB:
             command = self.change_table.select()
             result = conn.execute(command)
             for row in result:
-                file_path = row[3]  # todo: make these number indices defined somewhere
+                file_path = row[ChangeAttributes.path]
                 if file_path not in file_paths:
-                    file_paths.add(file_path)  # todo: make these number indices defined somewhere
+                    file_paths.add(file_path)
         else:
             latus.logger.log.warning('change_table does not exist')
         conn.close()
@@ -169,7 +181,7 @@ class NodeDB:
         if result:
             all_hashes = result.fetchall()
             if all_hashes:
-                file_hash = all_hashes[-1][5]  # todo: make these number indices defined somewhere
+                file_hash = all_hashes[-1][ChangeAttributes.hash]
         conn.close()
         return file_hash
 
@@ -269,17 +281,17 @@ class NodeDB:
     def get_computer(self):
         return self._get_general(self._computer_string)[0]
 
+    def set_heartbeat(self):
+        self._set_general(self._heartbeat_string, str(time.time()))
+
+    def get_heartbeat(self):
+        return self._get_general(self._heartbeat_string)[0]
+
     def set_login(self, login):
         self._set_general(self._login_string, str(login))
 
     def get_login(self):
         return self._get_general(self._login_string)  # tuple of (is_logged_in, login_timestamp)
-
-    def set_heartbeat(self):
-        self._set_general(self._heartbeat_string, datetime.datetime.utcnow())
-
-    def get_heartbeat(self):
-        return self._get_general(self._heartbeat_string)[0]
 
     def get_last_seq(self, file_path):
         conn = self.db_engine.connect()
@@ -312,7 +324,7 @@ class NodeDB:
                     shared = row[2]
                     cloud = row[3]
                 else:
-                    latus.logger.log.info('get_folder_preferences: %s : %s : no row' % (self.get_node_id(), folder))
+                    latus.logger.log.debug('get_folder_preferences: %s : %s : no row, using defaults' % (self.get_node_id(), folder))
             else:
                 latus.logger.log.warn('get_folder_preferences: %s : %s : no result' % (self.get_node_id(), folder))
             conn.close()
@@ -345,11 +357,11 @@ class NodeDB:
 
 
 def get_existing_nodes(cloud_node_db_folder):
-    node_db_files = glob.glob(os.path.join(cloud_node_db_folder, '*' + latus.const.DB_EXTENSION))
+    node_db_files = glob.glob(os.path.join(cloud_node_db_folder, '*' + DB_EXTENSION))
     return set(os.path.basename(p).split('.')[0] for p in node_db_files)
 
 
 def get_node_id_from_db_file_path(db_file_path):
-    ext_len = len(latus.const.DB_EXTENSION)
+    ext_len = len(DB_EXTENSION)
     return os.path.basename(db_file_path)[:-ext_len]
 

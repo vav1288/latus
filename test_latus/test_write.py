@@ -22,21 +22,17 @@ def test_write(setup):
 
     log_folders = [log_a, log_b]
 
-    test_latus.util.wait_on_nodes(log_folders)
 
     latus.logger.log.info("*************** STARTING WRITE *************")
 
     test_latus.util.write_to_file(os.path.join(folder_a, file_a), 'a')
-    test_latus.util.wait_on_nodes(log_folders)
     test_latus.util.write_to_file(os.path.join(folder_b, file_b), 'b')
-    test_latus.util.wait_on_nodes(log_folders)
 
     latus.logger.log.info("*************** ENDING WRITE *************")
 
     assert(test_latus.util.wait_for_file(os.path.join(folder_a, file_b)))
     assert(test_latus.util.wait_for_file(os.path.join(folder_b, file_a)))
 
-    test_latus.util.wait_on_nodes(log_folders)
 
     # doesn't seem to work:
     #proc_a.communicate('q\n')

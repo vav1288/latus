@@ -10,7 +10,7 @@ import latus.logger
 
 
 def get_node_db_retries_root():
-    retries_root = os.path.join('c:', os.sep, 'temp')  # some place fast
+    retries_root = os.path.join(test_latus.util.get_data_root(), 'temp')
     if not os.path.exists(retries_root):
         os.makedirs(retries_root)
     return retries_root
@@ -46,7 +46,7 @@ def test_node_db_retries():
     node_id = 'abc'
     w = multiprocessing.Process(target=writer, args=(node_id, 'w', ))
     w.start()
-    time.sleep(1)  # todo: make this some sort of pole
+    time.sleep(1)  # todo: make this some sort of poll
     read_processes = []
     for r in range(0, 20):
         read_processes.append(multiprocessing.Process(target=reader, args=(node_id, str(r), )))

@@ -57,60 +57,6 @@ def make_dirs(p):
         os.makedirs(p)
 
 
-def wait_on_nodes(log_folders_param):
-    for log_folder in log_folders_param:
-        wait_for_node(log_folder)
-
-
-def wait_for_node(log_folder):
-    # wait for this node to settle down and cease all activity
-    # returns True if stability found, False if we merely timed out and gave up
-
-    sleep_time = 0.5  # sec
-    time_out = 600/sleep_time  # sec to timeout
-    stable_time = 5/sleep_time  # number of seconds we need to see stable files to declare it stable
-    time_out_count = time_out
-    stable_count = stable_time
-    unstable_file = None
-
-    status = []
-    log_files = ['cloud.log', 'local.log']
-    prior_status = {}
-    for log_file in log_files:
-        prior_status[log_file] = None
-    while stable_count > 0 and time_out_count > 0:
-        stable_flag = True
-        for log_file in log_files:
-            file_path = os.path.join(log_folder, log_file)
-            if os.path.exists(file_path):
-                with open(file_path) as json_file:
-                    try:
-                        status = json.load(json_file)
-                    except ValueError:
-                        stable_flag = False
-                    if prior_status[log_file]:
-                        #print('status', status)
-                        if status['count'] != prior_status[log_file]['count']:
-                            latus.logger.log.debug('%s not yet stable %s : %s' % (file_path, status, prior_status[log_file]))
-                            stable_flag = False
-                            unstable_file = file_path
-                    else:
-                        stable_flag = False
-                    prior_status[log_file] = status
-            else:
-                stable_flag = False
-        #print('stable_flag', stable_flag)
-        if stable_flag:
-            stable_count -= 1
-        else:
-            stable_count = stable_time
-        time_out_count -= 1
-        time.sleep(0.1)
-    if time_out_count <= 0:
-        latus.logger.log.warn('timeout : %s' % unstable_file)
-    return time_out_count > 0
-
-
 def get_python_exe():
     if latus.util.is_windows():
         bin_folder = 'Scripts'
@@ -144,32 +90,63 @@ def start_cmd_line(node_id, test_name):
     return latus_process, latus_folder, log_folder
 
 
-def wait_for_file(file_path):
-    time_out_sec = 60
+# waits for a file to exist
+# set "to_exist" parameter to False if you want to wait until the file does NOT exist
+def wait_for_file(file_path, to_exist=True):
+    time_out_sec = 20
     sleep_time_sec = 0.1
     time_out_count_down = time_out_sec / sleep_time_sec
 
-    while not os.path.exists(file_path) and time_out_count_down:
+    if to_exist:
+        message = ''
+    else:
+        message = ' not'
+
+    while (to_exist ^ os.path.exists(file_path)) and time_out_count_down > 0:
         time.sleep(sleep_time_sec)
         time_out_count_down -= 1
-    return time_out_count_down > 0
+    if time_out_count_down <= 0:
+        print('timeout waiting for %s to%s exist' % (file_path, message))
+        return False
+    return True
 
 
 def get_app_data_folder(root):
     return os.path.join(root, 'appdata')
 
 
+def sync_node(setup_id, key, root, cloud, sub_folder, exit_event, write_flag=True):
+    _sync_node = SetupSyncNode(setup_id, key, root, cloud, sub_folder)
+    if write_flag:
+        write_to_file(_sync_node.get_file_path(), setup_id)
+    _sync_node.get_sync().start()
+    while not exit_event.is_set():
+        time.sleep(2)
+        _sync_node.get_sync().poll()  # the real app would have to periodically poll
+    _sync_node.get_sync().request_exit()
+
+
+def get_latus_folder(root, node_id):
+    node_folder = os.path.join(root, node_id)  # give us our own folder
+    latus_folder = os.path.join(node_folder, 'latus')
+    return latus_folder
+
+
+def get_file_name(node_id):
+    return node_id + '.txt'
+
+
 class SetupSyncNode:
-    def __init__(self, setup_id, key, root, cloud, sub_folder=None):
+    def __init__(self, node_id, key, root, cloud, sub_folder):
+        self.root = root
         self.sub_folder = sub_folder
-        self.node_id = setup_id
+        self.node_id = node_id
         node_folder = os.path.join(root, self.node_id)  # give us our own folder
         self.app_data_folder = get_app_data_folder(node_folder)
-        self.latus_folder = os.path.join(node_folder, 'latus')
         self.cloud_root = cloud
         pref = latus.preferences.Preferences(self.app_data_folder, True)
         pref.set_cloud_root(self.cloud_root)
-        pref.set_latus_folder(self.latus_folder)
+        pref.set_latus_folder(get_latus_folder(root, node_id))
         pref.set_node_id(self.node_id)
         pref.set_crypto_key(key)
         pref.set_verbose(True)
@@ -184,18 +161,13 @@ class SetupSyncNode:
     def get_preferences(self):
         return latus.preferences.Preferences(self.app_data_folder)
 
-    def get_file_name(self):
-        return self.node_id + '.txt'
-
     def get_file_path(self):
+        latus_folder = get_latus_folder(self.root, self.node_id)
         if self.sub_folder:
-            p = os.path.join(self.latus_folder, self.sub_folder, self.get_file_name())
+            p = os.path.join(latus_folder, self.sub_folder, get_file_name(self.node_id))
         else:
-            p = os.path.join(self.latus_folder, self.get_file_name())
+            p = os.path.join(latus_folder, get_file_name(self.node_id))
         return p
-
-    def get_latus_folder(self):
-        return self.latus_folder
 
     def get_cloud_root(self):
         return self.cloud_root

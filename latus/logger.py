@@ -15,6 +15,10 @@ ch = None
 log = None
 log_folder = None
 
+# the general log message format is:
+# < message_type > : [ node id ] , ...
+#
+# message_type is things like sync, file_write, etc.
 
 def init(log_folder_param=None):
     global fh, ch, log, log_folder
@@ -63,3 +67,14 @@ def set_file_log_level(new_level):
 
 def set_console_log_level(new_level):
     ch.setLevel(new_level)
+
+
+# the sync log functions
+
+def sync_log(node_id, file_system_event, miv, file_path, detection_source, size, local_hash, mtime):
+    log.info('sync : %s , %s , %s , "%s" , %s , %s , %s , %s' %
+             (node_id, str(file_system_event), str(miv), file_path, detection_source, size, local_hash, mtime))
+
+
+def sync_filtered_log(node_id, file_path):
+    log.info('sync : %s , filtered, %s' % (node_id, file_path))

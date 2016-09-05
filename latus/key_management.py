@@ -8,11 +8,11 @@ import platform
 import latus.const
 import latus.logger
 
-from PySide import *
+from PyQt5.QtWidgets import QFileDialog
 
 
 def write_latus_key_gui(key):
-    key_file_directory = QtGui.QFileDialog.getExistingDirectory(None, 'Save Latus key file:')
+    key_file_directory = QFileDialog.getExistingDirectory(None, 'Save Latus key file:')
     key_file_path = os.path.join(key_file_directory, latus.const.LATUS_KEY_FILE_NAME)
     if key_file_path and len(key_file_path) > 0:
         write_latus_key_to_file(key, key_file_path)
@@ -20,7 +20,7 @@ def write_latus_key_gui(key):
 
 def read_latus_key_gui():
     key = None
-    key_file_name = QtGui.QFileDialog.getOpenFileName(None, 'Latus key file:',
+    key_file_name = QFileDialog.getOpenFileName(None, 'Latus key file:',
                                                           filter=latus.const.LATUS_KEY_FILE_NAME)
     if key_file_name and len(key_file_name[0]) > 0:
         key_record = read_latus_key_from_file(key_file_name[0])

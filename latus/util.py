@@ -7,9 +7,6 @@ import appdirs
 import latus.logger
 import latus.const
 
-#WINDOWS_SEP = "\\"
-#LINUX_SEP = '/'
-
 
 def is_windows():
     is_win = False
@@ -32,14 +29,6 @@ def is_linux():
 if is_windows():
     import win32api
     import win32con
-
-
-#def get_folder_sep():
-#    if is_windows():
-#        sep = WINDOWS_SEP
-#    else:
-#        sep = LINUX_SEP
-#    return sep[-1]
 
 
 def get_long_abs_path(in_path):
@@ -106,44 +95,12 @@ def is_system(in_path):
 
 
 def make_hidden(in_path):
-    attribute = win32api.GetFileAttributes(in_path)
-    if not (attribute & win32con.FILE_ATTRIBUTE_HIDDEN):
-        win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
-
-
-#def get_latus_appdata_roaming_folder():
-#    return appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)
-
-
-#def get_latus_appdata_local_folder():
-#    return appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)
-#    return os.path.join(__get_os_appdata_local_folder(), latus.const.NAME)
-
-
-#def get_latus_log_folder():
-#    # use appdata local (log files can get big, so they shouldn't be in roaming)
-#    return os.path.join(__get_os_appdata_local_folder(), latus.const.NAME, 'log')
-
-
-#def __get_os_appdata_roaming_folder():
-#    # Things stored here: preferences, etc.
-#    #
-#    # I'd like to use winpaths.get_local_appdata() but it doesn't seem to work with Python 3, so I'll
-#    # rely on the environment variable.
-#    return os.environ['APPDATA']
-
-
-#def __get_os_appdata_local_folder():
-#    # Things stored here: logs, etc.
-#    # Can be larger files.
-#    key = 'LOCALAPPDATA'
-#    try:
-#        local_app_data = os.environ[key]
-#    except KeyError:
-#        print('No %s' % key)
-#        local_app_data = None
-#        raise
-#    return local_app_data
+    # for Linux/Mac the file needs to begin with a dot, therefore there's not really anything to do for these platforms
+    if is_windows():
+        attribute = win32api.GetFileAttributes(in_path)
+        if not (attribute & win32con.FILE_ATTRIBUTE_HIDDEN):
+            win32api.SetFileAttributes(in_path, win32con.FILE_ATTRIBUTE_HIDDEN)
+    # todo: check that the file name does indeed start with a dot
 
 
 def make_dirs(path):

@@ -1,51 +1,84 @@
 
 import os
+import multiprocessing
 import time
 
-import test_latus.test_write
-import test_latus.util
+import latus.const
+import latus.sync
+import latus.util
 import latus.logger
+import latus.folders
+import latus.crypto
+import latus.preferences
+from test_latus.util import logger_init, get_latus_folder, wait_for_file, sync_node, write_to_file, get_data_root
 
 
 def get_delete_root():
-    return os.path.join(test_latus.util.get_data_root(), "delete")
+    return os.path.join(get_data_root(), "delete")
 
 
 def test_delete(setup):
+    """
+    test a simple delete across 2 nodes
+    """
 
-    test_latus.util.logger_init(os.path.join(get_delete_root(), 'log'))
-    test_name = 'delete'
-    proc_a, folder_a, log_a = test_latus.util.start_cmd_line('a', test_name)
+    nodes = ['a', 'b']
     file_a = 'a.txt'
-    proc_b, folder_b, log_b = test_latus.util.start_cmd_line('b', test_name)
+    local_folders = []
+    for node in nodes:
+        local_folders.append(get_latus_folder(get_delete_root(), node))
+    file_path_a = os.path.join(local_folders[0], file_a)
+    file_path_b = os.path.join(local_folders[1], file_a)
 
-    log_folders = [log_a, log_b]
+    log_folder = os.path.join(get_delete_root(), 'log')
+    logger_init(log_folder)
 
-    test_latus.util.wait_on_nodes(log_folders)
+    key = latus.crypto.new_key()
 
-    file_path_a = os.path.join(folder_a, file_a)
-    file_path_b = os.path.join(folder_b, file_a)
+    syncs = {}
+    exit_event = multiprocessing.Event()
 
-    latus.logger.log.info("*************** STARTING WRITE *************")
-    test_latus.util.write_to_file(os.path.join(folder_a, file_a), 'a')
-    test_latus.util.wait_on_nodes(log_folders)
-    latus.logger.log.info("*************** ENDING WRITE *************")
+    cloud = os.path.join(get_delete_root(), 'cloud')
+    for node in nodes:
+        syncs[node] = multiprocessing.Process(target=sync_node,
+                                              args=(node, key, get_delete_root(), cloud, None, exit_event, False))
+
+    for sync in syncs:
+        syncs[sync].start()
 
     time.sleep(1)
-    assert(test_latus.util.wait_for_file(file_path_b))  # make sure it's on b
+    latus.logger.log.info('starting write to %s' % file_path_a)
+    write_to_file(file_path_a, 'a')
+    latus.logger.log.info('finished write to %s' % file_path_a)
 
-    latus.logger.log.info("*************** STARTING DELETE *************")
-    test_latus.util.wait_on_nodes(log_folders)
+    time.sleep(1)
+
+    wait_for_file(file_path_a)
+    wait_for_file(file_path_b)
+
+    assert(os.path.exists(file_path_a))
+    assert(os.path.exists(file_path_b))
+
+    latus.logger.log.info('starting delete of %s' % file_path_a)
     os.remove(file_path_a)  # remove it on a
-
-    test_latus.util.wait_on_nodes(log_folders)  # wait for it to happen
-    latus.logger.log.info("*************** ENDING DELETE *************")
-
-    test_latus.util.wait_on_nodes(log_folders)
+    latus.logger.log.info('finished delete of %s' % file_path_a)
 
     time.sleep(1)
-    assert(not os.path.exists(file_path_b))  # make sure it's gone on b
 
-    # todo: make this some sort of control flow based
-    proc_a.terminate()
-    proc_b.terminate()
+    wait_for_file(file_path_a, False)
+    wait_for_file(file_path_b, False)
+
+    assert(not os.path.exists(file_path_a))
+    assert(not os.path.exists(file_path_b))
+
+    time.sleep(1)
+
+    exit_event.set()
+
+    for node in nodes:
+        syncs[node].join()
+
+    latus.logger.log.info('test_delete exiting')
+
+    return
+
