@@ -9,7 +9,7 @@ def make_installer(verbose):
     osnap.installer.make_installer(AUTHOR, APPLICATION_NAME,
                                      'secure and unlimited storage across all your computers',
                                      'http://lat.us',
-                                     ['latus'],
+                                     ['latus', 'icons'],
                                      verbose=verbose)
 
 
