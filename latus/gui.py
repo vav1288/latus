@@ -1,3 +1,5 @@
+
+import appdirs
 import sys
 
 from PyQt5.QtWidgets import QGridLayout, QLabel, QLineEdit, QSystemTrayIcon, QMenu, QDialog, QApplication, QMessageBox
@@ -23,13 +25,19 @@ class About(QDialog):
         layout = QGridLayout(self)
         self.setLayout(layout)
         layout.addWidget(QLabel(latus.const.URL), 0, 0)
-        layout.addWidget(QLabel('Latus Node ID:'), 2, 0)
-        node_id_widget = QLineEdit(node_id)
-        node_id_widget.setReadOnly(True)
-        width = QFontMetrics(QFont()).width(node_id) * 1.05
-        node_id_widget.setMinimumWidth(width)
-        layout.addWidget(node_id_widget, 3, 0)
+
+        self.add_line('Latus Node ID:', node_id, 2, layout)
+        self.add_line('Log folder:', latus.logger.log_folder, 5, layout)
+
         self.show()
+
+    def add_line(self, label, value, row_number, layout):
+        layout.addWidget(QLabel(label), row_number, 0)
+        log_dir_widget = QLineEdit(value)
+        log_dir_widget.setReadOnly(True)
+        width = QFontMetrics(QFont()).width(value) * 1.05
+        log_dir_widget.setMinimumWidth(width)
+        layout.addWidget(log_dir_widget, row_number+1, 0)
 
 
 class LatusSystemTrayIcon(QSystemTrayIcon):
