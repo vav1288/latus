@@ -2,7 +2,6 @@
 import os
 import time
 import logging
-import json
 import subprocess
 import shutil
 
@@ -45,6 +44,7 @@ def logger_init(log_folder):
         latus.logger.init(log_folder)
     latus.logger.set_console_log_level(logging.INFO)
     latus.logger.set_file_log_level(logging.DEBUG)
+    latus.logger.log.info('logger_init')
 
 
 # get an mtime back in time
@@ -116,6 +116,7 @@ def get_app_data_folder(root):
 
 
 def sync_node(setup_id, key, root, cloud, sub_folder, exit_event, write_flag=True):
+    logger_init(os.path.join(root, 'log'))
     _sync_node = SetupSyncNode(setup_id, key, root, cloud, sub_folder)
     if write_flag:
         write_to_file(_sync_node.get_file_path(), setup_id)
