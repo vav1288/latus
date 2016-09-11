@@ -38,3 +38,4 @@ _build_.py
 *.dmg
 install-pyrun.sh
 install_osnap.*
+aws/
