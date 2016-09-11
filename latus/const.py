@@ -5,7 +5,7 @@ from enum import IntEnum
 COMPANY = 'abel'
 NAME = 'latus'
 LOG_FILE = NAME + '.log'
-LATUS_KEY_FILE_NAME = 'latus.lky'
+LATUS_KEY_FILE_EXT = '.lky'
 DB_EXTENSION = '.db'
 ENCRYPTION_EXTENSION = '.fer'
 UNENCRYPTED_EXTENSION = '.une'
