@@ -49,6 +49,9 @@ class GUIWizard(QWizard):
         pref = latus.preferences.Preferences(self.app_data_folder)
         pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
         pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
+
+        temp = self.field(LATUS_KEY_FIELD_STRING)
+
         pref.set_crypto_key(self.field(LATUS_KEY_FIELD_STRING))
         if not pref.get_node_id():
             pref.set_node_id(latus.util.new_node_id())
@@ -89,8 +92,8 @@ class WizardFolderListWidget(QListWidget):
 
 class CloudRootPage(QWizardPage):
 
-    complete_trigger = pyqtSignal()
-    selection_trigger = pyqtSignal()
+    complete_trigger = pyqtSignal(name='complete')
+    selection_trigger = pyqtSignal(name='selection')
 
     def __init__(self, folder_wizard, cloud_root_override=None):
         super().__init__()
@@ -211,7 +214,7 @@ class LatusKeyPage(QWizardPage):
     def __init__(self, app_data_folder):
         super().__init__()
         self.app_data_folder = app_data_folder
-        self.key_widget = QLabel(LATUS_KEY_FIELD_STRING)
+        self.key_widget = QLineEdit()  # use for value storage - will not be displayed
         self.registerField(LATUS_KEY_FIELD_STRING, self.key_widget)
         self.setTitle("Latus key")
 
@@ -233,7 +236,7 @@ class LatusKeyPage(QWizardPage):
         first_time_intro.setWordWrap(True)
         first_time_intro_text = \
             "This seems to be your first time setting up Latus.  We will now create a new Latus key " \
-            "for you.  You will use this key to 'connect' all of your computers to Latus.  You will also be " \
+            "for you.  You will use this key to connect all of your computers to Latus.  You will also be " \
             "prompted to write this key to a USB stick or some other secure medium you can later take " \
             "to your other computers in order to set them up."
         first_time_intro.setText(first_time_intro_text)
@@ -282,19 +285,19 @@ class LatusKeyPage(QWizardPage):
         self.setLayout(layout)
 
     def isComplete(self):
-        return bool(self.field(LATUS_KEY_FIELD_STRING) and len(self.field(LATUS_KEY_FIELD_STRING)) > 0)
+        if self.field(LATUS_KEY_FIELD_STRING) is None:
+            return False
+        return True
 
     def new_latus_key(self):
-        new_key = latus.crypto.new_key()
+        new_key = latus.crypto.new_key().decode()  # fields are strings, not byte arrays
+        latus.logger.log.info('new latus key created')
         self.setField(LATUS_KEY_FIELD_STRING, new_key)
-        latus.key_management.write_latus_key_gui(new_key)
         self.completeChanged.emit()
 
     def existing_latus_key(self):
         key = latus.key_management.read_latus_key_gui()
         if key:
-            # todo: this seems to cause the message below to be logged, even though things seem work - figure out why
-            # QWizard::setField: Couldn't write to property ''
             self.setField(LATUS_KEY_FIELD_STRING, key)
         self.completeChanged.emit()
 
