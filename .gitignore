@@ -34,3 +34,7 @@ cache
 venv
 .cache
 test_latus/data
+_build_.py
+*.dmg
+install-pyrun.sh
+install_osnap.*
