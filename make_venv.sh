@@ -3,3 +3,4 @@
 chmod 555 venv/bin/activate
 venv/bin/pip install -U pip
 venv/bin/pip install -U setuptools
+venv/bin/pip install -r requirements.txt
