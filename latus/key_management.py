@@ -38,7 +38,7 @@ def read_latus_key_gui():
 def write_latus_key_to_file(latus_key, latus_key_file_path):
     latus.logger.log.info('writing latus key %s to %s' % (latus_key, latus_key_file_path))
     with open(latus_key_file_path, 'w') as f:
-        key_record = {'key': latus_key.decode("utf-8"),
+        key_record = {'key': latus_key,
                       'timestamp': str(datetime.datetime.utcnow()),
                       'user': getpass.getuser(),
                       'computer': platform.node()}
