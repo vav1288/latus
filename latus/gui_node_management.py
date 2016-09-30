@@ -60,8 +60,6 @@ class ManagementDialog(QDialog):
             row_widgets += [button]
             cells.append(row_widgets)
 
-        cells = sorted(cells, key=lambda cell : cell[-1], reverse=True)
-
         widths = collections.defaultdict(int)
         for row in range(0, len(cells)):
             for column in range(0, len(cells[row]) - 1):
