@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-./venv/bin/python3 -m osnap.osnapy
+sudo -H ./venv/bin/python3 -m osnap.osnapy -a latus -v
