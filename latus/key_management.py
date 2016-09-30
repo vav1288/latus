@@ -27,7 +27,7 @@ def write_latus_key_gui(key):
 def read_latus_key_gui():
     key = None
     key_file_name = QFileDialog.getOpenFileName(None, 'Latus key file:',
-                                                filter=latus.const.LATUS_KEY_FILE_EXT)
+                                                filter='Latus Key (*%s)' % latus.const.LATUS_KEY_FILE_EXT)
     if key_file_name and len(key_file_name[0]) > 0:
         key_record = read_latus_key_from_file(key_file_name[0])
         if key_record:
