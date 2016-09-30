@@ -1,20 +1,19 @@
-
-import appdirs
 import sys
 
-from PyQt5.QtWidgets import QGridLayout, QLabel, QLineEdit, QSystemTrayIcon, QMenu, QDialog, QApplication, QMessageBox
+import appdirs
 from PyQt5.QtGui import QFontMetrics, QFont, QIcon, QPixmap
+from PyQt5.QtWidgets import QGridLayout, QLabel, QLineEdit, QSystemTrayIcon, QMenu, QDialog, QApplication, QMessageBox
 
-import latus.logger
-import latus.sync
-import latus.preferences
-import latus.util
 import latus.const
 import latus.crypto
-import latus.gui_wizard
-import latus.gui_preferences
 import latus.gui_node_management
+import latus.gui_preferences
+import latus.gui_wizard
 import latus.key_management
+import latus.logger
+import latus.preferences
+import latus.sync
+import latus.util
 
 
 class About(QDialog):
@@ -46,7 +45,7 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
         latus.logger.log.info('starting LatusSystemTrayIcon')
         self.app = app
 
-        import icons.icons  # actually used for QPixmap
+        from latus import icons
         icon = QIcon(QPixmap(':active.png'))
         super().__init__(icon, parent)
         self.latus_appdata_folder = latus_appdata_folder
