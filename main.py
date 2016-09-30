@@ -63,11 +63,13 @@ def main():
 
     latus_appdata_roaming_folder = set_from_args(args)
 
-    if args.cli:
-        latus.cli.main(latus_appdata_roaming_folder)
-    else:
-        latus.gui.main(latus_appdata_roaming_folder)
-
+    try:
+        if args.cli:
+            latus.cli.main(latus_appdata_roaming_folder)
+        else:
+            latus.gui.main(latus_appdata_roaming_folder)
+    except Exception:
+        latus.logger.log.exception("Fatal error")
 
 def set_from_args(args):
     """
@@ -83,6 +85,7 @@ def set_from_args(args):
     if args.verbose:
         latus.logger.set_console_log_level(logging.INFO)
     latus.logger.log.info('log folder : %s' % log_folder)
+
 
     if args.config:
         # useful for testing
