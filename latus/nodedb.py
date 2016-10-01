@@ -332,20 +332,20 @@ class NodeDB:
             cmd = self.change_table.select().distinct(self.change_table.c.path)
             result = conn.execute(cmd)
             for row in result:
-                q_cmd = self.change_table.select().where(self.change_table.c.path == row[ChangeAttributes.path] and self.change_table.c.pending)
+                q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == row[ChangeAttributes.path], self.change_table.c.pending))
                 q_result = conn.execute(q_cmd)
                 all_rows = q_result.fetchall()
                 if all_rows:
                     last = all_rows[-1]
+                    infos.append(self.db_row_to_info(last))
                 else:
                     last = None
-                infos.append(self.db_row_to_info(last))
             conn.close()
         return infos
 
     def get_info_from_path_and_seq(self, path, seq):
         with self.db_engine.connect() as conn:
-            q_cmd = self.change_table.select().where(self.change_table.c.seq == seq and self.change_table.c.path == path)
+            q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.seq == seq, self.change_table.c.path == path))
             q_result = conn.execute(q_cmd)
             # todo: check that there is indeed only one entry returned
             if q_result:
@@ -359,13 +359,16 @@ class NodeDB:
         return None
 
     def any_pendings(self, path):
+        any_pending_flag = False
         with self.db_engine.connect() as conn:
-            cmd = self.change_table.select().where(self.change_table.c.path == path and self.change_table.c.pending)
+            cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == path, self.change_table.c.pending == True))
             result = conn.execute(cmd)
+            rows = result.fetchall()
+            print(len(rows))
+            if len(rows) > 0:
+                any_pending_flag = True
             conn.close()
-            if result:
-                return True
-        return False
+        return any_pending_flag
 
     def clear_pending(self, info):
         with self.db_engine.connect() as conn:
