@@ -188,13 +188,13 @@ class LocalSync(SyncBase):
         most_recent_hash = node_db.get_most_recent_hash(latus_path)
         if most_recent_hash != file_hash:
             node_db.update(miv, node_id, int(filesystem_event_type), int(detection_source),
-                           latus_path, size, file_hash, mtime)
+                           latus_path, size, file_hash, mtime, False)
 
     def fs_scan(self, detection_source):
         pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        node_id = pref.get_node_id()
-        node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node_id)
+        this_node_id = pref.get_node_id()
+        node_db = latus.nodedb.NodeDB(cloud_folders.nodes, this_node_id)
         local_walker = latus.walker.Walker(pref.get_latus_folder())
         for partial_path in local_walker:
             local_full_path = local_walker.full_path(partial_path)
@@ -209,30 +209,31 @@ class LocalSync(SyncBase):
                     if local_hash != most_recent_hash:
                         mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(local_full_path))
                         size = os.path.getsize(local_full_path)
-                        miv = latus.miv.get_miv(node_id)
-                        latus.logger.sync_log(node_id, file_system_event, miv, partial_path,
+                        miv = latus.miv.get_miv(this_node_id)
+                        latus.logger.sync_log(this_node_id, file_system_event, miv, partial_path,
                                               detection_source, size, local_hash, mtime)
                         self.fill_cache(local_full_path)
                         self.add_filter_event(node_db.get_database_file_name(), FileSystemEvent.modified)
-                        node_db.update(miv, node_id, int(file_system_event),
-                                       int(detection_source), partial_path, size, local_hash, mtime)
+                        node_db.update(miv, this_node_id, int(file_system_event),
+                                       int(detection_source), partial_path, size, local_hash, mtime, False)
                 else:
-                    latus.logger.log.warn('could not calculate hash for %s' % local_full_path)
+                    latus.logger.log.warn('%s : could not calculate hash for %s' % (this_node_id, local_full_path))
 
-        node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
         for partial_path in node_db.get_paths():
             full_path = os.path.join(pref.get_latus_folder(), partial_path)
             if not os.path.exists(full_path):
-                node_id = pref.get_node_id()
                 most_recent_hash = node_db.get_most_recent_hash(partial_path)
                 if most_recent_hash is not None:
-                    latus.logger.log.info('%s : %s deleted' % (pref.get_node_id(), partial_path))
-                    miv = latus.miv.get_miv(node_id)
-                    latus.logger.sync_log(node_id, FileSystemEvent.deleted, miv, partial_path,
-                                          detection_source, None, None, None)
-                    self.add_filter_event(node_db.get_database_file_name(), FileSystemEvent.modified)
-                    node_db.update(miv, node_id, int(FileSystemEvent.deleted),
-                                   int(DetectionSource.initial_scan), partial_path, None, None, None)
+                    if node_db.any_pendings(partial_path):
+                        latus.logger.log.warning('%s : there are still pendings for %s' % (this_node_id, partial_path))
+                    else:
+                        latus.logger.log.info('%s : %s deleted' % (this_node_id, partial_path))
+                        miv = latus.miv.get_miv(this_node_id)
+                        latus.logger.sync_log(this_node_id, FileSystemEvent.deleted, miv, partial_path,
+                                              detection_source, None, None, None)
+                        self.add_filter_event(node_db.get_database_file_name(), FileSystemEvent.modified)
+                        node_db.update(miv, this_node_id, int(FileSystemEvent.deleted),
+                                       int(DetectionSource.initial_scan), partial_path, None, None, None, False)
 
 
 class CloudSync(SyncBase):
@@ -303,8 +304,8 @@ class CloudSync(SyncBase):
 
                     cloud_fernet_file = os.path.join(cloud_folders.cache,
                                                      info['hash'] + ENCRYPTION_EXTENSION)
-                    latus.logger.log.info('%s : %s : %s changed %s - propagating to %s %s' %
-                                          (pref.get_node_id(), detection_source, db_node_id, info['path'],
+                    latus.logger.log.info('%s : %s : %s %s %s - propagating to %s %s' %
+                                          (pref.get_node_id(), info['detection'], info['originator'], info['event'], info['path'],
                                            local_file_path, info['hash']))
                     encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(local_file_path)
 
@@ -314,24 +315,21 @@ class CloudSync(SyncBase):
                         expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
                         # todo: set mtime
                     else:
-                        cloud_file = os.path.join(cloud_folders.cache,
-                                                  info['hash'] + UNENCRYPTED_EXTENSION)
+                        cloud_file = os.path.join(cloud_folders.cache, info['hash'] + UNENCRYPTED_EXTENSION)
                         shutil.copy2(cloud_file, local_file_path)
-                    last_seq = this_node_db.get_last_seq(info['path'])
-                    if info['seq'] != last_seq:
-                        this_node_db.update(info['seq'], info['originator'], info['event'], info['detection'],
-                                            info['path'], info['size'], info['hash'], info['mtime'])
+                    this_node_db.clear_pending(info)
             elif info['event'] == FileSystemEvent.deleted:
                 self.add_filter_event(local_file_path, FileSystemEvent.deleted)
-                latus.logger.log.info('%s : %s : %s deleted %s' % (pref.get_node_id(), detection_source, db_node_id, info['path']))
+                latus.logger.log.info('%s : %s : %s deleted %s' % (pref.get_node_id(), detection_source, info['originator'], info['path']))
                 try:
                     if os.path.exists(local_file_path):
                         send2trash.send2trash(local_file_path)
                 except OSError:
                     # fallback
                     latus.logger.log.warn('%s : send2trash failed on %s' % (pref.get_node_id(), local_file_path))
-                this_node_db.update(info['seq'], info['originator'], info['event'], info['detection'],
-                                    info['path'], None, None, None)
+                this_node_db.clear_pending(info)
+                #this_node_db.update(info['seq'], info['originator'], info['event'], info['detection'],
+                #                    info['path'], None, None, None, False)
             else:
                 latus.logger.log.error('not yet implemented : %s' % str(info['event']))
 

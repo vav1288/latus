@@ -62,6 +62,7 @@ class NodeDB:
                                              sqlalchemy.Column('size', sqlalchemy.Integer),
                                              sqlalchemy.Column('hash', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('mtime', sqlalchemy.DateTime),
+                                             sqlalchemy.Column('pending', sqlalchemy.Boolean),
                                              sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
                                              )
 
@@ -99,30 +100,31 @@ class NodeDB:
         self.set_computer(platform.node())
         self.set_heartbeat()
 
-    def update(self, seq, originator, event, detection, file_path, size, hash, mtime):
+    def update(self, seq, originator, event, detection, file_path, size, hash, mtime, pending):
         conn = self.db_engine.connect()
-        latus.logger.log.info('%s updating %s %s %s %s %s %s %s %s' % (self.node_id, seq, originator, event, detection,
-                                                                       file_path, size, hash, mtime))
+        latus.logger.log.info('%s updating %s %s %s %s %s %s %s %s %s' % (self.node_id, seq, originator, event, detection,
+                                                                       file_path, size, hash, mtime, pending))
         command = self.change_table.select().where(self.change_table.c.seq == seq)
         result = conn.execute(command)
         if not result.fetchone():
             if mtime:
                 command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
                                                             detection=detection, path=file_path, size=size, hash=hash,
-                                                            mtime=mtime, timestamp=datetime.datetime.utcnow())
+                                                            mtime=mtime, pending=pending,
+                                                            timestamp=datetime.datetime.utcnow())
             else:
                 # if file has been deleted, there's no mtime (but we can't pass None into a datetime)
                 command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
-                                                            detection=detection, path=file_path,
+                                                            detection=detection, path=file_path, pending=pending,
                                                             timestamp=datetime.datetime.utcnow())
             result = conn.execute(command)
         else:
             latus.logger.log.warn('seq %s already found - not updating' % seq)
         conn.close()
 
-    def update_info(self, info):
+    def update_info(self, info, pending):
         self.update(info['seq'], info['originator'], info['event'], info['detection'], info['path'], info['size'],
-                    info['hash'], info['mtime'])
+                    info['hash'], info['mtime'], pending)
 
     def db_row_to_info(self, row):
         entry = {}
@@ -135,6 +137,7 @@ class NodeDB:
         entry['size'] = row[int(ChangeAttributes.size)]
         entry['hash'] = row[int(ChangeAttributes.hash)]
         entry['mtime'] = row[int(ChangeAttributes.mtime)]
+        entry['pending'] = row[int(ChangeAttributes.pending)]
         entry['timestamp'] = row[int(ChangeAttributes.timestamp)]
         return entry
 
@@ -190,12 +193,16 @@ class NodeDB:
         return file_hash
 
     def get_rows_as_info(self):
+        # todo: make this an interator, DB must stay open so to has to have a conn passed in
+        infos = []
         with self.db_engine.connect() as conn:
             command = self.change_table.select()
             result = conn.execute(command)
             if result:
                 for row in result:
-                    yield self.db_row_to_info(row)
+                    infos.append(self.db_row_to_info(row))
+            conn.close()
+        return infos
 
     # useful for testing DB access contention
     def get_retry_count(self):
@@ -315,9 +322,12 @@ class NodeDB:
                 last_seq = last[0]
             else:
                 last_seq = -1
+                conn.close()
             return last_seq
 
     def get_last_seqs_info(self):
+        # todo: make this an interator, DB must stay open so to has to have a conn passed in
+        infos = []
         with self.db_engine.connect() as conn:
             cmd = self.change_table.select().distinct(self.change_table.c.path)
             result = conn.execute(cmd)
@@ -329,7 +339,9 @@ class NodeDB:
                     last = all_rows[-1]
                 else:
                     last = None
-                yield self.db_row_to_info(last)
+                infos.append(self.db_row_to_info(last))
+            conn.close()
+        return infos
 
     def get_info_from_path_and_seq(self, path, seq):
         with self.db_engine.connect() as conn:
@@ -339,10 +351,32 @@ class NodeDB:
             if q_result:
                 row = q_result.fetchone()
                 if row:
+                    conn.close()
                     return self.db_row_to_info(row)
             else:
                 latus.logger.log.warn('DB execute error')
+            conn.close()
         return None
+
+    def any_pendings(self, path):
+        with self.db_engine.connect() as conn:
+            cmd = self.change_table.select().where(self.change_table.c.path == path and self.change_table.c.pending)
+            result = conn.execute(cmd)
+            conn.close()
+            if result:
+                return True
+        return False
+
+    def clear_pending(self, info):
+        with self.db_engine.connect() as conn:
+            result = None
+            stmt = self.change_table.update().values(pending=False).where(self.change_table.c.path == info['path'] and
+                                                                          self.change_table.c.seq == info['seq'])
+            result = conn.execute(stmt)
+            if not result:
+                latus.logger.log.error('clear_pending of %s %s failed' % (info['path'], info['seq']))
+
+            conn.close()
 
     def get_folder_preferences_from_path(self, path):
         return self.get_folder_preferences_from_folder(os.path.basename(path))
@@ -410,4 +444,4 @@ def sync_dbs(cloud_node_folder, source_node_id, destination_node_id):
     for source_info in source_node_db.get_rows_as_info():
         dest_info = destination_node_db.get_info_from_path_and_seq(source_info['path'], source_info['seq'])
         if dest_info is None:
-            destination_node_db.update_info(source_info)
+            destination_node_db.update_info(source_info, True)  # mark as pending

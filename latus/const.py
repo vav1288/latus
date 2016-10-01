@@ -47,10 +47,11 @@ class ChangeAttributes(IntEnum):
     index = 0
     seq = 1
     originator = 2
-    event = 3       # ChangeEvents
+    event = 3       # FileSystemEvent
     detection = 4   # DetectionSource
     path = 5
     size = 6
     hash = 7
     mtime = 8
-    timestamp = 9
+    pending = 9  # this node has not yet acted on it
+    timestamp = 10
