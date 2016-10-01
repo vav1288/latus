@@ -332,7 +332,7 @@ class NodeDB:
             cmd = self.change_table.select().distinct(self.change_table.c.path)
             result = conn.execute(cmd)
             for row in result:
-                q_cmd = self.change_table.select().where(self.change_table.c.path == row[ChangeAttributes.path])
+                q_cmd = self.change_table.select().where(self.change_table.c.path == row[ChangeAttributes.path] and self.change_table.c.pending)
                 q_result = conn.execute(q_cmd)
                 all_rows = q_result.fetchall()
                 if all_rows:
