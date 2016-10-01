@@ -54,7 +54,7 @@ class NodeDB:
 
         self.change_table = sqlalchemy.Table('change', self.sa_metadata,
                                              sqlalchemy.Column('index', sqlalchemy.Integer, primary_key=True),
-                                             sqlalchemy.Column('seq', sqlalchemy.Float, index=True),
+                                             sqlalchemy.Column('seq', sqlalchemy.Float, index=True),  # todo: make this a string
                                              sqlalchemy.Column('originator', sqlalchemy.String),
                                              sqlalchemy.Column('event', sqlalchemy.Integer),
                                              sqlalchemy.Column('detection', sqlalchemy.Integer),
@@ -120,6 +120,10 @@ class NodeDB:
             latus.logger.log.warn('seq %s already found - not updating' % seq)
         conn.close()
 
+    def update_info(self, info):
+        self.update(info['seq'], info['originator'], info['event'], info['detection'], info['path'], info['size'],
+                    info['hash'], info['mtime'])
+
     def db_row_to_info(self, row):
         entry = {}
         entry['index'] = row[int(ChangeAttributes.index)]
@@ -184,6 +188,14 @@ class NodeDB:
                 file_hash = all_hashes[-1][ChangeAttributes.hash]
         conn.close()
         return file_hash
+
+    def get_rows_as_info(self):
+        with self.db_engine.connect() as conn:
+            command = self.change_table.select()
+            result = conn.execute(command)
+            if result:
+                for row in result:
+                    yield self.db_row_to_info(row)
 
     # useful for testing DB access contention
     def get_retry_count(self):
@@ -294,17 +306,43 @@ class NodeDB:
         return self._get_general(self._login_string)  # tuple of (is_logged_in, login_timestamp)
 
     def get_last_seq(self, file_path):
-        conn = self.db_engine.connect()
-        q_cmd = self.change_table.select().where(self.change_table.c.path == file_path)
-        q_result = conn.execute(q_cmd)
-        all_rows = q_result.fetchall()
-        if all_rows:
-            last = all_rows[-1]
-            last_seq = last[0]
-        else:
-            last_seq = -1
-        conn.close()
-        return last_seq
+        with self.db_engine.connect() as conn:
+            q_cmd = self.change_table.select().where(self.change_table.c.path == file_path)
+            q_result = conn.execute(q_cmd)
+            all_rows = q_result.fetchall()
+            if all_rows:
+                last = all_rows[-1]
+                last_seq = last[0]
+            else:
+                last_seq = -1
+            return last_seq
+
+    def get_last_seqs_info(self):
+        with self.db_engine.connect() as conn:
+            cmd = self.change_table.select().distinct(self.change_table.c.path)
+            result = conn.execute(cmd)
+            for row in result:
+                q_cmd = self.change_table.select().where(self.change_table.c.path == row[ChangeAttributes.path])
+                q_result = conn.execute(q_cmd)
+                all_rows = q_result.fetchall()
+                if all_rows:
+                    last = all_rows[-1]
+                else:
+                    last = None
+                yield self.db_row_to_info(last)
+
+    def get_info_from_path_and_seq(self, path, seq):
+        with self.db_engine.connect() as conn:
+            q_cmd = self.change_table.select().where(self.change_table.c.seq == seq and self.change_table.c.path == path)
+            q_result = conn.execute(q_cmd)
+            # todo: check that there is indeed only one entry returned
+            if q_result:
+                row = q_result.fetchone()
+                if row:
+                    return self.db_row_to_info(row)
+            else:
+                latus.logger.log.warn('DB execute error')
+        return None
 
     def get_folder_preferences_from_path(self, path):
         return self.get_folder_preferences_from_folder(os.path.basename(path))
@@ -365,3 +403,11 @@ def get_node_id_from_db_file_path(db_file_path):
     ext_len = len(DB_EXTENSION)
     return os.path.basename(db_file_path)[:-ext_len]
 
+
+def sync_dbs(cloud_node_folder, source_node_id, destination_node_id):
+    source_node_db = NodeDB(cloud_node_folder, source_node_id)
+    destination_node_db = NodeDB(cloud_node_folder, destination_node_id)
+    for source_info in source_node_db.get_rows_as_info():
+        dest_info = destination_node_db.get_info_from_path_and_seq(source_info['path'], source_info['seq'])
+        if dest_info is None:
+            destination_node_db.update_info(source_info)

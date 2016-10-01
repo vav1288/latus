@@ -156,11 +156,14 @@ class LocalSync(SyncBase):
             if crypto_key is None:
                 latus.logger.log.error('no crypto_key yet')
                 return
-            cloud_fernet_file = os.path.join(cloud_folders.cache, hash + ENCRYPTION_EXTENSION)
-            crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
-            if not os.path.exists(cloud_fernet_file):
-                latus.logger.log.info('%s : file_write , %s' % (node_id, cloud_fernet_file))
-                crypto.encrypt(full_path, os.path.abspath(cloud_fernet_file))
+            if hash is None:
+                latus.logger.log.warning('could not get hash for %s' % full_path)
+            else:
+                cloud_fernet_file = os.path.join(cloud_folders.cache, hash + ENCRYPTION_EXTENSION)
+                crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
+                if not os.path.exists(cloud_fernet_file):
+                    latus.logger.log.info('%s : file_write , %s' % (node_id, cloud_fernet_file))
+                    crypto.encrypt(full_path, os.path.abspath(cloud_fernet_file))
         else:
             destination = os.path.join(cloud_folders.cache, hash + UNENCRYPTED_EXTENSION)
             if not os.path.exists(destination):
@@ -220,14 +223,14 @@ class LocalSync(SyncBase):
         for partial_path in node_db.get_paths():
             full_path = os.path.join(pref.get_latus_folder(), partial_path)
             if not os.path.exists(full_path):
-                latus.logger.log.info('%s : %s deleted' % (pref.get_node_id(), partial_path))
                 node_id = pref.get_node_id()
-                self.add_filter_event(node_db.get_database_file_name(), FileSystemEvent.modified)
                 most_recent_hash = node_db.get_most_recent_hash(partial_path)
                 if most_recent_hash is not None:
+                    latus.logger.log.info('%s : %s deleted' % (pref.get_node_id(), partial_path))
                     miv = latus.miv.get_miv(node_id)
                     latus.logger.sync_log(node_id, FileSystemEvent.deleted, miv, partial_path,
                                           detection_source, None, None, None)
+                    self.add_filter_event(node_db.get_database_file_name(), FileSystemEvent.modified)
                     node_db.update(miv, node_id, int(FileSystemEvent.deleted),
                                    int(DetectionSource.initial_scan), partial_path, None, None, None)
 
@@ -273,50 +276,36 @@ class CloudSync(SyncBase):
             self.cloud_sync(DetectionSource.watchdog)
 
     def cloud_sync(self, detection_source):
-        # todo: it would be nice to have the detection_source be in the node DB when we copy it over, but
-        # currently we copy over the original detection source, which is also valuable.  We do log
-        # the detection_source though.  Maybe that's enough.
         pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
         this_node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
 
-        crypto_key = pref.get_crypto_key()
-        if crypto_key is None:
-            latus.logger.log.info('no crypto_key yet')
-            return
-        crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
-        # for each file path, determine the 'winning' node (which could be this node)
-        winners = {}
-        for db_file in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
-            file_name = os.path.basename(db_file)
-            db_node_id = file_name.split('.')[0]
-            fs_db = latus.nodedb.NodeDB(cloud_folders.nodes, db_node_id)
-            for partial_path in fs_db.get_paths():
-                file_info = fs_db.get_latest_file_info(partial_path)
-                file_info['node'] = db_node_id  # this isn't in the db
-                if partial_path in winners:
-                    # got file info that is later than we've seen so far
-                    if file_info['seq'] > winners[partial_path]['seq']:
-                        winners[partial_path] = file_info
-                else:
-                    # init winner for this file
-                    winners[partial_path] = file_info
+        # ensure this node's DB has all the entries that other node's DBs have
+        for db_node_id in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
+            if db_node_id != this_node_db.get_node_id():
+                latus.nodedb.sync_dbs(cloud_folders.nodes, db_node_id, this_node_db.get_node_id())
 
-        latus.logger.log.info('%s : len(winners) = %d' % (pref.get_node_id(), len(winners)))
-        for partial_path in winners:
-            winning_file_info = winners[partial_path]
-            local_file_path = os.path.join(pref.get_latus_folder(), partial_path)
+        for info in this_node_db.get_last_seqs_info():
+            local_file_path = os.path.join(pref.get_latus_folder(), info['path'])
             if os.path.exists(local_file_path):
                 local_file_hash, _ = latus.hash.calc_sha512(local_file_path)  # todo: get this pre-computed from the db
             else:
                 local_file_hash = None
-            if winning_file_info['hash']:
-                if winning_file_info['hash'] != local_file_hash:
+
+            if info['event'] == FileSystemEvent.created or info['event'] == FileSystemEvent.modified:
+                if info['hash'] != local_file_hash:
+
+                    crypto_key = pref.get_crypto_key()
+                    if crypto_key is None:
+                        latus.logger.log.warning('no crypto_key yet')
+                        return
+                    crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
+
                     cloud_fernet_file = os.path.join(cloud_folders.cache,
-                                                     winning_file_info['hash'] + ENCRYPTION_EXTENSION)
+                                                     info['hash'] + ENCRYPTION_EXTENSION)
                     latus.logger.log.info('%s : %s : %s changed %s - propagating to %s %s' %
-                                          (pref.get_node_id(), detection_source, db_node_id, partial_path,
-                                           local_file_path, winning_file_info['hash']))
+                                          (pref.get_node_id(), detection_source, db_node_id, info['path'],
+                                           local_file_path, info['hash']))
                     encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(local_file_path)
 
                     latus.logger.log.info('%s : muting %s' % (pref.get_node_id(), local_file_path))
@@ -326,26 +315,25 @@ class CloudSync(SyncBase):
                         # todo: set mtime
                     else:
                         cloud_file = os.path.join(cloud_folders.cache,
-                                                  winning_file_info['hash'] + UNENCRYPTED_EXTENSION)
+                                                  info['hash'] + UNENCRYPTED_EXTENSION)
                         shutil.copy2(cloud_file, local_file_path)
-                    last_seq = this_node_db.get_last_seq(partial_path)
-                    if winning_file_info['seq'] != last_seq:
-                        this_node_db.update(winning_file_info['seq'], winning_file_info['originator'],
-                                            winning_file_info['event'], winning_file_info['detection'],
-                                            winning_file_info['path'], winning_file_info['size'],
-                                            winning_file_info['hash'], winning_file_info['mtime'])
-            elif local_file_hash:
+                    last_seq = this_node_db.get_last_seq(info['path'])
+                    if info['seq'] != last_seq:
+                        this_node_db.update(info['seq'], info['originator'], info['event'], info['detection'],
+                                            info['path'], info['size'], info['hash'], info['mtime'])
+            elif info['event'] == FileSystemEvent.deleted:
                 self.add_filter_event(local_file_path, FileSystemEvent.deleted)
-                latus.logger.log.info('%s : %s : %s deleted %s' % (pref.get_node_id(), detection_source, db_node_id, partial_path))
+                latus.logger.log.info('%s : %s : %s deleted %s' % (pref.get_node_id(), detection_source, db_node_id, info['path']))
                 try:
                     if os.path.exists(local_file_path):
                         send2trash.send2trash(local_file_path)
                 except OSError:
                     # fallback
                     latus.logger.log.warn('%s : send2trash failed on %s' % (pref.get_node_id(), local_file_path))
-                this_node_db.update(winning_file_info['seq'], winning_file_info['originator'],
-                                    winning_file_info['event'], winning_file_info['detection'],
-                                    winning_file_info['path'], None, None, None)
+                this_node_db.update(info['seq'], info['originator'], info['event'], info['detection'],
+                                    info['path'], None, None, None)
+            else:
+                latus.logger.log.error('not yet implemented : %s' % str(info['event']))
 
     def fs_scan(self, detection_source):
         pass
