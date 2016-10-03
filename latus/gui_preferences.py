@@ -4,6 +4,7 @@ import logging
 
 from PyQt5.QtWidgets import QLabel, QDialogButtonBox, QVBoxLayout, QLineEdit, QGridLayout, QFileDialog, QDialog, \
     QGroupBox, QCheckBox
+from PyQt5.QtCore import Qt
 
 import latus.logger
 import latus.sync
@@ -66,9 +67,9 @@ class PreferencesDialog(QDialog):
             col = 1
             self.check_boxes[folder] = []
             for attribute in self.node_db.get_folder_preferences_from_folder(folder):
-                s = Qt.CheckState.Unchecked
+                s = Qt.Unchecked
                 if attribute:
-                    s = Qt.CheckState.Checked
+                    s = Qt.Checked
                 cb = QCheckBox()
                 cb.setCheckState(s)
                 folder_preferences_layout.addWidget(cb, row, col)
