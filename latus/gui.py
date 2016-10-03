@@ -1,6 +1,6 @@
 import sys
+import subprocess
 
-import appdirs
 from PyQt5.QtGui import QFontMetrics, QFont, QIcon, QPixmap
 from PyQt5.QtWidgets import QGridLayout, QLabel, QLineEdit, QSystemTrayIcon, QMenu, QDialog, QApplication, QMessageBox
 
@@ -51,21 +51,22 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
         self.latus_appdata_folder = latus_appdata_folder
 
         menu = QMenu(parent)
-        about_action = menu.addAction("Import Latus Key")
-        about_action.triggered.connect(self.import_latus_key)
-        about_action = menu.addAction("Export Latus Key")
-        about_action.triggered.connect(self.export_latus_key)
-        about_action = menu.addAction("Nodes")
-        about_action.triggered.connect(self.nodes)
-        about_action = menu.addAction("Preferences")
-        about_action.triggered.connect(self.preferences)
-        about_action = menu.addAction("About")
-        about_action.triggered.connect(self.about)
-        exit_action = menu.addAction("Exit")
-        exit_action.triggered.connect(self.exit)
+        menu.addAction("Open Latus Folder").triggered.connect(self.open_latus_folder)
+        menu.addSeparator()
+        menu.addAction("Import Latus Key").triggered.connect(self.import_latus_key)
+        menu.addAction("Export Latus Key").triggered.connect(self.export_latus_key)
+        menu.addAction("Nodes").triggered.connect(self.nodes)
+        menu.addAction("Preferences").triggered.connect(self.preferences)
+        menu.addAction("About").triggered.connect(self.about)
+        menu.addAction("Exit").triggered.connect(self.exit)
         self.setContextMenu(menu)
 
         self.sync = None
+
+    def activated(self, reason):
+        super().activated(reason)
+        if reason == self.DoubleClick:
+            self.open_latus_folder()
 
     def start_latus(self):
         self.sync = latus.sync.Sync(self.latus_appdata_folder)
@@ -73,6 +74,17 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
 
     def show(self):
         QSystemTrayIcon.show(self)
+
+    def open_latus_folder(self):
+        pref = latus.preferences.Preferences(self.latus_appdata_folder)
+        if latus.util.is_windows():
+            cmd = 'explorer'
+        elif latus.util.is_mac():
+            cmd = 'open'
+        else:
+            # todo: what about Linux?
+            raise NotImplementedError
+        subprocess.check_call([cmd, pref.get_latus_folder()])
 
     def import_latus_key(self):
         key = latus.key_management.read_latus_key_gui()
