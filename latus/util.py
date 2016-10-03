@@ -9,22 +9,16 @@ import latus.const
 
 
 def is_windows():
-    is_win = False
-    plat = platform.system()
-    plat = plat.lower()
-    if plat[0] == 'w':
-        is_win = True
-    return is_win
+    return platform.system().lower()[0] == 'w'
 
 
 def is_linux():
-    is_lin = False
-    plat = platform.system()
-    plat = plat.lower()
-    if plat[0] == 'l':
-        is_lin = True
-    return is_lin
+    return platform.system().lower()[0] == 'l'
 
+
+def is_mac():
+    # darwin
+    return platform.system().lower()[0] == 'd'
 
 if is_windows():
     import win32api
