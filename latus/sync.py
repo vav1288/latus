@@ -302,22 +302,25 @@ class CloudSync(SyncBase):
                         return
                     crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
 
-                    cloud_fernet_file = os.path.join(cloud_folders.cache,
-                                                     info['hash'] + ENCRYPTION_EXTENSION)
-                    latus.logger.log.info('%s : %s : %s %s %s - propagating to %s %s' %
-                                          (pref.get_node_id(), info['detection'], info['originator'], info['event'], info['path'],
-                                           local_file_path, info['hash']))
-                    encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(local_file_path)
+                    if info['hash']:
+                        cloud_fernet_file = os.path.join(cloud_folders.cache,
+                                                         info['hash'] + ENCRYPTION_EXTENSION)
+                        latus.logger.log.info('%s : %s : %s %s %s - propagating to %s %s' %
+                                              (pref.get_node_id(), info['detection'], info['originator'], info['event'], info['path'],
+                                               local_file_path, info['hash']))
+                        encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(local_file_path)
 
-                    latus.logger.log.info('%s : muting %s' % (pref.get_node_id(), local_file_path))
-                    self.add_filter_event(local_file_path, FileSystemEvent.any)  # is actually create or modify ... will be correct when we have this class use the proper watchdog events
-                    if encrypt:
-                        expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
-                        # todo: set mtime
+                        latus.logger.log.info('%s : muting %s' % (pref.get_node_id(), local_file_path))
+                        self.add_filter_event(local_file_path, FileSystemEvent.any)  # is actually create or modify ... will be correct when we have this class use the proper watchdog events
+                        if encrypt:
+                            expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
+                            # todo: set mtime
+                        else:
+                            cloud_file = os.path.join(cloud_folders.cache, info['hash'] + UNENCRYPTED_EXTENSION)
+                            shutil.copy2(cloud_file, local_file_path)
+                        this_node_db.clear_pending(info)
                     else:
-                        cloud_file = os.path.join(cloud_folders.cache, info['hash'] + UNENCRYPTED_EXTENSION)
-                        shutil.copy2(cloud_file, local_file_path)
-                    this_node_db.clear_pending(info)
+                        latus.logger.log.warning('%s : hash is None for %s' % (pref.get_node_id(), local_file_path))
             elif info['event'] == FileSystemEvent.deleted:
                 self.add_filter_event(local_file_path, FileSystemEvent.deleted)
                 latus.logger.log.info('%s : %s : %s deleted %s' % (pref.get_node_id(), detection_source, info['originator'], info['path']))
