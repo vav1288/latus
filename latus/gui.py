@@ -1,4 +1,5 @@
 import sys
+import os
 import subprocess
 
 from PyQt5.QtGui import QFontMetrics, QFont, QIcon, QPixmap
@@ -78,13 +79,13 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
     def open_latus_folder(self):
         pref = latus.preferences.Preferences(self.latus_appdata_folder)
         if latus.util.is_windows():
-            cmd = 'explorer'
+            os.startfile(pref.get_latus_folder())  # keep the app running - call('explorer') would kil it
         elif latus.util.is_mac():
-            cmd = 'open'
+            subprocess.check_call(['open', pref.get_latus_folder()])
         else:
             # todo: what about Linux?
             raise NotImplementedError
-        subprocess.check_call([cmd, pref.get_latus_folder()])
+
 
     def import_latus_key(self):
         key = latus.key_management.read_latus_key_gui()
