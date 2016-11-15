@@ -10,7 +10,15 @@ import latus.util
 import latus.const
 import latus.logger
 
+
+# DB schema version is the latus version where this schema was first introduced.  If your DB schema is earlier
+# than (i.e. "less than") this, you need to do a drop all tables and start over.  This value is MANUALLY copied from
+# latus.__version__ when a new and incompatible schema is introduced.
+__db_version__ = '0.0.0'
+
+
 Base = sqlalchemy.ext.declarative.declarative_base()
+
 
 class PreferencesTable(Base):
     __tablename__ = 'preferences'
@@ -31,17 +39,23 @@ class Preferences:
         self.__most_recent_key_folder_string = 'keyfolder'
         self.__cloud_root_string = 'cloudroot'
         self.__latus_folder_string = 'latusfolder'
+        self.__check_new_version_string = 'checknewversion'
+        self.__upload_usage_string = 'uploadusage'
+        self.__upload_logs_string = 'uploadlogs'
+        self.__version_key_string = 'version'
         self.__verbose_string = 'verbose'
 
         if not os.path.exists(latus_appdata_folder):
             latus.util.make_dirs(latus_appdata_folder)
-        self._db_path = os.path.abspath(os.path.join(latus_appdata_folder, self.PREFERENCES_FILE))
-        sqlite_path = 'sqlite:///' + self._db_path
+        self.__db_path = os.path.abspath(os.path.join(latus_appdata_folder, self.PREFERENCES_FILE))
+        sqlite_path = 'sqlite:///' + self.__db_path
         self.__db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
+        # todo: check the version in the DB against the current __version__ to see if we need to force an init
+        # (since this schema is so simple, we probably won't ever have to do this)
         if init:
             self.init()
-        Base.metadata.create_all(self.__db_engine)
         self.__Session = sqlalchemy.orm.sessionmaker(bind=self.__db_engine)
+        self.__pref_set(self.__version_key_string, __db_version__)
 
     def __pref_set(self, key, value):
         latus.logger.log.debug('pref_set : %s to %s' % (str(key), str(value)))
@@ -96,6 +110,24 @@ class Preferences:
     def get_key_folder(self):
         return self.__pref_get(self.__most_recent_key_folder_string)
 
+    def set_check_new_version(self, check_flag):
+        self.__pref_set(self.__check_new_version_string, check_flag)
+
+    def get_check_new_version(self):
+        return bool(int(self.__pref_get(self.__check_new_version_string)))
+
+    def set_upload_usage(self, upload_usage_flag):
+        self.__pref_set(self.__upload_usage_string, upload_usage_flag)
+
+    def get_upload_usage(self):
+        return bool(int(self.__pref_get(self.__upload_usage_string)))
+
+    def set_upload_logs(self, upload_logs_flag):
+        self.__pref_set(self.__upload_logs_string, upload_logs_flag)
+
+    def get_upload_logs(self):
+        return bool(int(self.__pref_get(self.__upload_logs_string)))
+
     def set_node_id(self, new_node_id):
         self.__pref_set(self.__id_string, new_node_id)
 
@@ -103,11 +135,12 @@ class Preferences:
         return self.__pref_get(self.__id_string)
 
     def get_db_path(self):
-        return self._db_path
+        return self.__db_path
 
     def init(self):
         Base.metadata.drop_all(self.__db_engine)
         Base.metadata.create_all(self.__db_engine)
+        latus.logger.log.info('creating preferences DB version %s' % __db_version__)
 
     def folders_are_set(self):
         return self.get_cloud_root() is not None and self.get_latus_folder() is not None

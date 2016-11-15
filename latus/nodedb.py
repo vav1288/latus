@@ -13,6 +13,11 @@ from latus.const import DB_EXTENSION, ChangeAttributes
 import latus.logger
 import latus.util
 
+# DB schema version is the latus version where this schema was first introduced.  If your DB schema is earlier
+# than (i.e. "less than") this, you need to do a drop all tables and start over.  This value is MANUALLY copied from
+# latus.__version__ when a new and incompatible schema is introduced.
+__db_version__ = '0.0.0'
+
 
 class NodeDB:
     def __init__(self, cloud_node_db_folder, node_id, write_flag=False):
@@ -75,14 +80,26 @@ class NodeDB:
                                               )
 
         if write_flag:
-            try:
-                self.sa_metadata.create_all()
-            except sqlalchemy.exc.OperationalError as e:
-                # todo: this is really odd ... it keeps throwing these errors and I don't know why.  I shouldn't need
-                # to do this since create_all() is supposed to check first.
-                latus.logger.log.warn(str(e))
-            self.set_all(node_id)
-            latus.util.make_hidden(self.sqlite_file_path)
+            new_schema = False
+            if self._get_general('version')[0] is None:
+                new_schema = True
+                latus.logger.log.info('%s : no version in DB' % self.node_id)
+            elif latus.util.version_to_tuple(__db_version__) > latus.util.version_to_tuple(self._get_general('version')[0]):
+                new_schema = True
+                latus.logger.log.info('%s : new DB schema' % self.node_id)
+            if not self.db_engine.has_table('general') or new_schema:
+                latus.logger.log.info('%s : start creating node DB version %s' % (node_id, __db_version__))
+                try:
+                    self.sa_metadata.drop_all()
+                    self.sa_metadata.create_all()
+                except sqlalchemy.exc.OperationalError as e:
+                    # todo: this is really odd ... it keeps throwing these errors and I don't know why.  I shouldn't need
+                    # to do this since create_all() is supposed to check first.
+                    latus.logger.log.fatal(str(e))
+                self.set_all(node_id)
+                self._set_general('version', __db_version__)  # keep track of this DB version as it was created
+                latus.util.make_hidden(self.sqlite_file_path)
+                latus.logger.log.info('%s : end creating node DB version %s' % (node_id, __db_version__))
 
     def delete(self):
         if os.path.exists(self.sqlite_file_path):
@@ -172,7 +189,7 @@ class NodeDB:
             command = self.change_table.select()
             result = conn.execute(command)
             for row in result:
-                file_path = row[ChangeAttributes.path]
+                file_path = row[int(ChangeAttributes.path)]
                 if file_path not in file_paths:
                     file_paths.add(file_path)
         else:
@@ -188,7 +205,7 @@ class NodeDB:
         if result:
             all_hashes = result.fetchall()
             if all_hashes:
-                file_hash = all_hashes[-1][ChangeAttributes.hash]
+                file_hash = all_hashes[-1][int(ChangeAttributes.hash)]
         conn.close()
         return file_hash
 
@@ -244,6 +261,8 @@ class NodeDB:
         conn.close()
         if not val_is_valid:
             latus.logger.log.error('node DB: %s : could not read %s' % (self.node_id, key))
+            val = None
+            timestamp = None
         return val, timestamp
 
     def _set_general(self, key, value):
@@ -332,7 +351,7 @@ class NodeDB:
             cmd = self.change_table.select().distinct(self.change_table.c.path)
             result = conn.execute(cmd)
             for row in result:
-                q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == row[ChangeAttributes.path], self.change_table.c.pending))
+                q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == row[int(ChangeAttributes.path)], self.change_table.c.pending))
                 q_result = conn.execute(q_cmd)
                 all_rows = q_result.fetchall()
                 if all_rows:

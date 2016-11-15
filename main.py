@@ -71,6 +71,7 @@ def main():
     except Exception:
         latus.logger.log.exception("Fatal error")
 
+
 def set_from_args(args):
     """
     Setup config based on args from argparse

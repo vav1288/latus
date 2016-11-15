@@ -1,5 +1,8 @@
+
 # PEP 440 compliant
-__version__ = '0.0.dev0'
+# adhere to http://semver.org/
+__version__ = '0.0.0'
+
 
 # required for OSNAP
 __author__ = 'abel.co'
