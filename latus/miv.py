@@ -18,7 +18,7 @@ g_miv_count = 0
 
 def _get_miv(node_id):
     global g_miv_count
-    server = 'http://mono.lat.us'
+    server = 'https://api.abel.co/miv'
     miv = None
     tries = 0
     while miv is None and tries < 3:
