@@ -133,8 +133,8 @@ def new_node_id():
     return str(uuid.uuid4())
 
 
-def version_string():
-    return datetime.datetime.utcnow().strftime("%y%m%d")
+#def version_string():
+#    return datetime.datetime.utcnow().strftime("%y%m%d")
 
 
 def wait_random_avg_1_sec():
@@ -142,3 +142,12 @@ def wait_random_avg_1_sec():
     import time
 
     time.sleep(0.5 + random.random())
+
+
+def version_to_tuple(version_string):
+    """
+    convert a version string to a version tuple
+    :param version_string: e.g. '2.5.1'
+    :return: version tuple, e.g. (2,5,1)
+    """
+    return tuple([int(s) for s in '1.2.3'.split('.')])
