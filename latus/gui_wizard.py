@@ -55,6 +55,12 @@ class GUIWizard(QWizard):
         pref.set_crypto_key(self.field(LATUS_KEY_FIELD_STRING))
         if not pref.get_node_id():
             pref.set_node_id(latus.util.new_node_id())
+
+        # defaults (i.e. opt-in or opt-out) for support selections
+        pref.set_check_new_version(True)
+        pref.set_upload_logs(False)
+        pref.set_upload_usage(False)
+
         folders = latus.folders.CloudFolders(pref.get_cloud_root())
         node = latus.nodedb.NodeDB(folders.nodes, pref.get_node_id(), write_flag=True)
         node.set_all(pref.get_node_id())

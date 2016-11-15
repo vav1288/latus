@@ -1,10 +1,12 @@
 
 import os
 import logging
+import appdirs
 
 from PyQt5.QtWidgets import QLabel, QDialogButtonBox, QVBoxLayout, QLineEdit, QGridLayout, QFileDialog, QDialog, \
     QGroupBox, QCheckBox
 from PyQt5.QtCore import Qt
+from PyQt5.Qt import QApplication
 
 import latus.logger
 import latus.sync
@@ -50,32 +52,34 @@ class PreferencesDialog(QDialog):
 
         super().__init__()
         overall_layout = QVBoxLayout()
+        col = 0
+        row = 1
 
         folder_preferences_group_box = QGroupBox("Folder Preferences")
         folder_preferences_layout = QGridLayout()
         headers = ['Folder', 'Encrypted', 'Shared', 'Cloud']
-        col = 0
         for header in headers:
             folder_preferences_layout.addWidget(QLabel(header), 0, col)
             col += 1
-        row = 1
-
-        self.folders = sorted(os.listdir(self.pref.get_latus_folder()))
-        self.check_boxes = {}
-        for folder in self.folders:
-            folder_preferences_layout.addWidget(QLabel(folder))
-            col = 1
-            self.check_boxes[folder] = []
-            for attribute in self.node_db.get_folder_preferences_from_folder(folder):
-                s = Qt.Unchecked
-                if attribute:
-                    s = Qt.Checked
-                cb = QCheckBox()
-                cb.setCheckState(s)
-                folder_preferences_layout.addWidget(cb, row, col)
-                self.check_boxes[folder].append(cb)
-                col += 1
-            row += 1
+        self.folders = list(filter(None, [f if os.path.isdir(f) else False for f in sorted(os.listdir(self.pref.get_latus_folder()))]))
+        if len(self.folders) > 0:
+            self.check_boxes = {}
+            for folder in self.folders:
+                folder_preferences_layout.addWidget(QLabel(folder))
+                col = 1
+                self.check_boxes[folder] = []
+                for attribute in self.node_db.get_folder_preferences_from_folder(folder):
+                    ss = Qt.Unchecked
+                    if attribute:
+                        ss = Qt.Checked
+                    cb = QCheckBox()
+                    cb.setCheckState(ss)
+                    folder_preferences_layout.addWidget(cb, row, col)
+                    self.check_boxes[folder].append(cb)
+                    col += 1
+                row += 1
+        else:
+            folder_preferences_layout.addWidget(QLabel("(No Folders Created Yet)"))
         folder_preferences_group_box.setLayout(folder_preferences_layout)
         overall_layout.addWidget(folder_preferences_group_box)
 
@@ -85,6 +89,27 @@ class PreferencesDialog(QDialog):
         self.cloud_folder = LineUI('Cloud Folder', self.pref.get_cloud_root(), self.new_folder)
         self.blank = QLabel('')
 
+        support_preferences_group_box = QGroupBox("Support Preferences")
+        support_preferences_layout = QGridLayout()
+        headers = ['Option', 'Enabled']
+        col = 0
+        for header in headers:
+            support_preferences_layout.addWidget(QLabel(header), 0, col)
+            col += 1
+        row = 1
+        self.support_selections = []
+        self.support_selections.append({'str': 'Check For New Version', 'set': preferences.set_check_new_version, 'get': preferences.get_check_new_version})
+        self.support_selections.append({'str': 'Upload Issue Logs', 'set': preferences.set_upload_logs, 'get': preferences.get_upload_logs})
+        self.support_selections.append({'str': 'Upload Usage Information', 'set': preferences.set_upload_usage, 'get': preferences.get_upload_usage})
+        for ss in self.support_selections:
+            support_preferences_layout.addWidget(QLabel(ss['str']), row, 0)
+            ss['cb'] = QCheckBox()
+            if ss['get']():
+                ss['cb'].setCheckState(Qt.Checked)
+            support_preferences_layout.addWidget(ss['cb'], row, 1)
+            row += 1
+        support_preferences_group_box.setLayout(support_preferences_layout)
+
         ok_buttonBox = QDialogButtonBox(QDialogButtonBox.Ok)
         ok_buttonBox.accepted.connect(self.ok)
         cancel_buttonBox = QDialogButtonBox(QDialogButtonBox.Cancel)
@@ -93,7 +118,9 @@ class PreferencesDialog(QDialog):
         self.latus_folder.layout(folder_locations_layout, row)
         self.cloud_folder.layout(folder_locations_layout, row + 1)
         folder_locations_group_box.setLayout(folder_locations_layout)
+
         overall_layout.addWidget(folder_locations_group_box)
+        overall_layout.addWidget(support_preferences_group_box)
 
         # todo: alignment
         overall_layout.addWidget(ok_buttonBox)     # , alignment=QtCore.Qt.AlignLeft)
@@ -115,8 +142,12 @@ class PreferencesDialog(QDialog):
             current_preferences = self.node_db.get_folder_preferences_from_folder(folder)
             print(cb_states)
             if current_preferences != cb_states:
-                print('new prefernces for %s : %s --> %s' % (folder, str(current_preferences), str(cb_states)))
+                latus.logger.log.info('new folder preferences for %s : %s --> %s' % (folder, str(current_preferences), str(cb_states)))
                 self.node_db.set_folder_preferences(folder, cb_states[0], cb_states[1], cb_states[2])
+        for ss in self.support_selections:
+            if ss['cb'].isChecked() != ss['get']():
+                latus.logger.log.info('new support preferences for %s : %s --> %s' % (ss['str'], str(ss['get']()), str(ss['cb'].isChecked())))
+                ss['set'](ss['cb'].isChecked())
         self.close()
 
     def cancel(self):
@@ -133,9 +164,10 @@ if __name__ == '__main__':
     latus.logger.init()
     latus.logger.set_console_log_level(logging.INFO)
 
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
 
-    app_data_folder = latus.util.get_latus_appdata_roaming_folder()
+    app_data_folder = appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)
+    print('app_data_folder', app_data_folder)
     preferences = latus.preferences.Preferences(app_data_folder)
     if not preferences.get_node_id():
         preferences.set_node_id(latus.util.new_node_id())
