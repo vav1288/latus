@@ -3,6 +3,8 @@ import platform
 import uuid
 import datetime
 import appdirs
+import random
+import time
 
 import latus.logger
 import latus.const
@@ -133,15 +135,15 @@ def new_node_id():
     return str(uuid.uuid4())
 
 
-#def version_string():
-#    return datetime.datetime.utcnow().strftime("%y%m%d")
-
-
-def wait_random_avg_1_sec():
-    import random
-    import time
-
-    time.sleep(0.5 + random.random())
+def wait_random(sec):
+    """
+    wait between 1 and sec seconds
+    :param sec: maximum time to wait (in seconds)
+    :return: time waited (in seconds)
+    """
+    t = (sec - 1.0) * random.random() + 1.0
+    time.sleep(t)
+    return t
 
 
 def version_to_tuple(version_string):
@@ -150,4 +152,4 @@ def version_to_tuple(version_string):
     :param version_string: e.g. '2.5.1'
     :return: version tuple, e.g. (2,5,1)
     """
-    return tuple([int(s) for s in '1.2.3'.split('.')])
+    return tuple([int(s) for s in version_string.split('.')])
