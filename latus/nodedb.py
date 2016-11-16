@@ -81,13 +81,16 @@ class NodeDB:
 
         if write_flag:
             new_schema = False
-            if self._get_general('version')[0] is None:
+            if not self.db_engine.has_table('general'):
+                new_schema = True
+                latus.logger.log.info('%s : no tables in DB' % self.node_id)
+            elif self._get_general('version')[0] is None:
                 new_schema = True
                 latus.logger.log.info('%s : no version in DB' % self.node_id)
             elif latus.util.version_to_tuple(__db_version__) > latus.util.version_to_tuple(self._get_general('version')[0]):
                 new_schema = True
                 latus.logger.log.info('%s : new DB schema' % self.node_id)
-            if not self.db_engine.has_table('general') or new_schema:
+            if new_schema:
                 latus.logger.log.info('%s : start creating node DB version %s' % (node_id, __db_version__))
                 try:
                     self.sa_metadata.drop_all()
@@ -234,9 +237,9 @@ class NodeDB:
                 result = conn.execute(command)
             except sqlalchemy.exc.OperationalError:
                 self.retry_count += 1
-                latus.logger.log.info('execute retry : %s' % str(msg))
+                latus.logger.log.warn('%s : execute retry : %s : %d' % (self.node_id, str(msg), self.retry_count))
                 result = None
-                latus.util.wait_random_avg_1_sec()
+                latus.util.wait_random(3)
         if result is None:
             latus.logger.log.error('execute error : %s' % str(msg))
         return result
@@ -246,7 +249,7 @@ class NodeDB:
         val_is_valid = False
         if self.db_engine is None:
             latus.logger.log.warn('_get_general: db_engine is None')
-            return None
+            return None, None
         conn = self.db_engine.connect()
         val = None
         timestamp = None
