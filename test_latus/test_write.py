@@ -25,8 +25,8 @@ def test_write(setup):
 
     latus.logger.log.info("*************** STARTING WRITE *************")
 
-    test_latus.util.write_to_file(os.path.join(folder_a, file_a), 'a')
-    test_latus.util.write_to_file(os.path.join(folder_b, file_b), 'b')
+    test_latus.util.write_to_file(folder_a, file_a, 'a')
+    test_latus.util.write_to_file(folder_b, file_b, 'b')
 
     latus.logger.log.info("*************** ENDING WRITE *************")
 

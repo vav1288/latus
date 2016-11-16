@@ -48,7 +48,7 @@ def test_delete(setup):
 
     time.sleep(1)
     latus.logger.log.info('starting write to %s' % file_path_a)
-    write_to_file(file_path_a, 'a')
+    write_to_file(local_folders[0], file_a, 'a')
     latus.logger.log.info('finished write to %s' % file_path_a)
 
     time.sleep(1)

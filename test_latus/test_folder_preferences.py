@@ -37,7 +37,7 @@ def test_folder_preferences(setup):
         sync[node] = test_latus.util.SetupSyncNode(node, key, get_simple_root(), cloud, sub_folder)
         sync[node].set_folder_preferences(False, True, False)
     for node in nodes:
-        test_latus.util.write_to_file(sync[node].get_file_path(), node)
+        test_latus.util.write_to_file(sync[node].get_file_dir(), sync[node].get_file_name(), node)
     for node in nodes:
         sync[node].get_sync().start()
 

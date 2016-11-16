@@ -115,11 +115,11 @@ def get_app_data_folder(root):
     return os.path.join(root, 'appdata')
 
 
-def sync_node(setup_id, key, root, cloud, sub_folder, exit_event, write_flag=True):
+def sync_node(setup_id, key, root, cloud, sub_folder, exit_event, write_flag=True, data_sub_folder=None):
     logger_init(os.path.join(root, 'log'))
     _sync_node = SetupSyncNode(setup_id, key, root, cloud, sub_folder)
     if write_flag:
-        write_to_file(_sync_node.get_file_path(), setup_id)
+        write_to_file(_sync_node.get_file_dir(), _sync_node.get_file_name(), setup_id, data_sub_folder)
     _sync_node.get_sync().start()
     while not exit_event.is_set():
         time.sleep(2)
@@ -170,6 +170,12 @@ class SetupSyncNode:
             p = os.path.join(latus_folder, get_file_name(self.node_id))
         return p
 
+    def get_file_dir(self):
+        return os.path.dirname(self.get_file_path())
+
+    def get_file_name(self):
+        return get_file_name(self.node_id)
+
     def get_cloud_root(self):
         return self.cloud_root
 
@@ -202,7 +208,11 @@ def clean():
         exit('clean failed')
 
 
-def write_to_file(p, contents):
+def write_to_file(dir_path, file_name, contents, subdir=None):
+    if subdir:
+        p = os.path.join(dir_path, subdir, file_name)
+    else:
+        p = os.path.join(dir_path, file_name)
     make_dirs(os.path.dirname(p))
     with open(p, "w") as f:
         f.write(contents)
