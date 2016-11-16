@@ -49,6 +49,7 @@ class PreferencesDialog(QDialog):
         self.pref = latus.preferences.Preferences(latus_appdata_folder)
         cloud_folders = latus.folders.CloudFolders(self.pref.get_cloud_root())
         self.node_db = latus.nodedb.NodeDB(cloud_folders.nodes, self.pref.get_node_id())
+        preferences = latus.preferences.Preferences(latus_appdata_folder)
 
         super().__init__()
         overall_layout = QVBoxLayout()
@@ -158,7 +159,7 @@ class PreferencesDialog(QDialog):
         return f
 
 
-if __name__ == '__main__':
+def main():
     import sys
 
     latus.logger.init()
@@ -174,3 +175,6 @@ if __name__ == '__main__':
     preferences_dialog = PreferencesDialog(app_data_folder)
     preferences_dialog.show()
     preferences_dialog.exec_()
+
+if __name__ == '__main__':
+    main()
