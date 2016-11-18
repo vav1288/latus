@@ -62,7 +62,7 @@ class PreferencesDialog(QDialog):
         for header in headers:
             folder_preferences_layout.addWidget(QLabel(header), 0, col)
             col += 1
-        self.folders = list(filter(None, [f if os.path.isdir(f) else False for f in sorted(os.listdir(self.pref.get_latus_folder()))]))
+        self.folders = latus.util.get_latus_folders(self.pref)
         if len(self.folders) > 0:
             self.check_boxes = {}
             for folder in self.folders:
@@ -141,7 +141,6 @@ class PreferencesDialog(QDialog):
         for folder in self.folders:
             cb_states = tuple([cb.isChecked() for cb in self.check_boxes[folder]])
             current_preferences = self.node_db.get_folder_preferences_from_folder(folder)
-            print(cb_states)
             if current_preferences != cb_states:
                 latus.logger.log.info('new folder preferences for %s : %s --> %s' % (folder, str(current_preferences), str(cb_states)))
                 self.node_db.set_folder_preferences(folder, cb_states[0], cb_states[1], cb_states[2])
@@ -168,7 +167,6 @@ def main():
     app = QApplication(sys.argv)
 
     app_data_folder = appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)
-    print('app_data_folder', app_data_folder)
     preferences = latus.preferences.Preferences(app_data_folder)
     if not preferences.get_node_id():
         preferences.set_node_id(latus.util.new_node_id())

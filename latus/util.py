@@ -153,3 +153,14 @@ def version_to_tuple(version_string):
     :return: version tuple, e.g. (2,5,1)
     """
     return tuple([int(s) for s in version_string.split('.')])
+
+
+def get_latus_folders(pref):
+    """
+    get the list of latus folders
+    :param pref: a Preferences object
+    :return: a sorted list of preferences folders
+    """
+    latus_folder = pref.get_latus_folder()
+    files_and_dirs = [os.path.join(latus_folder, p) for p in sorted(os.listdir(latus_folder))]
+    return list(filter(None, [p if os.path.isdir(p) else None for p in files_and_dirs]))
