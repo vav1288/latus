@@ -5,7 +5,6 @@ import logging
 import shutil
 import sys
 import subprocess
-import threading
 
 import latus.logger
 import latus.util
@@ -84,7 +83,7 @@ def get_file_name(node_id):
     return node_id + '.txt'
 
 
-class SyncThread(threading.Thread):
+class SyncThread:
     """
     Run the sync in a separate process.  This is necessary since the watchdog module and/or the
     underlying OS doesn't work well if there are multiple watchers watching the same path in the same process
@@ -93,15 +92,19 @@ class SyncThread(threading.Thread):
     def __init__(self, app_data_folder):
         self.app_data_folder = app_data_folder
         self.sync_process = None
-        super().__init__()
+        self.cmd = '%s %s -a %s -v' % (sys.executable, os.path.join('latus', 'sync.py'), self.app_data_folder)
 
-    def run(self):
-        cmd = '%s %s -a %s -v' % (sys.executable, os.path.join('latus', 'sync.py'), self.app_data_folder)
-        latus.logger.log.info(cmd)
-        self.sync_process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
+    def start(self):
+        latus.logger.log.info(self.cmd)
+        self.sync_process = subprocess.Popen(self.cmd, shell=True, stdin=subprocess.PIPE)
 
     def request_exit(self):
-        self.sync_process.communicate(b'\n\r')  # emulate 'enter' key (one of these should do it)
+        self.sync_process.communicate(b'\n\r')  # emulate 'enter' key to shutdown (one of these should do it)
+        self.sync_process.wait(5*60)  # if there are no issues shutdown should take just a few seconds
+        rc = self.sync_process.poll()
+        if rc != 0:
+            latus.logger.log.fatal('%s returned %s' % (self.cmd, str(rc)))
+        return rc
 
 
 def clean():
