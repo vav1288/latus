@@ -3,6 +3,7 @@ import requests
 import requests.exceptions
 import time
 import logging
+import random
 
 import latus.logger
 
@@ -24,7 +25,10 @@ def _get_miv(node_id):
     while miv is None and tries < 3:
         r = None
         try:
+            latus.logger.log.info('starting %s' % server)
+            time.sleep(1)
             r = requests.get(server)
+            latus.logger.log.info('end %s' % server)
         except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
             latus.logger.log.info(str(e))
         if r and r.status_code == 200:

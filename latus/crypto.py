@@ -66,10 +66,8 @@ class Crypto():
                 try:
                     b = self.__fernet.decrypt(in_file.read())
                 except cryptography.fernet.InvalidToken as e:
-                    latus.logger.log.error('InvalidToken %s : %s %s' % (str(e), in_path, out_path))
-                    print(e)
+                    latus.logger.log.error('InvalidToken (possible key error) %s : %s %s' % (str(e), in_path, out_path))
                 except cryptography.exceptions.UnsupportedAlgorithm as e:
-                    print(e)
                     latus.logger.log.error('UnsupportedAlgorithm %s : %s %s' % (str(e), in_path, out_path))
                 if b:
                     with open(out_path, 'wb') as out_file:

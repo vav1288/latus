@@ -5,6 +5,8 @@ import time
 import datetime
 import sys
 import collections
+import argparse
+import appdirs
 
 import watchdog.observers
 import watchdog.events
@@ -12,8 +14,8 @@ import send2trash
 
 import latus.logger
 import latus.util
-from latus.const import FileSystemEvent, DetectionSource, ChangeAttributes, TIME_OUT, FILTER_TIME_OUT, ENCRYPTION_EXTENSION, \
-    UNENCRYPTED_EXTENSION
+import latus.const
+from latus.const import FileSystemEvent, DetectionSource, ChangeAttributes, TIME_OUT, FILTER_TIME_OUT, ENCRYPTION_EXTENSION, UNENCRYPTED_EXTENSION
 import latus.preferences
 import latus.walker
 import latus.hash
@@ -22,6 +24,7 @@ import latus.nodedb
 import latus.miv
 import latus.folders
 import latus.key_management
+import latus.gui
 
 
 FilterEvent = collections.namedtuple('FilterEvent', ['path', 'event', 'timestamp'])
@@ -35,7 +38,6 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         self.filter_events = filter_events
         self.observer = watchdog.observers.Observer()
         pref = latus.preferences.Preferences(self.app_data_folder)
-        latus.logger.log.info('log_folder : %s , %s' % (pref.get_node_id(), latus.logger.get_log_folder()))
         super().__init__()
 
     def get_type(self):
@@ -154,8 +156,8 @@ class LocalSync(SyncBase):
         if encrypt:
             crypto_key = pref.get_crypto_key()
             if crypto_key is None:
-                latus.logger.log.error('no crypto_key yet')
-                return
+                latus.logger.log.fatal('No Latus Key - please reinitialize the preferences - exiting')
+                return None
             if hash is None:
                 latus.logger.log.warning('could not get hash for %s' % full_path)
             else:
@@ -315,6 +317,8 @@ class CloudSync(SyncBase):
                         if encrypt:
                             expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
                             # todo: set mtime
+                            if not expand_ok:
+                                latus.logger.log.fatal('Latus Key Error - please reinitialize the Latus Key - exiting')
                         else:
                             cloud_file = os.path.join(cloud_folders.cache, info['hash'] + UNENCRYPTED_EXTENSION)
                             shutil.copy2(cloud_file, local_file_path)
@@ -377,3 +381,13 @@ class Sync:
         latus.logger.log.info('%s - sync - request_exit end' % node_id)
         return timed_out
 
+if __name__ == '__main__':
+    # Run latus from the command line with existing preferences.
+    # This is used in testing.
+    latus.logger.init()
+    args = latus.util.arg_parse()
+    sync = Sync(args.appdatafolder)
+    sync.start()
+    input('hit enter to exit')
+    if sync.request_exit():
+        print('note: exit timed out')

@@ -1,10 +1,11 @@
 import os
 import platform
 import uuid
-import datetime
+import argparse
 import appdirs
 import random
 import time
+import logging
 
 import latus.logger
 import latus.const
@@ -164,3 +165,15 @@ def get_latus_folders(pref):
     latus_folder = pref.get_latus_folder()
     files_and_dirs = [os.path.join(latus_folder, p) for p in sorted(os.listdir(latus_folder))]
     return list(filter(None, [p if os.path.isdir(p) else None for p in files_and_dirs]))
+
+
+def arg_parse():
+    parser = argparse.ArgumentParser(description="efficient and secure cloud-based folder sync")
+    parser.add_argument('-a', '--appdatafolder', default=appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY),
+                        help="app data folder (where preferences are stored)")
+    parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")
+    args = parser.parse_args()
+    if args.verbose:
+        latus.logger.set_console_log_level(logging.INFO)
+        latus.logger.set_file_log_level(logging.DEBUG)
+    return args

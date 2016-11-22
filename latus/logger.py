@@ -1,19 +1,23 @@
 
 import os
+import sys
 import appdirs
 import logging
 import logging.handlers
+import subprocess
 
 import latus.util
 import latus.const
+import latus.gui
+import latus.messagedialog
 
 LOG_FILE_NAME = 'latus.log'
 LOGGER_NAME_BASE = 'latus'
 
 fh = None
 ch = None
+dh = None
 log = None
-log_folder = None
 
 # the general log message format is:
 # < message_type > : [ node id ] , ...
@@ -21,9 +25,8 @@ log_folder = None
 # message_type is things like sync, file_write, etc.
 
 
-def init(log_folder_param=None):
-    global fh, ch, log, log_folder
-    log_folder = log_folder_param
+def init(log_folder=None):
+    global fh, ch, dh, log
 
     if not log_folder:
         log_folder = appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY)
@@ -40,12 +43,15 @@ def init(log_folder_param=None):
     # create file handler
     fh = logging.handlers.RotatingFileHandler(os.path.join(log_folder, LOG_FILE_NAME),
                                               maxBytes=20*1E6, backupCount=3)
-    #fh = logging.FileHandler(LOG_FILE_NAME)
     fh.setLevel(logging.INFO)
 
     # create console handler
     ch = logging.StreamHandler()
-    ch.setLevel(logging.ERROR)
+    ch.setLevel(logging.WARNING)
+
+    # create dialog box handler
+    dh = DialogBoxHandlerAndExit()
+    dh.setLevel(logging.FATAL)  # only pop this up as we're on the way out
 
     # create formatter and add it to the handlers
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(levelname)s - %(message)s')
@@ -54,12 +60,24 @@ def init(log_folder_param=None):
     # add the handlers to the logger
     log.addHandler(fh)
     log.addHandler(ch)
+    log.addHandler(dh)
+
+    log.info('log_folder : %s' % log_folder)
 
     return log_folder
 
 
-def get_log_folder():
-    return log_folder
+class DialogBoxHandlerAndExit(logging.Handler):
+    def emit(self, record):
+        msg = self.format(record)
+        cmd = '%s -c "%s" "%s"' % (sys.executable,  latus.messagedialog.program, msg)
+        try:
+            subprocess.call(cmd, shell=True)
+            sys.exit(msg)
+        except OSError:
+            # If the Python executable isn't actually accessible we should get this exception.
+            # We don't have the exit() here since we don't want to merely exit silently.
+            print(msg)  # at least try to communicate this message
 
 
 def set_file_log_level(new_level):

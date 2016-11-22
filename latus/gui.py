@@ -17,6 +17,14 @@ import latus.sync
 import latus.util
 
 
+def message_box(msg):
+    w = QMessageBox()
+    w.setWindowTitle(latus.const.NAME)
+    w.setText(msg)
+    w.show()
+    return w
+
+
 class About(QDialog):
 
     def __init__(self, node_id):
@@ -79,13 +87,13 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
     def open_latus_folder(self):
         pref = latus.preferences.Preferences(self.latus_appdata_folder)
         if latus.util.is_windows():
+            # todo: startfile() seems to be deprecated ... ?
             os.startfile(pref.get_latus_folder())  # keep the app running - call('explorer') would kil it
         elif latus.util.is_mac():
             subprocess.check_call(['open', pref.get_latus_folder()])
         else:
             # todo: what about Linux?
             raise NotImplementedError
-
 
     def import_latus_key(self):
         key = latus.key_management.read_latus_key_gui()
@@ -140,12 +148,8 @@ def main(latus_appdata_folder):
         app.exec_()
     else:
         msg = 'Incomplete configuration.\n\nPlease re-run Latus and complete the Latus Setup Wizard.\n\nExiting ...'
-
-        w = QMessageBox()
-        w.setWindowTitle(latus.const.NAME)
-        w.setText(msg)
-        w.exec()
-
+        mb = message_box(msg)
+        mb.exec()
         latus.logger.log.warn(msg.replace('\n', ' '))  # don't put newlines in the log
         sys.exit(1)
 

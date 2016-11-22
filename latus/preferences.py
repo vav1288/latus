@@ -34,6 +34,8 @@ class Preferences:
 
     def __init__(self, latus_appdata_folder, init=False):
 
+        # todo: do I still need 'init' parameter?  I think I can just get rid of it and act as if it's True
+
         self.__id_string = 'nodeid'
         self.__key_string = 'cryptokey'
         self.__most_recent_key_folder_string = 'keyfolder'
@@ -50,12 +52,14 @@ class Preferences:
         self.__db_path = os.path.abspath(os.path.join(latus_appdata_folder, self.PREFERENCES_FILE))
         sqlite_path = 'sqlite:///' + self.__db_path
         self.__db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
-        # todo: check the version in the DB against the current __version__ to see if we need to force an init
+        # todo: check the version in the DB against the current __version__ to see if we need to force a drop table
         # (since this schema is so simple, we probably won't ever have to do this)
         if init:
-            self.init()
+            Base.metadata.create_all(self.__db_engine)
         self.__Session = sqlalchemy.orm.sessionmaker(bind=self.__db_engine)
-        self.__pref_set(self.__version_key_string, __db_version__)
+        if init:
+            latus.logger.log.info('creating preferences DB version %s' % __db_version__)
+            self.__pref_set(self.__version_key_string, __db_version__)
 
     def __pref_set(self, key, value):
         latus.logger.log.debug('pref_set : %s to %s' % (str(key), str(value)))
@@ -136,11 +140,6 @@ class Preferences:
 
     def get_db_path(self):
         return self.__db_path
-
-    def init(self):
-        Base.metadata.drop_all(self.__db_engine)
-        Base.metadata.create_all(self.__db_engine)
-        latus.logger.log.info('creating preferences DB version %s' % __db_version__)
 
     def folders_are_set(self):
         return self.get_cloud_root() is not None and self.get_latus_folder() is not None
