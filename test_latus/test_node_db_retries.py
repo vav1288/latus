@@ -3,14 +3,14 @@ import os
 import multiprocessing
 import time
 
-import test_latus.util
+from test_latus.tstutil import get_data_root, logger_init
 
 import latus.nodedb
 import latus.logger
 
 
 def get_node_db_retries_root():
-    retries_root = os.path.join(test_latus.util.get_data_root(), 'temp')
+    retries_root = os.path.join(get_data_root(), 'temp')
     if not os.path.exists(retries_root):
         os.makedirs(retries_root)
     return retries_root
@@ -18,7 +18,7 @@ def get_node_db_retries_root():
 
 def writer(node_id, label):
     log_folder = os.path.join(get_node_db_retries_root(), 'log')
-    test_latus.util.logger_init(log_folder)
+    logger_init(log_folder)
     latus.logger.log.info('entering writer: %s' % node_id)
     db_writer = latus.nodedb.NodeDB(get_node_db_retries_root(), node_id, True)
     while True:
@@ -27,7 +27,7 @@ def writer(node_id, label):
 
 def reader(node_id, label):
     log_folder = os.path.join(get_node_db_retries_root(), 'log')
-    test_latus.util.logger_init(log_folder)
+    logger_init(log_folder)
     latus.logger.log.info('entering reader: %s' % node_id)
     db_reader = latus.nodedb.NodeDB(get_node_db_retries_root(), node_id)
     # I'd rather not have a count down, but we're not guaranteed we'll ever get a retry
@@ -42,7 +42,7 @@ def reader(node_id, label):
 
 def test_node_db_retries():
     log_folder = os.path.join(get_node_db_retries_root(), 'log')
-    test_latus.util.logger_init(log_folder)
+    logger_init(log_folder)
     node_id = 'abc'
     w = multiprocessing.Process(target=writer, args=(node_id, 'w', ))
     w.start()

@@ -1,6 +1,9 @@
 
 import os
-import multiprocessing
+import logging
+import subprocess
+import sys
+import threading
 
 import latus.const
 import latus.sync
@@ -9,8 +12,7 @@ import latus.logger
 import latus.folders
 import latus.crypto
 import latus.preferences
-from test_latus.util import logger_init, get_latus_folder, wait_for_file, get_file_name, sync_node, \
-    get_data_root
+from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncThread
 
 
 def get_simple_root():
@@ -26,37 +28,36 @@ def test_simple(setup):
 
     log_folder = os.path.join(get_simple_root(), 'log')
     logger_init(log_folder)
+    latus.logger.set_console_log_level(logging.INFO)
 
+    # write preferences
     key = latus.crypto.new_key()
+    app_data_folders = [write_preferences(node, get_simple_root(), key) for node in nodes]
 
-    syncs = {}
-    exit_event = multiprocessing.Event()
-
-    cloud = os.path.join(get_simple_root(), 'cloud')
-
+    # get list of folders and files, and write to them
     local_folders = []
     file_names = []
     for node in nodes:
-        local_folders.append(get_latus_folder(get_simple_root(), node))
-        file_names.append(get_file_name(node))
+        latus_folder = get_latus_folder(get_simple_root(), node)
+        file_name = get_file_name(node)
+        local_folders.append(latus_folder)
+        file_names.append(file_name)
+        write_to_file(latus_folder, file_name, node, '')
 
-    for node in nodes:
-        syncs[node] = multiprocessing.Process(target=sync_node,
-                                              args=(node, key, get_simple_root(), cloud, None, exit_event))
-    for sync in syncs:
-        syncs[sync].start()  # start the thread
+    # start the sync
+    syncs = [SyncThread(app_data_folder) for app_data_folder in app_data_folders]
+    [sync.start() for sync in syncs]
 
+    # wait for files to sync
     b_to_a = os.path.join(local_folders[0], file_names[1])
     wait_for_file(b_to_a)
-
     a_to_b = os.path.join(local_folders[1], file_names[0])
     wait_for_file(a_to_b)
 
-    exit_event.set()
+    # stop the syncs
+    [sync.request_exit() for sync in syncs]
 
-    for node in nodes:
-        syncs[node].join()
-
+    # check the results
     assert(os.path.exists(b_to_a))
     assert(os.path.exists(a_to_b))
 

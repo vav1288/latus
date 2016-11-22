@@ -4,15 +4,15 @@ import os
 import latus.nodedb
 import latus.util
 
-import test_latus.util
+import test_latus.tstutil
 
 def get_node_db_general_root():
-    return os.path.join(test_latus.util.get_data_root(), "get_node_db_general")
+    return os.path.join(test_latus.tstutil.get_data_root(), "get_node_db_general")
 
 
 def test_node_db_general():
     log_folder = os.path.join(get_node_db_general_root(), 'log')
-    test_latus.util.logger_init(log_folder)
+    test_latus.tstutil.logger_init(log_folder)
 
     node_id = 'a'
     general_root = get_node_db_general_root()

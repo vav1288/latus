@@ -1,6 +1,6 @@
 
 import os
-import multiprocessing
+import logging
 import time
 
 import latus.const
@@ -10,7 +10,7 @@ import latus.logger
 import latus.folders
 import latus.crypto
 import latus.preferences
-from test_latus.util import logger_init, get_latus_folder, wait_for_file, sync_node, write_to_file, get_data_root
+from test_latus.tstutil import logger_init, get_latus_folder, wait_for_file, write_to_file, get_data_root, write_preferences, get_file_name, SyncThread
 
 
 def get_delete_root():
@@ -23,60 +23,47 @@ def test_delete(setup):
     """
 
     nodes = ['a', 'b']
-    file_a = 'a.txt'
-    local_folders = []
-    for node in nodes:
-        local_folders.append(get_latus_folder(get_delete_root(), node))
-    file_path_a = os.path.join(local_folders[0], file_a)
-    file_path_b = os.path.join(local_folders[1], file_a)
 
     log_folder = os.path.join(get_delete_root(), 'log')
     logger_init(log_folder)
+    latus.logger.set_console_log_level(logging.INFO)
 
     key = latus.crypto.new_key()
+    app_data_folders = [write_preferences(node, get_delete_root(), key) for node in nodes]
 
-    syncs = {}
-    exit_event = multiprocessing.Event()
-
-    cloud = os.path.join(get_delete_root(), 'cloud')
+    local_folders = []
+    file_names = []
     for node in nodes:
-        syncs[node] = multiprocessing.Process(target=sync_node,
-                                              args=(node, key, get_delete_root(), cloud, None, exit_event, False))
+        latus_folder = get_latus_folder(get_delete_root(), node)
+        file_name = get_file_name(node)
+        local_folders.append(latus_folder)
+        file_names.append(file_name)
 
-    for sync in syncs:
-        syncs[sync].start()
+    file_name = nodes[0] + '.txt'
+    path_node_0 = write_to_file(get_latus_folder(get_delete_root(), nodes[0]), file_name, nodes[0])
+    path_node_1 = os.path.join(get_latus_folder(get_delete_root(), nodes[1]), file_name)
 
-    time.sleep(1)
-    latus.logger.log.info('starting write to %s' % file_path_a)
-    write_to_file(local_folders[0], file_a, 'a')
-    latus.logger.log.info('finished write to %s' % file_path_a)
+    # start the sync
+    syncs = [SyncThread(app_data_folder) for app_data_folder in app_data_folders]
+    [sync.start() for sync in syncs]
 
-    time.sleep(1)
+    # wait for the file to get sync'd
+    wait_for_file(path_node_1)
+    wait_for_file(path_node_0)
 
-    wait_for_file(file_path_a)
-    wait_for_file(file_path_b)
+    # now remove the file on the node that it was sync'd to
+    os.remove(path_node_1)
 
-    assert(os.path.exists(file_path_a))
-    assert(os.path.exists(file_path_b))
+    # wait for the file to be removed from both notes
+    wait_for_file(path_node_0, False)
+    wait_for_file(path_node_1, False)
 
-    latus.logger.log.info('starting delete of %s' % file_path_a)
-    os.remove(file_path_a)  # remove it on a
-    latus.logger.log.info('finished delete of %s' % file_path_a)
+    # ok .. should be done ... exit
+    [sync.request_exit() for sync in syncs]
 
-    time.sleep(1)
-
-    wait_for_file(file_path_a, False)
-    wait_for_file(file_path_b, False)
-
-    assert(not os.path.exists(file_path_a))
-    assert(not os.path.exists(file_path_b))
-
-    time.sleep(1)
-
-    exit_event.set()
-
-    for node in nodes:
-        syncs[node].join()
+    # the above might have timed out, so make sure it worked OK
+    assert(not os.path.exists(path_node_0))
+    assert(not os.path.exists(path_node_1))
 
     latus.logger.log.info('test_delete exiting')
 

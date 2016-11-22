@@ -2,7 +2,7 @@
 import os
 import subprocess
 
-import test_latus.util
+import test_latus.tstutil
 
 
 def test_gui_wizard_with_automa():
