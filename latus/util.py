@@ -177,3 +177,26 @@ def arg_parse():
         latus.logger.set_console_log_level(logging.INFO)
         latus.logger.set_file_log_level(logging.DEBUG)
     return args
+
+
+def exception_to_string(exc_info, e):
+    """
+    usage:
+
+        try:
+            self.observer.stop()
+        except SystemError as e:
+            latus.logger.log.error(latus.util.exception_to_string(sys.exc_info(), e))
+
+    :param exc_info: from call to sys.exc_info()
+    :param e: exception
+    :return: string that represents the exception (e.g. that can be written to a log file
+    """
+    exc_type, exc_value, exc_traceback = exc_info
+    traceback_details = {
+        'filename': exc_traceback.tb_frame.f_code.co_filename,
+        'lineno': exc_traceback.tb_lineno,
+        'name': exc_traceback.tb_frame.f_code.co_name,
+        'type': exc_type.__name__,
+    }
+    return str(traceback_details) + ':' + str(e)
