@@ -5,8 +5,7 @@ import time
 import datetime
 import sys
 import collections
-import argparse
-import appdirs
+from functools import wraps
 
 import watchdog.observers
 import watchdog.events
@@ -25,6 +24,7 @@ import latus.miv
 import latus.folders
 import latus.key_management
 import latus.gui
+import latus.activity_timer
 
 
 FilterEvent = collections.namedtuple('FilterEvent', ['path', 'event', 'timestamp'])
@@ -32,33 +32,44 @@ FilterEvent = collections.namedtuple('FilterEvent', ['path', 'event', 'timestamp
 # todo: would it be better to use watchdog.events.LoggingEventHandler instead of FileSystemEventHandler?
 
 
+def activity_trigger(func):
+    """
+    decorator that add activity triggers
+    """
+    @wraps(func)
+    def do_triggers(self, *args, **kwargs):
+        self.active_timer.enter_trigger(func.__name__)
+        r = func(self, *args, **kwargs)
+        self.active_timer.exit_trigger(func.__name__)
+        return r
+    return do_triggers
+
+
 class SyncBase(watchdog.events.FileSystemEventHandler):
     def __init__(self, app_data_folder, filter_events):
         self.app_data_folder = app_data_folder
         self.filter_events = filter_events
+
         self.observer = watchdog.observers.Observer()
+        # used to determine of this sync node is currently considered active
         pref = latus.preferences.Preferences(self.app_data_folder)
+
+        self.active_timer = latus.activity_timer.ActivityTimer(3, pref.get_node_id() + '_' + self.get_type())
+
         super().__init__()
 
     def get_type(self):
         # type of folder - children provide this - e.g. local, cloud
         assert False
 
+    @activity_trigger
     def request_exit(self):
         pref = latus.preferences.Preferences(self.app_data_folder)
         latus.logger.log.info('%s - %s - request_exit begin' % (pref.get_node_id(), self.get_type()))
         try:
             self.observer.stop()
         except SystemError as e:
-            # todo: put this in util.py
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            traceback_details = {
-                'filename': exc_traceback.tb_frame.f_code.co_filename,
-                'lineno': exc_traceback.tb_lineno,
-                'name': exc_traceback.tb_frame.f_code.co_name,
-                'type': exc_type.__name__,
-            }
-            latus.logger.log.error(str(traceback_details) + ':' + str(e))
+            latus.logger.log.error(latus.util.exception_to_string(sys.exc_info(), e))
         self.observer.join(TIME_OUT)
 
         if len(self.filter_events) > 0:
@@ -68,8 +79,11 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         latus.logger.log.info('%s - %s - request_exit end' % (pref.get_node_id(), self.get_type()))
         if self.observer.is_alive():
             latus.logger.log.error('%s - %s - request_exit failed to stop observer' % (pref.get_node_id(), self.get_type()))
+
+        self.active_timer.reset()
         return self.observer.is_alive()
 
+    @activity_trigger
     def start_observer(self):
         self.observer.start()
 
@@ -107,6 +121,9 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         pref = latus.preferences.Preferences(self.app_data_folder)
         return pref.get_node_id()
 
+    def is_active(self):
+        return self.active_timer.is_active()
+
 
 class LocalSync(SyncBase):
     """
@@ -115,38 +132,64 @@ class LocalSync(SyncBase):
     def __init__(self, app_data_folder, filter_events):
         super().__init__(app_data_folder, filter_events)
         pref = latus.preferences.Preferences(app_data_folder)
-        latus_folder = pref.get_latus_folder()
-        latus.util.make_dir(latus_folder)
-        self.observer.schedule(self, latus_folder, recursive=True)
+        self.latus_folder = pref.get_latus_folder()
+        latus.util.make_dir(self.latus_folder)
+        self.observer.schedule(self, self.latus_folder, recursive=True)
 
     def get_type(self):
         return 'local'
 
+    # todo: make these logs DRY
+
+    @activity_trigger
     def on_created(self, watchdog_event):
         if not watchdog_event.is_directory:
-            if not self.filtered(watchdog_event):
+            if self.filtered(watchdog_event):
+                latus.logger.log.info('%s : filtered local on_created event : %s' % (self.get_node_id(), str(watchdog_event)))
+            else:
+                latus.logger.log.info('%s : local on_created event : %s' % (self.get_node_id(), str(watchdog_event)))
                 src_path = watchdog_event.src_path
-                file_hash = self.fill_cache(src_path)
-                self.write_db(src_path, FileSystemEvent.created, DetectionSource.watchdog, file_hash)
+                file_hash = self.__fill_cache(src_path)
+                self.__write_db(src_path, None, FileSystemEvent.created, DetectionSource.watchdog, file_hash)
 
-    def on_deleted(self, event):
-        if not event.is_directory:
-            latus.logger.log.info('%s : local on_deleted event : %s' % (self.get_node_id(), event))
-            if not self.filtered(event):
+    @activity_trigger
+    def on_deleted(self, watchdog_event):
+        if not watchdog_event.is_directory:
+            if self.filtered(watchdog_event):
+                latus.logger.log.info('%s : filtered local on_deleted event : %s' % (self.get_node_id(), str(watchdog_event)))
+            else:
+                latus.logger.log.info('%s : local on_deleted event : %s' % (self.get_node_id(), str(watchdog_event)))
                 # todo: remove from cache
-                self.write_db(event.src_path, FileSystemEvent.deleted, DetectionSource.watchdog, None)
+                self.__write_db(watchdog_event.src_path, None, FileSystemEvent.deleted, DetectionSource.watchdog, None)
 
-    def on_modified(self, event):
-        if not event.is_directory:
-            latus.logger.log.info('%s : local on_modified event : %s' % (self.get_node_id(), event))
-            if not self.filtered(event):
-                file_hash = self.fill_cache(event.src_path)
-                self.write_db(event.src_path, FileSystemEvent.modified, DetectionSource.watchdog, file_hash)
+    @activity_trigger
+    def on_modified(self, watchdog_event):
+        if not watchdog_event.is_directory:
+            if self.filtered(watchdog_event):
+                latus.logger.log.info('%s : filtered local on_modified event : %s' % (self.get_node_id(), str(watchdog_event)))
+            else:
+                latus.logger.log.info('%s : local on_modified event : %s' % (self.get_node_id(), str(watchdog_event)))
+                file_hash = self.__fill_cache(watchdog_event.src_path)
+                self.__write_db(watchdog_event.src_path, None, FileSystemEvent.modified, DetectionSource.watchdog, file_hash)
 
-    def on_moved(self, event):
-        latus.logger.log.warn('on_moved not yet implemented')
+    @activity_trigger
+    def on_moved(self, watchdog_event):
+        if not watchdog_event.is_directory:
+            if self.filtered(watchdog_event):
+                latus.logger.log.info('%s : filtered local on_moved event : %s' % (self.get_node_id(), str(watchdog_event)))
+            else:
+                latus.logger.log.info('%s : local on_moved event : %s' % (self.get_node_id(), str(watchdog_event)))
 
-    def fill_cache(self, full_path):
+                # for move events the dest is an absolute path - we need just the partial path
+                src_path = watchdog_event.src_path.replace(self.latus_folder, '')
+                if src_path[0] == os.sep:
+                    # remove leading /
+                    src_path = src_path[1:]
+
+                file_hash, _ = latus.hash.calc_sha512(watchdog_event.dest_path)
+                self.__write_db(watchdog_event.dest_path, src_path, FileSystemEvent.moved, DetectionSource.watchdog, file_hash)
+
+    def __fill_cache(self, full_path):
         pref = latus.preferences.Preferences(self.app_data_folder)
         node_id = pref.get_node_id()
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
@@ -173,7 +216,7 @@ class LocalSync(SyncBase):
         return hash
 
     # todo: encrypt the hash?
-    def write_db(self, full_path, filesystem_event_type, detection_source, file_hash):
+    def __write_db(self, full_path, src_path, filesystem_event_type, detection_source, file_hash):
         pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
         latus_path = full_path.replace(pref.get_latus_folder() + os.sep, '')
@@ -190,14 +233,16 @@ class LocalSync(SyncBase):
         most_recent_hash = node_db.get_most_recent_hash(latus_path)
         if most_recent_hash != file_hash:
             node_db.update(miv, node_id, int(filesystem_event_type), int(detection_source),
-                           latus_path, size, file_hash, mtime, False)
+                           latus_path, src_path, size, file_hash, mtime, False)
 
+    @activity_trigger
     def fs_scan(self, detection_source):
         pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
         this_node_id = pref.get_node_id()
         node_db = latus.nodedb.NodeDB(cloud_folders.nodes, this_node_id)
         local_walker = latus.walker.Walker(pref.get_latus_folder())
+        src_path = None  # no moves in file system scan
         for partial_path in local_walker:
             local_full_path = local_walker.full_path(partial_path)
             if os.path.exists(local_full_path):
@@ -214,10 +259,10 @@ class LocalSync(SyncBase):
                         miv = latus.miv.get_miv(this_node_id)
                         latus.logger.sync_log(this_node_id, file_system_event, miv, partial_path,
                                               detection_source, size, local_hash, mtime)
-                        self.fill_cache(local_full_path)
+                        self.__fill_cache(local_full_path)
                         self.add_filter_event(node_db.get_database_file_name(), FileSystemEvent.modified)
                         node_db.update(miv, this_node_id, int(file_system_event),
-                                       int(detection_source), partial_path, size, local_hash, mtime, False)
+                                       int(detection_source), partial_path, src_path, size, local_hash, mtime, False)
                 else:
                     latus.logger.log.warn('%s : could not calculate hash for %s' % (this_node_id, local_full_path))
 
@@ -235,7 +280,7 @@ class LocalSync(SyncBase):
                                               detection_source, None, None, None)
                         self.add_filter_event(node_db.get_database_file_name(), FileSystemEvent.modified)
                         node_db.update(miv, this_node_id, int(FileSystemEvent.deleted),
-                                       int(DetectionSource.initial_scan), partial_path, None, None, None, False)
+                                       int(DetectionSource.initial_scan), partial_path, src_path, None, None, None, False)
 
 
 class CloudSync(SyncBase):
@@ -268,6 +313,7 @@ class CloudSync(SyncBase):
     def get_type(self):
         return 'cloud'
 
+    @activity_trigger
     def on_any_event(self, event):
         pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
@@ -278,6 +324,7 @@ class CloudSync(SyncBase):
             latus.logger.log.info('%s : cloud dispatch : event : %s' % (pref.get_node_id(), event))
             self.cloud_sync(DetectionSource.watchdog)
 
+    @activity_trigger
     def cloud_sync(self, detection_source):
         pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
@@ -335,8 +382,22 @@ class CloudSync(SyncBase):
                     # fallback
                     latus.logger.log.warn('%s : send2trash failed on %s' % (pref.get_node_id(), local_file_path))
                 this_node_db.clear_pending(info)
-                #this_node_db.update(info['seq'], info['originator'], info['event'], info['detection'],
-                #                    info['path'], None, None, None, False)
+            elif info['event'] == FileSystemEvent.moved:
+                # todo: make a specific 'moved' filter event - this one just uses the dest
+                latus_path = pref.get_latus_folder()
+                self.add_filter_event(local_file_path, FileSystemEvent.moved)
+                latus.logger.log.info('%s : %s : %s moved %s to %s' % (pref.get_node_id(), detection_source, info['originator'], info['path'], info['srcpath']))
+                dest_abs_path = os.path.join(latus_path, info['path'])
+                src_abs_path = os.path.join(latus_path, info['srcpath'])
+                try:
+                    shutil.move(src_abs_path, dest_abs_path)
+                except IOError as e:
+                    latus.logger.log.error('%s : %s' % (pref.get_node_id(), str(e)))
+                    if os.path.exists(dest_abs_path):
+                        latus.logger.log.error('%s : attempting move but %s already exists' % (pref.get_node_id(), dest_abs_path))
+                    if not os.path.exists(src_abs_path):
+                        latus.logger.log.error('%s : attempting move but %s not found' % (pref.get_node_id(), src_abs_path))
+                this_node_db.clear_pending(info)
             else:
                 latus.logger.log.error('not yet implemented : %s' % str(info['event']))
 
@@ -345,7 +406,7 @@ class CloudSync(SyncBase):
 
 
 class Sync:
-    def __init__(self, app_data_folder):
+    def __init__(self, app_data_folder, status_folder_path=None):
         self.app_data_folder = app_data_folder
         pref = latus.preferences.Preferences(self.app_data_folder)
         node_id = pref.get_node_id()
@@ -381,9 +442,12 @@ class Sync:
         latus.logger.log.info('%s - sync - request_exit end' % node_id)
         return timed_out
 
+    def is_active(self):
+        return self.local_sync.is_active() and self.cloud_sync.is_active()
+
 if __name__ == '__main__':
     # Run latus from the command line with existing preferences.
-    # This is used in testing.
+    # This is particularly useful for testing.
     latus.logger.init()
     args = latus.util.arg_parse()
     sync = Sync(args.appdatafolder)
