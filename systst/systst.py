@@ -6,7 +6,7 @@ import threading
 import random
 import shutil
 import argparse
-import subprocess
+import appdirs
 
 from PyQt5.QtWidgets import QApplication, QPushButton, QWidget
 
@@ -15,22 +15,29 @@ import latus.sync
 import latus.preferences
 import latus.crypto
 import latus.gui
+import latus.const
+from test_latus.tstutil import SyncProc
 
 import test_latus.tstutil
+import test_latus.read_logs
 
 
 class FilesTest(threading.Thread):
     """
     thread that does all the testing
     """
-    def __init__(self, app_data_folders, latus_folders):
+    def __init__(self, app_data_folders, latus_folders, syncs):
         super().__init__()
         self.app_data_folders = app_data_folders
         self.latus_folders = latus_folders
+        self.syncs = syncs
         [os.makedirs(d, exist_ok=True) for d in self.latus_folders]
         self.run_latus_test = True
         self.exit_event = threading.Event()
         self.file_count = 0
+        # the test latus processes use the default log path
+        self.log_file_path = os.path.join(appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY), latus.const.LOG_FILE)
+        os.remove(self.log_file_path)
 
     def run(self):
         # create appears twice so we give more weight to file creation (else we'd not have a lot of files)
@@ -39,7 +46,17 @@ class FilesTest(threading.Thread):
             # keep trying until one of the actions actually does something
             while not random.choice(actions)():
                 pass
-            self.exit_event.wait(15)
+
+            time.sleep(1)
+            latus.logger.log.info('waiting for nodes to become inactive')
+            timeout = 0
+            # read the log file the nodes are using
+            while test_latus.read_logs.is_active(self.log_file_path) and timeout < 10*60:
+                # print(test_latus.read_logs.get_activity_states(self.log_file_path))
+                time.sleep(2)
+                timeout += 1
+            latus.logger.log.info('all nodes ready (inactive)')
+
         print('exiting test')
 
     def file_create(self):
@@ -175,11 +192,12 @@ def main():
     # create the nodes and start them
     syncs = []
     if not args.no_sync:
-        syncs = [latus.sync.Sync(app_data_folder) for app_data_folder in app_data_folders]
+        # start the sync
+        syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
         [sync.start() for sync in syncs]
 
     # do the tests (and provide the user with a "Stop" button)
-    files_test = FilesTest(app_data_folders, latus_folders)
+    files_test = FilesTest(app_data_folders, latus_folders, syncs)
     files_test.start()
     user_interface()
     files_test.request_exit()
