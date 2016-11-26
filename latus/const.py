@@ -53,8 +53,9 @@ class ChangeAttributes(IntEnum):
     event = 3       # FileSystemEvent
     detection = 4   # DetectionSource
     path = 5
-    size = 6
-    hash = 7
-    mtime = 8
-    pending = 9  # this node has not yet acted on it
-    timestamp = 10
+    srcpath = 6
+    size = 7
+    hash = 8
+    mtime = 9
+    pending = 10  # this node has not yet acted on it
+    timestamp = 11

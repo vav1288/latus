@@ -16,7 +16,7 @@ import latus.util
 # DB schema version is the latus version where this schema was first introduced.  If your DB schema is earlier
 # than (i.e. "less than") this, you need to do a drop all tables and start over.  This value is MANUALLY copied from
 # latus.__version__ when a new and incompatible schema is introduced.
-__db_version__ = '0.0.0'
+__db_version__ = '0.0.1'
 
 
 class NodeDB:
@@ -64,6 +64,7 @@ class NodeDB:
                                              sqlalchemy.Column('event', sqlalchemy.Integer),
                                              sqlalchemy.Column('detection', sqlalchemy.Integer),
                                              sqlalchemy.Column('path', sqlalchemy.String, index=True),
+                                             sqlalchemy.Column('srcpath', sqlalchemy.String),  # source path for moves
                                              sqlalchemy.Column('size', sqlalchemy.Integer),
                                              sqlalchemy.Column('hash', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('mtime', sqlalchemy.DateTime),
@@ -120,31 +121,31 @@ class NodeDB:
         self.set_computer(platform.node())
         self.set_heartbeat()
 
-    def update(self, seq, originator, event, detection, file_path, size, hash, mtime, pending):
+    def update(self, seq, originator, event, detection, file_path, src_path, size, hash, mtime, pending):
         conn = self.db_engine.connect()
-        latus.logger.log.info('%s updating %s %s %s %s %s %s %s %s %s' % (self.node_id, seq, originator, event, detection,
-                                                                       file_path, size, hash, mtime, pending))
+        latus.logger.log.info('%s updating %s %s %s %s %s %s %s %s %s %s' % (self.node_id, seq, originator, event, detection,
+                                                                       file_path, src_path, size, hash, mtime, pending))
         command = self.change_table.select().where(self.change_table.c.seq == seq)
         result = conn.execute(command)
         if not result.fetchone():
             if mtime:
                 command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
-                                                            detection=detection, path=file_path, size=size, hash=hash,
-                                                            mtime=mtime, pending=pending,
+                                                            detection=detection, path=file_path, srcpath=src_path,
+                                                            size=size, hash=hash, mtime=mtime, pending=pending,
                                                             timestamp=datetime.datetime.utcnow())
             else:
                 # if file has been deleted, there's no mtime (but we can't pass None into a datetime)
                 command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
-                                                            detection=detection, path=file_path, pending=pending,
-                                                            timestamp=datetime.datetime.utcnow())
+                                                            detection=detection, path=file_path, srcpath=src_path,
+                                                            pending=pending, timestamp=datetime.datetime.utcnow())
             result = conn.execute(command)
         else:
             latus.logger.log.warn('seq %s already found - not updating' % seq)
         conn.close()
 
     def update_info(self, info, pending):
-        self.update(info['seq'], info['originator'], info['event'], info['detection'], info['path'], info['size'],
-                    info['hash'], info['mtime'], pending)
+        self.update(info['seq'], info['originator'], info['event'], info['detection'], info['path'], info['srcpath'],
+                    info['size'], info['hash'], info['mtime'], pending)
 
     def db_row_to_info(self, row):
         entry = {}
@@ -154,6 +155,7 @@ class NodeDB:
         entry['event'] = row[int(ChangeAttributes.event)]
         entry['detection'] = row[int(ChangeAttributes.detection)]
         entry['path'] = row[int(ChangeAttributes.path)]
+        entry['srcpath'] = row[int(ChangeAttributes.srcpath)]
         entry['size'] = row[int(ChangeAttributes.size)]
         entry['hash'] = row[int(ChangeAttributes.hash)]
         entry['mtime'] = row[int(ChangeAttributes.mtime)]
@@ -466,7 +468,8 @@ def get_node_id_from_db_file_path(db_file_path):
 def sync_dbs(cloud_node_folder, source_node_id, destination_node_id):
     source_node_db = NodeDB(cloud_node_folder, source_node_id)
     destination_node_db = NodeDB(cloud_node_folder, destination_node_id)
-    for source_info in source_node_db.get_rows_as_info():
+    source_infos = source_node_db.get_rows_as_info()
+    for source_info in source_infos:
         dest_info = destination_node_db.get_info_from_path_and_seq(source_info['path'], source_info['seq'])
         if dest_info is None:
             destination_node_db.update_info(source_info, True)  # mark as pending
