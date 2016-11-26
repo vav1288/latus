@@ -12,7 +12,7 @@ import latus.logger
 import latus.folders
 import latus.crypto
 import latus.preferences
-from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncThread
+from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncProc
 
 
 def get_simple_root():
@@ -45,7 +45,7 @@ def test_simple(setup):
         write_to_file(latus_folder, file_name, node, '')
 
     # start the sync
-    syncs = [SyncThread(app_data_folder) for app_data_folder in app_data_folders]
+    syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
     # wait for files to sync

@@ -83,7 +83,7 @@ def get_file_name(node_id):
     return node_id + '.txt'
 
 
-class SyncThread:
+class SyncProc:
     """
     Run the sync in a separate process.  This is necessary since the watchdog module and/or the
     underlying OS doesn't work well if there are multiple watchers watching the same path in the same process
