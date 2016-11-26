@@ -10,7 +10,7 @@ import latus.logger
 import latus.folders
 import latus.crypto
 import latus.preferences
-from test_latus.tstutil import logger_init, get_latus_folder, wait_for_file, write_to_file, get_data_root, write_preferences, get_file_name, SyncThread
+from test_latus.tstutil import logger_init, get_latus_folder, wait_for_file, write_to_file, get_data_root, write_preferences, get_file_name, SyncProc
 
 
 def get_delete_root():
@@ -44,12 +44,15 @@ def test_delete(setup):
     path_node_1 = os.path.join(get_latus_folder(get_delete_root(), nodes[1]), file_name)
 
     # start the sync
-    syncs = [SyncThread(app_data_folder) for app_data_folder in app_data_folders]
+    syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
     # wait for the file to get sync'd
     wait_for_file(path_node_1)
     wait_for_file(path_node_0)
+
+    assert(os.path.exists(path_node_0))
+    assert(os.path.exists(path_node_1))
 
     # now remove the file on the node that it was sync'd to
     os.remove(path_node_1)
@@ -61,7 +64,7 @@ def test_delete(setup):
     # ok .. should be done ... exit
     [sync.request_exit() for sync in syncs]
 
-    # the above might have timed out, so make sure it worked OK
+    # make sure it worked OK
     assert(not os.path.exists(path_node_0))
     assert(not os.path.exists(path_node_1))
 
