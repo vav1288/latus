@@ -18,6 +18,7 @@ fh = None
 ch = None
 dh = None
 log = None
+base_log_file_path = None
 
 # the general log message format is:
 # < message_type > : [ node id ] , ...
@@ -26,7 +27,7 @@ log = None
 
 
 def init(log_folder=None):
-    global fh, ch, dh, log
+    global fh, ch, dh, log, base_log_file_path
 
     if not log_folder:
         log_folder = appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY)
@@ -41,13 +42,14 @@ def init(log_folder=None):
     # todo: put these logs in the program data area
 
     # create file handler
-    fh = logging.handlers.RotatingFileHandler(os.path.join(log_folder, LOG_FILE_NAME),
-                                              maxBytes=20*1E6, backupCount=3)
+    base_log_file_path = os.path.join(log_folder, LOG_FILE_NAME)
+    fh = logging.handlers.RotatingFileHandler(base_log_file_path, maxBytes=20*1E6, backupCount=3)
     fh.setLevel(logging.INFO)
 
     # create console handler
     ch = logging.StreamHandler()
-    ch.setLevel(logging.WARNING)
+    # see ch.setLevel() below for final level - we set this so we can display the log file path on the screen for debug
+    ch.setLevel(logging.INFO)
 
     # create dialog box handler
     dh = DialogBoxHandlerAndExit()
@@ -62,7 +64,8 @@ def init(log_folder=None):
     log.addHandler(ch)
     log.addHandler(dh)
 
-    log.info('log_folder : %s' % log_folder)
+    log.info('log_folder : %s' % os.path.abspath(log_folder))
+    ch.setLevel(logging.WARN)  # real default
 
     return log_folder
 
@@ -88,7 +91,7 @@ def set_console_log_level(new_level):
     ch.setLevel(new_level)
 
 
-# the sync log functions
+# the sync log functions used by the sync module
 
 def sync_log(node_id, file_system_event, miv, file_path, detection_source, size, local_hash, mtime):
     log.info('sync : %s , %s , %s , "%s" , %s , %s , %s , %s' %
@@ -97,3 +100,7 @@ def sync_log(node_id, file_system_event, miv, file_path, detection_source, size,
 
 def sync_filtered_log(node_id, file_path):
     log.info('sync : %s , filtered, %s' % (node_id, file_path))
+
+
+def get_base_log_file_path():
+    return base_log_file_path
