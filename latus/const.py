@@ -22,10 +22,9 @@ BIG_FILE_SIZE = 1024 * 1024
 MAX_HASH_PERF_VALUES = 10  # determine how many longest hash times to store in the db
 ASYMMETRIC_KEY_LENGTH = 1024  # Asymmetric key size (in bits)
 
-# todo: make this longer once I fix some bugs that this influences
-TIME_OUT = 3  # seconds
+TIME_OUT = 10  # seconds
 
-FILTER_TIME_OUT = 60  # seconds
+FILTER_TIME_OUT = 10  # seconds
 
 
 class FileSystemEvent(IntEnum):
