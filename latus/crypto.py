@@ -3,6 +3,7 @@ import os
 import json
 import datetime
 import cryptography.fernet
+import cryptography.exceptions
 import latus.util
 import latus.logger
 
@@ -36,15 +37,15 @@ class CryptoFile:
         return key_info
 
 
-class Crypto():
-    def __init__(self, key, verbose = False):
+class Crypto:
+    def __init__(self, key, node_id=None):
         self.__key = key
-        self.__verbose = verbose
+        self.__node_id = node_id
         self.__fernet = cryptography.fernet.Fernet(self.__key)
 
     def encrypt(self, in_path, out_path):
         token = None
-        latus.logger.log.info('encrypt : %s to %s' % (in_path, out_path))
+        latus.logger.log.info('%s : encrypt : %s to %s' % (self.__node_id, in_path, out_path))
         if os.path.exists(in_path):
             with open(in_path, 'rb') as in_file:
                 try:
@@ -55,10 +56,10 @@ class Crypto():
                     with open(out_path, 'wb') as out_file:
                         out_file.write(token)
         else:
-            latus.logger.log.warn('does not exist : %s' % in_path)
+            latus.logger.log.error('does not exist : %s' % in_path)
 
     def decrypt(self, in_path, out_path):
-        latus.logger.log.info('decrypt : %s to %s' % (in_path, out_path))
+        latus.logger.log.info('%s : decrypt : %s to %s' % (self.__node_id, in_path, out_path))
         success = False
         if os.path.exists(in_path):
             with open(in_path, 'rb') as in_file:
