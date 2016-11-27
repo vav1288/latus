@@ -32,12 +32,12 @@ class ActivityTimer:
     # every call to enter_trigger() must be followed by a call to exit_trigger()
     def enter_trigger(self, trigger_name=''):
         self.active_count += 1
-        latus.logger.log.info('%s : active : enter : %d : %s' % (self.timer_name, self.active_count, trigger_name))
+        latus.logger.log.debug('%s : active : enter : %d : %s' % (self.timer_name, self.active_count, trigger_name))
         return self.__trigger()
 
     def exit_trigger(self, trigger_name=''):
         self.active_count -= 1
-        latus.logger.log.info('%s : active : exit : %d : %s' % (self.timer_name, self.active_count, trigger_name))
+        latus.logger.log.debug('%s : active : exit : %d : %s' % (self.timer_name, self.active_count, trigger_name))
         return self.__trigger()
 
     def __trigger(self):
@@ -54,7 +54,7 @@ class ActivityTimer:
 
     def reset(self):
         # 'ready' is essentially 'inactive', but I want a string I can search for (active is a substring of inactive)
-        latus.logger.log.info('%s : ready : %d' % (self.timer_name, self.active_count))
+        latus.logger.log.debug('%s : ready : %d' % (self.timer_name, self.active_count))
         self.timer_state = False
 
 
