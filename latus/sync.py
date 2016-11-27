@@ -34,7 +34,7 @@ FilterEvent = collections.namedtuple('FilterEvent', ['path', 'event', 'timestamp
 
 def activity_trigger(func):
     """
-    decorator that add activity triggers
+    decorator that adds activity triggers
     """
     @wraps(func)
     def do_triggers(self, *args, **kwargs):
@@ -88,6 +88,8 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         self.observer.start()
 
     def add_filter_event(self, path, event):
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        latus.logger.log.info('%s : add_filter_event : %s : %s' % (pref.get_node_id(), path, str(event)))
         self.filter_events.append(FilterEvent(path, event, time.time()))
 
     # Returns True if path is found in the filter list.  Also removes that path entry from the filter list.
@@ -96,23 +98,23 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         pref = latus.preferences.Preferences(self.app_data_folder)
 
         # remove any old events that somehow timed out
-        removes = []
+        events_to_remove = []
         for filter_event in self.filter_events:
             if now > filter_event.timestamp + FILTER_TIME_OUT:
-                removes.append(filter_event)
-        for remove in removes:
-            latus.logger.log.warn('%s : filter event timed out %s' % (pref.get_node_id(), str(remove)))
-            self.filter_events.remove(remove)
+                events_to_remove.append(filter_event)
+        for event_to_remove in events_to_remove:
+            latus.logger.log.warn('%s : filter event timed out %s' % (pref.get_node_id(), str(event_to_remove)))
+            self.filter_events.remove(event_to_remove)
 
         # Look for this path in events.  If found, remove it and return True.
-        remove = None
+        event_to_remove = None
         for filter_event in self.filter_events:
             if filter_event.path == event.src_path:
-                remove = filter_event
+                event_to_remove = filter_event
                 break
-        if remove is not None:
-            latus.logger.sync_filtered_log(pref.get_node_id(), str(remove))
-            self.filter_events.remove(remove)
+        if event_to_remove is not None:
+            latus.logger.log.info('filtered : %s : %s' % (pref.get_node_id(), str(event_to_remove)))
+            self.filter_events.remove(event_to_remove)
             return True
 
         return False
@@ -205,7 +207,7 @@ class LocalSync(SyncBase):
                 latus.logger.log.warning('could not get hash for %s' % full_path)
             else:
                 cloud_fernet_file = os.path.join(cloud_folders.cache, hash + ENCRYPTION_EXTENSION)
-                crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
+                crypto = latus.crypto.Crypto(crypto_key, pref.get_node_id())
                 if not os.path.exists(cloud_fernet_file):
                     latus.logger.log.info('%s : file_write , %s' % (node_id, cloud_fernet_file))
                     crypto.encrypt(full_path, os.path.abspath(cloud_fernet_file))
@@ -228,7 +230,7 @@ class LocalSync(SyncBase):
             mtime = None
             size = None
         miv = latus.miv.get_miv(node_id)
-        latus.logger.sync_log(node_id, miv, filesystem_event_type, full_path, detection_source, size, file_hash, mtime)
+        self.sync_log(node_id, miv, filesystem_event_type, full_path, detection_source, size, file_hash, mtime)
         node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node_id)
         most_recent_hash = node_db.get_most_recent_hash(latus_path)
         if most_recent_hash != file_hash:
@@ -257,10 +259,9 @@ class LocalSync(SyncBase):
                         mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(local_full_path))
                         size = os.path.getsize(local_full_path)
                         miv = latus.miv.get_miv(this_node_id)
-                        latus.logger.sync_log(this_node_id, file_system_event, miv, partial_path,
-                                              detection_source, size, local_hash, mtime)
+                        self.sync_log(this_node_id, file_system_event, miv, partial_path, detection_source, size, local_hash, mtime)
                         self.__fill_cache(local_full_path)
-                        self.add_filter_event(node_db.get_database_file_name(), FileSystemEvent.modified)
+                        self.add_filter_event(node_db.get_database_file_abs_path(), FileSystemEvent.modified)
                         node_db.update(miv, this_node_id, int(file_system_event),
                                        int(detection_source), partial_path, src_path, size, local_hash, mtime, False)
                 else:
@@ -276,11 +277,14 @@ class LocalSync(SyncBase):
                     else:
                         latus.logger.log.info('%s : %s deleted' % (this_node_id, partial_path))
                         miv = latus.miv.get_miv(this_node_id)
-                        latus.logger.sync_log(this_node_id, FileSystemEvent.deleted, miv, partial_path,
-                                              detection_source, None, None, None)
-                        self.add_filter_event(node_db.get_database_file_name(), FileSystemEvent.modified)
+                        self.sync_log(this_node_id, FileSystemEvent.deleted, miv, partial_path, detection_source, None, None, None)
+                        self.add_filter_event(node_db.get_database_file_abs_path(), FileSystemEvent.modified)
                         node_db.update(miv, this_node_id, int(FileSystemEvent.deleted),
                                        int(DetectionSource.initial_scan), partial_path, src_path, None, None, None, False)
+
+    def sync_log(self, node_id, file_system_event, miv, file_path, detection_source, size, local_hash, mtime):
+        latus.logger.log.info('sync : %s , %s , %s , "%s" , %s , %s , %s , %s' %
+                              (node_id, str(file_system_event), str(miv), file_path, detection_source, size, local_hash, mtime))
 
 
 class CloudSync(SyncBase):
@@ -316,13 +320,17 @@ class CloudSync(SyncBase):
     @activity_trigger
     def on_any_event(self, event):
         pref = latus.preferences.Preferences(self.app_data_folder)
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        this_node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
-        event_node_id = latus.nodedb.get_node_id_from_db_file_path(event.src_path)
-        # if this dispatch was caused by an event on our own DB, ignore it
-        if not event.is_directory and event_node_id != this_node_db.get_node_id() and 'db-journal' not in event.src_path:
-            latus.logger.log.info('%s : cloud dispatch : event : %s' % (pref.get_node_id(), event))
-            self.cloud_sync(DetectionSource.watchdog)
+        if self.filtered(event):
+            latus.logger.log.info('%s : filtered cloud on_any_event : %s' % (pref.get_node_id(), str(event)))
+        else:
+            latus.logger.log.info('%s : cloud on_any_event : %s' % (pref.get_node_id(), str(event)))
+            cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+            this_node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
+            event_node_id = latus.nodedb.get_node_id_from_db_file_path(event.src_path)
+            # if this dispatch was caused by an event on our own DB, ignore it
+            if not event.is_directory and event_node_id != this_node_db.get_node_id() and 'db-journal' not in event.src_path:
+                latus.logger.log.info('%s : cloud dispatch : event : %s' % (pref.get_node_id(), event))
+                self.cloud_sync(DetectionSource.watchdog)
 
     @activity_trigger
     def cloud_sync(self, detection_source):
@@ -349,7 +357,7 @@ class CloudSync(SyncBase):
                     if crypto_key is None:
                         latus.logger.log.warning('no crypto_key yet')
                         return
-                    crypto = latus.crypto.Crypto(crypto_key, pref.get_verbose())
+                    crypto = latus.crypto.Crypto(crypto_key, pref.get_node_id())
 
                     if info['hash']:
                         cloud_fernet_file = os.path.join(cloud_folders.cache,
@@ -358,8 +366,6 @@ class CloudSync(SyncBase):
                                               (pref.get_node_id(), info['detection'], info['originator'], info['event'], info['path'],
                                                local_file_path, info['hash']))
                         encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(local_file_path)
-
-                        latus.logger.log.info('%s : muting %s' % (pref.get_node_id(), local_file_path))
                         self.add_filter_event(local_file_path, FileSystemEvent.any)  # is actually create or modify ... will be correct when we have this class use the proper watchdog events
                         if encrypt:
                             expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
