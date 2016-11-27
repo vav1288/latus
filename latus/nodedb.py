@@ -166,6 +166,9 @@ class NodeDB:
     def get_database_file_name(self):
         return self.database_file_name
 
+    def get_database_file_abs_path(self):
+        return os.path.abspath(self.sqlite_file_path)
+
     def get_file_info(self, file_path):
         conn = self.db_engine.connect()
         command = self.change_table.select().where(self.change_table.c.path == file_path)
