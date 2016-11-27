@@ -21,6 +21,8 @@ from test_latus.tstutil import SyncProc
 import test_latus.tstutil
 import test_latus.read_logs
 
+# todo: Don't pollute the normal log file with these logs (but you'll have to change both this code and the
+#       processes of the latus sync nodes).
 
 class FilesTest(threading.Thread):
     """
@@ -47,21 +49,23 @@ class FilesTest(threading.Thread):
             while not random.choice(actions)():
                 pass
 
-            time.sleep(1)
             latus.logger.log.info('waiting for nodes to become inactive')
+            time.sleep(2)
+
             timeout = 0
             # read the log file the nodes are using
             while test_latus.read_logs.is_active(self.log_file_path) and timeout < 10*60:
-                # print(test_latus.read_logs.get_activity_states(self.log_file_path))
+                latus.logger.log.info(test_latus.read_logs.get_activity_states(self.log_file_path))
                 time.sleep(2)
                 timeout += 1
-            latus.logger.log.info('all nodes ready (inactive)')
+            latus.logger.log.info(test_latus.read_logs.get_activity_states(self.log_file_path))
+            test_latus.tstutil.compare_folders(self.latus_folders)
 
-        print('exiting test')
+        latus.logger.log.info('exiting test')
 
     def file_create(self):
         file_path = self.next_file_path()
-        print('file_create : %s' % file_path)
+        latus.logger.log.info('file_create : %s' % file_path)
         with open(file_path, 'w') as f:
             f.write('%s\n' % file_path)  # merely write the file path in the file itself
         return True
@@ -69,22 +73,22 @@ class FilesTest(threading.Thread):
     def file_modify(self):
         file_path, dir = self.get_existing_file_path()
         if file_path:
-            print('file_modify : %s' % file_path)
+            latus.logger.log.info('file_modify : %s' % file_path)
             with open(file_path, 'a') as f:
                 f.write('%s\n' % str(time.time()))
             return True
         else:
-            print('can not do file_modify yet at %s - no files exist' % dir)
+            latus.logger.log.info('can not do file_modify yet at %s - no files exist' % dir)
             return False
 
     def file_delete(self):
         file_path, d = self.get_existing_file_path()
         if file_path:
-            print('file_delete : %s' % file_path)
+            latus.logger.log.info('file_delete : %s' % file_path)
             os.remove(file_path)
             return True
         else:
-            print('can not do file_delete yet at %s - no files exist' % d)
+            latus.logger.log.info('can not do file_delete yet at %s - no files exist' % d)
             return False
 
     def file_move(self):
@@ -92,11 +96,11 @@ class FilesTest(threading.Thread):
         new_path = self.next_file_path(dir)  # moves are within a node's folder (not cross-node)
         if file_path:
             # if there is no existing file, then don't do anything
-            print('file_move : %s to %s' % (file_path, new_path))
+            latus.logger.log.info('file_move : %s to %s' % (file_path, new_path))
             shutil.move(file_path, new_path)
             return True
         else:
-            print('can not do file_move yet at %s - no files exist' % dir)
+            latus.logger.log.info('can not do file_move yet at %s - no files exist' % dir)
             return False
 
     def next_file_path(self, d=None):
@@ -105,7 +109,7 @@ class FilesTest(threading.Thread):
             d = random.choice(self.latus_folders)
         path = os.path.join(d, 't' + hex(self.file_count) + '.txt')
         self.file_count += 1
-        # print('next_file_path : %s' % path)
+        # latus.logger.log.info('next_file_path : %s' % path)
         return path
 
     def get_existing_file_path(self):
@@ -117,11 +121,11 @@ class FilesTest(threading.Thread):
         path = os.path.join(d, random.choice(files))
         while os.path.isdir(path):
             path = os.path.join(d, random.choice(files))
-        # print('existing file : %s' % path)
+        # latus.logger.log.info('existing file : %s' % path)
         return path, d
 
     def request_exit(self):
-        print('exit requested')
+        latus.logger.log.info('exit requested')
         self.exit_event.set()
 
 
@@ -170,7 +174,7 @@ def main():
     main test function
     """
 
-    number_of_nodes = 2  # todo: once I figure out how to deal with only getting one watchdog call back per file system change, increase this beyond 2
+    number_of_nodes = 3
 
     parser = argparse.ArgumentParser(description='latus system test')
     parser.add_argument('-n', '--no_sync', action='store_true', default=False, help="don't do sync (for testing)")
@@ -179,7 +183,7 @@ def main():
     # set up test folder and logging
     test_root = os.path.join('temp', 'systst')
     shutil.rmtree(test_root)
-    latus.logger.init(os.path.join(test_root, 'log'))
+    latus.logger.init(delete_existing_log_files=True)
     latus.logger.set_console_log_level(logging.INFO)
 
     # set up the preferences for the nodes we'll run
