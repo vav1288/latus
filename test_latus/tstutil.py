@@ -5,6 +5,7 @@ import logging
 import shutil
 import sys
 import subprocess
+import filecmp
 
 import latus.logger
 import latus.util
@@ -138,6 +139,35 @@ def write_to_file(dir_path, file_name, contents, subdir=None):
         f.write(contents)
         f.close()
     return p
+
+
+def compare_folders(folder_paths):
+    """
+    compare a list of folder paths
+    print errors if they exist
+    :param folder_paths: list of folder paths
+    :return: True if all compare, False if there are differences or there are errors
+    """
+    all_compare_ok = True
+    latus.logger.log.info('comparing %s' % str(folder_paths))
+    for folder_a in folder_paths:
+        for folder_b in folder_paths:
+            if folder_a != folder_b:
+                # both dirs should have the same files
+                common_files = os.listdir(folder_a)
+                latus.logger.log.debug('comparing %s to %s using %s' % (folder_a, folder_b, str(common_files)))
+                match, mismatch, errors = filecmp.cmpfiles(folder_a, folder_b, common_files)
+                if len(mismatch) > 0:
+                    s = 'mismatch : %s' % str(mismatch)
+                    latus.logger.log.fatal(s)
+                    print(s)
+                    all_compare_ok = False
+                if len(errors) > 0:
+                    s = 'errors : %s' % str(errors)
+                    latus.logger.log.fatal(s)
+                    print(s)
+                    all_compare_ok = False
+    return all_compare_ok
 
 
 sha512 = {
