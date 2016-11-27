@@ -26,7 +26,7 @@ base_log_file_path = None
 # message_type is things like sync, file_write, etc.
 
 
-def init(log_folder=None):
+def init(log_folder=None, delete_existing_log_files=False):
     global fh, ch, dh, log, base_log_file_path
 
     if not log_folder:
@@ -39,10 +39,10 @@ def init(log_folder=None):
     
     log.setLevel(logging.DEBUG)
 
-    # todo: put these logs in the program data area
-
     # create file handler
     base_log_file_path = os.path.join(log_folder, LOG_FILE_NAME)
+    if delete_existing_log_files:
+        os.remove(base_log_file_path)
     fh = logging.handlers.RotatingFileHandler(base_log_file_path, maxBytes=20*1E6, backupCount=3)
     fh.setLevel(logging.INFO)
 
@@ -89,17 +89,6 @@ def set_file_log_level(new_level):
 
 def set_console_log_level(new_level):
     ch.setLevel(new_level)
-
-
-# the sync log functions used by the sync module
-
-def sync_log(node_id, file_system_event, miv, file_path, detection_source, size, local_hash, mtime):
-    log.info('sync : %s , %s , %s , "%s" , %s , %s , %s , %s' %
-             (node_id, str(file_system_event), str(miv), file_path, detection_source, size, local_hash, mtime))
-
-
-def sync_filtered_log(node_id, file_path):
-    log.info('sync : %s , filtered, %s' % (node_id, file_path))
 
 
 def get_base_log_file_path():
