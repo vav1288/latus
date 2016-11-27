@@ -2,6 +2,7 @@
 import re
 import collections
 import os
+import time
 
 
 def get_activity_states(log_file_path):
@@ -10,6 +11,8 @@ def get_activity_states(log_file_path):
     :return: a dict of the state of each log file
     """
     states = collections.defaultdict()
+    while not os.path.exists(log_file_path):
+        time.sleep(1)
     with open(log_file_path) as f:
         for l in f:
             m = re.search(r'([-_0-9a-z]+)( : )(active|ready : 0)', l, re.IGNORECASE)
