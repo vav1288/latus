@@ -24,7 +24,7 @@ ASYMMETRIC_KEY_LENGTH = 1024  # Asymmetric key size (in bits)
 
 TIME_OUT = 10  # seconds
 
-FILTER_TIME_OUT = 10  # seconds
+FILTER_TIME_OUT = 5  # seconds
 
 
 class FileSystemEvent(IntEnum):
