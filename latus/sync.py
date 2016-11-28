@@ -110,7 +110,7 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         # Look for this path in events.  If found, remove it and return True.
         event_to_remove = None
         for filter_event in self.filter_events:
-            if filter_event.path == event.src_path:
+            if filter_event.path.replace('\\\\', '\\') == event.src_path.replace('\\\\', '\\'):
                 event_to_remove = filter_event
                 break
         if event_to_remove is not None:
