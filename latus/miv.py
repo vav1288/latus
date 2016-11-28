@@ -19,7 +19,9 @@ g_miv_count = 0
 
 def _get_miv(node_id):
     global g_miv_count
-    server = 'https://api.abel.co/miv'
+    # todo: Make this https.  I get this error with https:
+    #       SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:645)
+    server = 'http://api.abel.co/miv'
     miv = None
     tries = 0
     while miv is None and tries < 3:
