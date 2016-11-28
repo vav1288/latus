@@ -40,7 +40,10 @@ class FilesTest(threading.Thread):
         self.file_count = 0
         # the test latus processes use the default log path
         self.log_file_path = os.path.join(appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY), latus.const.LOG_FILE)
-        os.remove(self.log_file_path)
+        try:
+            os.remove(self.log_file_path)
+        except PermissionError:
+            pass
 
     def run(self):
         # create appears twice so we give more weight to file creation (else we'd not have a lot of files)
