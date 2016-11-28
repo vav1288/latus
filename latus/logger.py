@@ -5,6 +5,7 @@ import appdirs
 import logging
 import logging.handlers
 import subprocess
+import shutil
 
 import latus.util
 import latus.const
@@ -26,13 +27,22 @@ base_log_file_path = None
 # message_type is things like sync, file_write, etc.
 
 
-def init(log_folder=None, delete_existing_log_files=False):
+def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
+    """
+
+    :param log_folder: folder where the log file will be written
+    :param delete_existing_log_files: True to remove all log files before writing to them
+    :param backup_count: number of files in the rotating backup (0=a single file, which is necessary for testing)
+    :return: the log folder to be used
+    """
     global fh, ch, dh, log, base_log_file_path
 
     if not log_folder:
         log_folder = appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY)
 
-    latus.util.make_dirs(log_folder)
+    if delete_existing_log_files:
+        shutil.rmtree(log_folder, ignore_errors=True)
+    os.makedirs(log_folder, exist_ok=True)
 
     logger_name = LOGGER_NAME_BASE
     log = logging.getLogger(logger_name)
@@ -41,9 +51,12 @@ def init(log_folder=None, delete_existing_log_files=False):
 
     # create file handler
     base_log_file_path = os.path.join(log_folder, LOG_FILE_NAME)
-    if delete_existing_log_files:
-        os.remove(base_log_file_path)
-    fh = logging.handlers.RotatingFileHandler(base_log_file_path, maxBytes=20*1E6, backupCount=3)
+    if backup_count > 0:
+        max_bytes = 10*1E6  # normal usage
+    else:
+        max_bytes = 0  # no limit - used during testing
+    fh = logging.handlers.RotatingFileHandler(base_log_file_path, maxBytes=max_bytes, backupCount=backup_count)
+    # see fh.setLevel() below for final level - we set this so we can put the log file path in the log file itself
     fh.setLevel(logging.INFO)
 
     # create console handler
@@ -65,7 +78,10 @@ def init(log_folder=None, delete_existing_log_files=False):
     log.addHandler(dh)
 
     log.info('log_folder : %s' % os.path.abspath(log_folder))
-    ch.setLevel(logging.WARN)  # real default
+
+    # real defaults
+    fh.setLevel(logging.WARN)
+    ch.setLevel(logging.ERROR)
 
     return log_folder
 
