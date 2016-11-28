@@ -16,6 +16,7 @@ import latus.preferences
 import latus.crypto
 import latus.gui
 import latus.const
+import latus.util
 from test_latus.tstutil import SyncProc
 
 import test_latus.tstutil
@@ -60,19 +61,23 @@ class FilesTest(threading.Thread):
 
             time.sleep(2)
 
-            timeout = 0
-            # read the log file the nodes are using
-            while test_latus.read_logs.is_active(self.log_file_path) and timeout < 10*60:
+            if latus.util.is_mac():
+                timeout = 0
+                # read the log file the nodes are using
+                while test_latus.read_logs.is_active(self.log_file_path) and timeout < 10*60:
+                    latus.logger.log.info(test_latus.read_logs.get_activity_states(self.log_file_path))
+                    time.sleep(2)
+                    timeout += 1
                 latus.logger.log.info(test_latus.read_logs.get_activity_states(self.log_file_path))
-                time.sleep(2)
-                timeout += 1
-            latus.logger.log.info(test_latus.read_logs.get_activity_states(self.log_file_path))
 
-            # Until we filter based on watchdog event type, it's possible for moves to have a pending filter event
-            # from a prior test iteration.  So, for now, wait until any prior filter events have timed out.
-            # This is actually for the next iteration, but put it before the folder compare just to give all
-            # the nodes even more time to settle out (I know ... this "delay" shouldn't be needed).
-            time.sleep(latus.const.FILTER_TIME_OUT)
+                # Until we filter based on watchdog event type, it's possible for moves to have a pending filter event
+                # from a prior test iteration.  So, for now, wait until any prior filter events have timed out.
+                # This is actually for the next iteration, but put it before the folder compare just to give all
+                # the nodes even more time to settle out (I know ... this "delay" shouldn't be needed).
+                time.sleep(latus.const.FILTER_TIME_OUT)
+            elif latus.util.is_windows():
+                time.sleep(2 * latus.const.FILTER_TIME_OUT)  # examining the log file doesn't work for Windows
+
             test_latus.tstutil.compare_folders(self.latus_folders)
 
             test_iteration += 1
