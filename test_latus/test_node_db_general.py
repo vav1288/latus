@@ -16,6 +16,6 @@ def test_node_db_general():
 
     node_id = 'a'
     general_root = get_node_db_general_root()
-    latus.util.make_dirs(general_root)
+    os.makedirs(general_root, exist_ok=True)
     node_db = latus.nodedb.NodeDB(general_root, node_id, True)
     assert(node_db.get_node_id() == node_id)
