@@ -47,8 +47,7 @@ class Preferences:
         self.__version_key_string = 'version'
         self.__verbose_string = 'verbose'
 
-        if not os.path.exists(latus_appdata_folder):
-            latus.util.make_dirs(latus_appdata_folder)
+        os.makedirs(latus_appdata_folder, exist_ok=True)
         self.__db_path = os.path.abspath(os.path.join(latus_appdata_folder, self.PREFERENCES_FILE))
         sqlite_path = 'sqlite:///' + self.__db_path
         self.__db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
@@ -73,7 +72,7 @@ class Preferences:
         session.close()
 
     def __pref_get(self, key):
-        latus.logger.log.debug('pref_get : %s' % str(key))
+        # latus.logger.log.debug('pref_get : %s' % str(key))
         session = self.__Session()
         row = session.query(PreferencesTable).filter_by(key=key).first()
         if row:
@@ -81,7 +80,7 @@ class Preferences:
         else:
             value = None
         session.close()
-        latus.logger.log.debug('pref_get : %s' % str(value))
+        # latus.logger.log.debug('pref_get : %s' % str(value))
         return value
 
     def set_crypto_key(self, key):
