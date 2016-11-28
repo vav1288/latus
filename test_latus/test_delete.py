@@ -47,9 +47,13 @@ def test_delete(setup):
     syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
+    time.sleep(2)
+
     # wait for the file to get sync'd
     wait_for_file(path_node_1)
     wait_for_file(path_node_0)
+
+    time.sleep(2)
 
     assert(os.path.exists(path_node_0))
     assert(os.path.exists(path_node_1))
@@ -57,7 +61,9 @@ def test_delete(setup):
     # now remove the file on the node that it was sync'd to
     os.remove(path_node_1)
 
-    # wait for the file to be removed from both notes
+    time.sleep(5)  # todo: determine why these delays are needed on Windows
+
+    # wait for the file to be removed from both nodes
     wait_for_file(path_node_0, False)
     wait_for_file(path_node_1, False)
 
