@@ -100,18 +100,6 @@ def make_hidden(in_path):
     # todo: check that the file name does indeed start with a dot
 
 
-def make_dirs(path):
-    """
-    Make a directory as specified by path.  If it already exists, simply return (don't raise an error).
-
-    :param path: path of directories/folders to create
-    """
-    try:
-        os.makedirs(path)
-    except FileExistsError:
-        pass
-
-
 def make_dir(path, hidden=False):
     try:
         os.mkdir(path)
@@ -173,9 +161,6 @@ def arg_parse():
                         help="app data folder (where preferences are stored)")
     parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")
     args = parser.parse_args()
-    if args.verbose:
-        latus.logger.set_console_log_level(logging.INFO)
-        latus.logger.set_file_log_level(logging.DEBUG)
     return args
 
 
