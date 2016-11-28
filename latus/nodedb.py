@@ -126,7 +126,7 @@ class NodeDB:
         latus.logger.log.info('%s updating %s %s %s %s %s %s %s %s %s %s' % (self.node_id, seq, originator, event, detection,
                                                                        file_path, src_path, size, hash, mtime, pending))
         command = self.change_table.select().where(self.change_table.c.seq == seq)
-        result = conn.execute(command)
+        result = self._execute_with_retry(conn, command, 'update_select')
         if not result.fetchone():
             if mtime:
                 command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
@@ -138,7 +138,7 @@ class NodeDB:
                 command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
                                                             detection=detection, path=file_path, srcpath=src_path,
                                                             pending=pending, timestamp=datetime.datetime.utcnow())
-            result = conn.execute(command)
+            result = self._execute_with_retry(conn, command, 'update_insert')
         else:
             latus.logger.log.warn('seq %s already found - not updating' % seq)
         conn.close()
@@ -172,7 +172,7 @@ class NodeDB:
     def get_file_info(self, file_path):
         conn = self.db_engine.connect()
         command = self.change_table.select().where(self.change_table.c.path == file_path)
-        result = conn.execute(command)
+        result = self._execute_with_retry(conn, command, 'get_file_info')
         updates = []
         for row in result:
             updates.append(self.db_row_to_info(row))
@@ -182,7 +182,7 @@ class NodeDB:
     def get_latest_file_info(self, file_path):
         conn = self.db_engine.connect()
         command = self.change_table.select().where(self.change_table.c.path == file_path)
-        result = conn.execute(command)
+        result = self._execute_with_retry(conn, command, 'get_latest_file_info')
         update = None
         for row in result:
             update = self.db_row_to_info(row)  # just get last one
@@ -195,7 +195,7 @@ class NodeDB:
         file_paths = set()
         if self.change_table.exists():
             command = self.change_table.select()
-            result = conn.execute(command)
+            result = self._execute_with_retry(conn, command, 'get_paths')
             for row in result:
                 file_path = row[int(ChangeAttributes.path)]
                 if file_path not in file_paths:
@@ -209,7 +209,7 @@ class NodeDB:
         conn = self.db_engine.connect()
         file_hash = None
         command = self.change_table.select().where(self.change_table.c.path == file_path)
-        result = conn.execute(command)
+        result = self._execute_with_retry(conn, command, 'get_most_recent_hash')
         if result:
             all_hashes = result.fetchall()
             if all_hashes:
@@ -222,7 +222,7 @@ class NodeDB:
         infos = []
         with self.db_engine.connect() as conn:
             command = self.change_table.select()
-            result = conn.execute(command)
+            result = self._execute_with_retry(conn, command, 'get_rows_as_info')
             if result:
                 for row in result:
                     infos.append(self.db_row_to_info(row))
@@ -342,7 +342,7 @@ class NodeDB:
     def get_last_seq(self, file_path):
         with self.db_engine.connect() as conn:
             q_cmd = self.change_table.select().where(self.change_table.c.path == file_path)
-            q_result = conn.execute(q_cmd)
+            q_result = self._execute_with_retry(conn, q_cmd, 'get_last_seq')
             all_rows = q_result.fetchall()
             if all_rows:
                 last = all_rows[-1]
@@ -357,10 +357,10 @@ class NodeDB:
         infos = []
         with self.db_engine.connect() as conn:
             cmd = self.change_table.select().distinct(self.change_table.c.path)
-            result = conn.execute(cmd)
+            result = self._execute_with_retry(conn, cmd, 'get_last_seqs_info_0')
             for row in result:
                 q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == row[int(ChangeAttributes.path)], self.change_table.c.pending))
-                q_result = conn.execute(q_cmd)
+                q_result = self._execute_with_retry(conn, q_cmd, 'get_last_seqs_info_1')
                 all_rows = q_result.fetchall()
                 if all_rows:
                     last = all_rows[-1]
@@ -373,7 +373,7 @@ class NodeDB:
     def get_info_from_path_and_seq(self, path, seq):
         with self.db_engine.connect() as conn:
             q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.seq == seq, self.change_table.c.path == path))
-            q_result = conn.execute(q_cmd)
+            q_result = self._execute_with_retry(conn, q_cmd, 'get_info_from_path_and_seq')
             # todo: check that there is indeed only one entry returned
             if q_result:
                 row = q_result.fetchone()
@@ -389,7 +389,7 @@ class NodeDB:
         any_pending_flag = False
         with self.db_engine.connect() as conn:
             cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == path, self.change_table.c.pending == True))
-            result = conn.execute(cmd)
+            result = self._execute_with_retry(conn, cmd, 'any_pendings')
             rows = result.fetchall()
             print(len(rows))
             if len(rows) > 0:
@@ -402,7 +402,7 @@ class NodeDB:
             result = None
             stmt = self.change_table.update().values(pending=False).where(self.change_table.c.path == info['path'] and
                                                                           self.change_table.c.seq == info['seq'])
-            result = conn.execute(stmt)
+            result = self._execute_with_retry(conn, stmt, 'clear_pending')
             if not result:
                 latus.logger.log.error('clear_pending of %s %s failed' % (info['path'], info['seq']))
 
@@ -418,7 +418,7 @@ class NodeDB:
         if self.db_engine:
             conn = self.db_engine.connect()
             command = self.folders_table.select().where(self.folders_table.c.name == folder)
-            result = conn.execute(command)
+            result = self._execute_with_retry(conn, command, 'get_folder_preferences_from_folder')
             if result:
                 row = result.fetchone()
                 if row:
@@ -440,7 +440,7 @@ class NodeDB:
             return False
         conn = self.db_engine.connect()
         select_command = self.folders_table.select().where(self.folders_table.c.name == name)
-        select_result = conn.execute(select_command)
+        select_result = self._execute_with_retry(conn, select_command, 'set_folder_preferences_select')
         do_insert = True
         if select_result:
             row = select_result.fetchone()
@@ -449,11 +449,11 @@ class NodeDB:
                 update_command = self.folders_table.update().where(self.folders_table.c.name == name).\
                     values(name=name, encrypt=encrypt, shared=shared, cloud=cloud,
                            timestamp=datetime.datetime.utcnow())
-                conn.execute(update_command)
+                self._execute_with_retry(conn, update_command, 'set_folder_preferences_update')
         if do_insert:
             insert_command = self.folders_table.insert().values(name=name, encrypt=encrypt, shared=shared, cloud=cloud,
                                                                 timestamp=datetime.datetime.utcnow())
-            conn.execute(insert_command)
+            self._execute_with_retry(conn, insert_command, 'set_folder_preferences_insert')
         conn.close()
         return True
 
