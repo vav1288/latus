@@ -5,6 +5,7 @@ import time
 import datetime
 import sys
 import collections
+import logging
 from functools import wraps
 
 import watchdog.observers
@@ -391,10 +392,12 @@ class CloudSync(SyncBase):
             elif info['event'] == FileSystemEvent.moved:
                 # todo: make a specific 'moved' filter event - this one just uses the dest
                 latus_path = pref.get_latus_folder()
-                self.add_filter_event(local_file_path, FileSystemEvent.moved)
                 latus.logger.log.info('%s : %s : %s moved %s to %s' % (pref.get_node_id(), detection_source, info['originator'], info['path'], info['srcpath']))
                 dest_abs_path = os.path.join(latus_path, info['path'])
                 src_abs_path = os.path.join(latus_path, info['srcpath'])
+                # add both src and dest to filter, in case we get both events.  We'll rely on the timeout to remove extraneous ones.
+                self.add_filter_event(dest_abs_path, FileSystemEvent.moved)
+                self.add_filter_event(src_abs_path, FileSystemEvent.moved)
                 try:
                     shutil.move(src_abs_path, dest_abs_path)
                 except IOError as e:
@@ -454,8 +457,14 @@ class Sync:
 if __name__ == '__main__':
     # Run latus from the command line with existing preferences.
     # This is particularly useful for testing.
-    latus.logger.init()
     args = latus.util.arg_parse()
+    if args.verbose:
+        # test settings
+        latus.logger.init(backup_count=0)
+        latus.logger.set_console_log_level(logging.INFO)
+        latus.logger.set_file_log_level(logging.DEBUG)
+    else:
+        latus.logger.init()
     sync = Sync(args.appdatafolder)
     sync.start()
     input('hit enter to exit')
