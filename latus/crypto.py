@@ -2,14 +2,14 @@
 import os
 import json
 import datetime
-import cryptography.fernet
+from cryptography.fernet import Fernet, InvalidToken
 import cryptography.exceptions
 import latus.util
 import latus.logger
 
 
 def new_key():
-    return cryptography.fernet.Fernet.generate_key()
+    return Fernet.generate_key()
 
 
 class CryptoFile:
@@ -41,7 +41,7 @@ class Crypto:
     def __init__(self, key, node_id=None):
         self.__key = key
         self.__node_id = node_id
-        self.__fernet = cryptography.fernet.Fernet(self.__key)
+        self.__fernet = Fernet(self.__key)
 
     def encrypt(self, in_path, out_path):
         token = None
@@ -66,7 +66,7 @@ class Crypto:
                 b = None
                 try:
                     b = self.__fernet.decrypt(in_file.read())
-                except cryptography.fernet.InvalidToken as e:
+                except InvalidToken as e:
                     latus.logger.log.error('InvalidToken (possible key error) %s : %s %s' % (str(e), in_path, out_path))
                 except cryptography.exceptions.UnsupportedAlgorithm as e:
                     latus.logger.log.error('UnsupportedAlgorithm %s : %s %s' % (str(e), in_path, out_path))
