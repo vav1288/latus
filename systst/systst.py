@@ -57,9 +57,9 @@ class FilesTest(threading.Thread):
             while not random.choice(actions)():
                 pass
 
-            latus.logger.log.info('waiting for nodes to become inactive')
+            time.sleep(5)
 
-            time.sleep(2)
+            latus.logger.log.info('waiting for nodes to complete the sync')
 
             if latus.util.is_mac():
                 timeout = 0
