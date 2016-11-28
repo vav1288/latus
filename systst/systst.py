@@ -24,6 +24,7 @@ import test_latus.read_logs
 # todo: Don't pollute the normal log file with these logs (but you'll have to change both this code and the
 #       processes of the latus sync nodes).
 
+
 class FilesTest(threading.Thread):
     """
     thread that does all the testing
@@ -44,12 +45,16 @@ class FilesTest(threading.Thread):
     def run(self):
         # create appears twice so we give more weight to file creation (else we'd not have a lot of files)
         actions = [self.file_create, self.file_create, self.file_modify, self.file_delete, self.file_move]
+        test_iteration = 0
         while not self.exit_event.is_set():
+            latus.logger.log.info('starting test iteration %d' % test_iteration)
+
             # keep trying until one of the actions actually does something
             while not random.choice(actions)():
                 pass
 
             latus.logger.log.info('waiting for nodes to become inactive')
+
             time.sleep(2)
 
             timeout = 0
@@ -59,7 +64,15 @@ class FilesTest(threading.Thread):
                 time.sleep(2)
                 timeout += 1
             latus.logger.log.info(test_latus.read_logs.get_activity_states(self.log_file_path))
+
+            # Until we filter based on watchdog event type, it's possible for moves to have a pending filter event
+            # from a prior test iteration.  So, for now, wait until any prior filter events have timed out.
+            # This is actually for the next iteration, but put it before the folder compare just to give all
+            # the nodes even more time to settle out (I know ... this "delay" shouldn't be needed).
+            time.sleep(latus.const.FILTER_TIME_OUT)
             test_latus.tstutil.compare_folders(self.latus_folders)
+
+            test_iteration += 1
 
         latus.logger.log.info('exiting test')
 
@@ -182,8 +195,12 @@ def main():
 
     # set up test folder and logging
     test_root = os.path.join('temp', 'systst')
-    shutil.rmtree(test_root)
-    latus.logger.init(delete_existing_log_files=True)
+    try:
+        shutil.rmtree(test_root)
+    except FileNotFoundError:
+        pass
+    # backup_count=0 so we don't have log file rollover (the code that looks into the logs can't handle log file rollover)
+    latus.logger.init(delete_existing_log_files=True, backup_count=0)
     latus.logger.set_console_log_level(logging.INFO)
 
     # set up the preferences for the nodes we'll run
