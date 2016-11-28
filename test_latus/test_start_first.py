@@ -17,7 +17,7 @@ def get_start_first_root():
     return os.path.join(get_data_root(), "start_first")
 
 
-def test_simple(setup):
+def test_start_first(setup):
     """
     test a simple sync of 2 files across 2 nodes
     """
@@ -61,6 +61,6 @@ def test_simple(setup):
     assert(os.path.exists(b_to_a))
     assert(os.path.exists(a_to_b))
 
-    latus.logger.log.info('test_simple exiting')
+    latus.logger.log.info('test_start_first exiting')
 
     return
