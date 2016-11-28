@@ -3,6 +3,9 @@ import re
 import collections
 import os
 import time
+import glob
+
+import latus.logger
 
 
 def get_activity_states(log_file_path):
@@ -10,6 +13,12 @@ def get_activity_states(log_file_path):
     :param log_file_path: path to the log file to parse
     :return: a dict of the state of each log file
     """
+
+    # check that we don't have log file rollover (we can't handle log file rollover)
+    rollovers = glob.glob('%s.*' % log_file_path)
+    if len(rollovers) > 0:
+        latus.logger.log.fatal('log file rollover apparently being used - we can not handle that (%s)' % rollovers)
+
     states = collections.defaultdict()
     while not os.path.exists(log_file_path):
         time.sleep(1)
