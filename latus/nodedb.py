@@ -19,6 +19,11 @@ import latus.util
 __db_version__ = '0.0.1'
 
 
+# A note on OS interoperability on paths:
+# We store paths in the DB MacOS/OSX/*nix style - i.e. with forward slashes
+# External to the NodeDB class the paths are in the format of the OS we are running on (Win or Mac).  They can be
+# passed into the NodeDB class in the native OS format and they are returned in the native OS format.
+
 class NodeDB:
     def __init__(self, cloud_node_db_folder, node_id, write_flag=False):
 
@@ -122,6 +127,8 @@ class NodeDB:
         self.set_heartbeat()
 
     def update(self, seq, originator, event, detection, file_path, src_path, size, hash, mtime, pending):
+        file_path = norm_latus_path(file_path)
+        src_path = norm_latus_path(src_path)
         conn = self.db_engine.connect()
         latus.logger.log.info('%s updating %s %s %s %s %s %s %s %s %s %s' % (self.node_id, seq, originator, event, detection,
                                                                        file_path, src_path, size, hash, mtime, pending))
@@ -199,13 +206,15 @@ class NodeDB:
             for row in result:
                 file_path = row[int(ChangeAttributes.path)]
                 if file_path not in file_paths:
-                    file_paths.add(file_path)
+                    # return the file paths in the native OS format
+                    file_paths.add(os.path.normpath(file_path))
         else:
             latus.logger.log.warning('change_table does not exist')
         conn.close()
         return file_paths
 
     def get_most_recent_hash(self, file_path):
+        file_path = norm_latus_path(file_path)
         conn = self.db_engine.connect()
         file_hash = None
         command = self.change_table.select().where(self.change_table.c.path == file_path)
@@ -372,6 +381,7 @@ class NodeDB:
 
     def get_info_from_path_and_seq(self, path, seq):
         with self.db_engine.connect() as conn:
+            path = norm_latus_path(path)  # paths are stored in DB as latus normalized paths
             q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.seq == seq, self.change_table.c.path == path))
             q_result = self._execute_with_retry(conn, q_cmd, 'get_info_from_path_and_seq')
             # todo: check that there is indeed only one entry returned
@@ -476,3 +486,20 @@ def sync_dbs(cloud_node_folder, source_node_id, destination_node_id):
         dest_info = destination_node_db.get_info_from_path_and_seq(source_info['path'], source_info['seq'])
         if dest_info is None:
             destination_node_db.update_info(source_info, True)  # mark as pending
+
+
+def norm_latus_path(path):
+    """
+    Return a normalized latus path - this is a path with only forward slashes.
+    This is chosen since converting from MacOS/OSX/Linux to Windows (forward slashes to backward slashes) is
+    straightforward and most of the Python OS routines make this conversion automatically.  Converting from
+    backward slashes to forward slashes are problematic since backward slash is also an escape character.
+    :param path: file system path
+    :return: normalized latus style path
+    """
+    if path is None:
+        p = None
+    else:
+        # os.path.normpath() also provides collapsing and up leveling
+        p = os.path.normpath(path).replace('\\', '/')
+    return p

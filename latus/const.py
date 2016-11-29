@@ -27,7 +27,7 @@ TIME_OUT = 10  # seconds
 FILTER_TIME_OUT = 5  # seconds
 
 
-class FileSystemEvent(IntEnum):
+class LatusFileSystemEvent(IntEnum):
     unknown = 0
     created = 1
     modified = 2

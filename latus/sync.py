@@ -15,7 +15,7 @@ import send2trash
 import latus.logger
 import latus.util
 import latus.const
-from latus.const import FileSystemEvent, DetectionSource, ChangeAttributes, TIME_OUT, FILTER_TIME_OUT, ENCRYPTION_EXTENSION, UNENCRYPTED_EXTENSION
+from latus.const import LatusFileSystemEvent, DetectionSource, ChangeAttributes, TIME_OUT, FILTER_TIME_OUT, ENCRYPTION_EXTENSION, UNENCRYPTED_EXTENSION
 import latus.preferences
 import latus.walker
 import latus.hash
@@ -88,13 +88,13 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
     def start_observer(self):
         self.observer.start()
 
-    def add_filter_event(self, path, event):
+    def add_filter_event(self, path, latus_file_system_event):
         pref = latus.preferences.Preferences(self.app_data_folder)
-        latus.logger.log.info('%s : add_filter_event : %s : %s' % (pref.get_node_id(), path, str(event)))
-        self.filter_events.append(FilterEvent(path, event, time.time()))
+        latus.logger.log.info('%s : add_filter_event : %s : %s' % (pref.get_node_id(), path, str(latus_file_system_event)))
+        self.filter_events.append(FilterEvent(path, latus_file_system_event, time.time()))
 
     # Returns True if path is found in the filter list.  Also removes that path entry from the filter list.
-    def filtered(self, event):
+    def filtered(self, watchdog_event):
         now = time.time()
         pref = latus.preferences.Preferences(self.app_data_folder)
 
@@ -110,7 +110,7 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         # Look for this path in events.  If found, remove it and return True.
         event_to_remove = None
         for filter_event in self.filter_events:
-            if filter_event.path.replace('\\\\', '\\') == event.src_path.replace('\\\\', '\\'):
+            if filter_event.path == watchdog_event.src_path:
                 event_to_remove = filter_event
                 break
         if event_to_remove is not None:
@@ -153,7 +153,7 @@ class LocalSync(SyncBase):
                 latus.logger.log.info('%s : local on_created event : %s' % (self.get_node_id(), str(watchdog_event)))
                 src_path = watchdog_event.src_path
                 file_hash = self.__fill_cache(src_path)
-                self.__write_db(src_path, None, FileSystemEvent.created, DetectionSource.watchdog, file_hash)
+                self.__write_db(src_path, None, LatusFileSystemEvent.created, DetectionSource.watchdog, file_hash)
 
     @activity_trigger
     def on_deleted(self, watchdog_event):
@@ -163,7 +163,7 @@ class LocalSync(SyncBase):
             else:
                 latus.logger.log.info('%s : local on_deleted event : %s' % (self.get_node_id(), str(watchdog_event)))
                 # todo: remove from cache
-                self.__write_db(watchdog_event.src_path, None, FileSystemEvent.deleted, DetectionSource.watchdog, None)
+                self.__write_db(watchdog_event.src_path, None, LatusFileSystemEvent.deleted, DetectionSource.watchdog, None)
 
     @activity_trigger
     def on_modified(self, watchdog_event):
@@ -173,7 +173,7 @@ class LocalSync(SyncBase):
             else:
                 latus.logger.log.info('%s : local on_modified event : %s' % (self.get_node_id(), str(watchdog_event)))
                 file_hash = self.__fill_cache(watchdog_event.src_path)
-                self.__write_db(watchdog_event.src_path, None, FileSystemEvent.modified, DetectionSource.watchdog, file_hash)
+                self.__write_db(watchdog_event.src_path, None, LatusFileSystemEvent.modified, DetectionSource.watchdog, file_hash)
 
     @activity_trigger
     def on_moved(self, watchdog_event):
@@ -190,7 +190,7 @@ class LocalSync(SyncBase):
                     src_path = src_path[1:]
 
                 file_hash, _ = latus.hash.calc_sha512(watchdog_event.dest_path)
-                self.__write_db(watchdog_event.dest_path, src_path, FileSystemEvent.moved, DetectionSource.watchdog, file_hash)
+                self.__write_db(watchdog_event.dest_path, src_path, LatusFileSystemEvent.moved, DetectionSource.watchdog, file_hash)
 
     def __fill_cache(self, full_path):
         pref = latus.preferences.Preferences(self.app_data_folder)
@@ -253,16 +253,16 @@ class LocalSync(SyncBase):
                 if local_hash:
                     most_recent_hash = node_db.get_most_recent_hash(partial_path)
                     if most_recent_hash is None:
-                        file_system_event = FileSystemEvent.created
+                        file_system_event = LatusFileSystemEvent.created
                     else:
-                        file_system_event = FileSystemEvent.modified
+                        file_system_event = LatusFileSystemEvent.modified
                     if local_hash != most_recent_hash:
                         mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(local_full_path))
                         size = os.path.getsize(local_full_path)
                         miv = latus.miv.get_miv(this_node_id)
                         self.sync_log(this_node_id, file_system_event, miv, partial_path, detection_source, size, local_hash, mtime)
                         self.__fill_cache(local_full_path)
-                        self.add_filter_event(node_db.get_database_file_abs_path(), FileSystemEvent.modified)
+                        self.add_filter_event(node_db.get_database_file_abs_path(), LatusFileSystemEvent.modified)
                         node_db.update(miv, this_node_id, int(file_system_event),
                                        int(detection_source), partial_path, src_path, size, local_hash, mtime, False)
                 else:
@@ -278,9 +278,9 @@ class LocalSync(SyncBase):
                     else:
                         latus.logger.log.info('%s : %s deleted' % (this_node_id, partial_path))
                         miv = latus.miv.get_miv(this_node_id)
-                        self.sync_log(this_node_id, FileSystemEvent.deleted, miv, partial_path, detection_source, None, None, None)
-                        self.add_filter_event(node_db.get_database_file_abs_path(), FileSystemEvent.modified)
-                        node_db.update(miv, this_node_id, int(FileSystemEvent.deleted),
+                        self.sync_log(this_node_id, LatusFileSystemEvent.deleted, miv, partial_path, detection_source, None, None, None)
+                        self.add_filter_event(node_db.get_database_file_abs_path(), LatusFileSystemEvent.modified)
+                        node_db.update(miv, this_node_id, int(LatusFileSystemEvent.deleted),
                                        int(DetectionSource.initial_scan), partial_path, src_path, None, None, None, False)
 
     def sync_log(self, node_id, file_system_event, miv, file_path, detection_source, size, local_hash, mtime):
@@ -351,7 +351,7 @@ class CloudSync(SyncBase):
             else:
                 local_file_hash = None
 
-            if info['event'] == FileSystemEvent.created or info['event'] == FileSystemEvent.modified:
+            if info['event'] == LatusFileSystemEvent.created or info['event'] == LatusFileSystemEvent.modified:
                 if info['hash'] != local_file_hash:
 
                     crypto_key = pref.get_crypto_key()
@@ -367,7 +367,7 @@ class CloudSync(SyncBase):
                                               (pref.get_node_id(), info['detection'], info['originator'], info['event'], info['path'],
                                                local_file_path, info['hash']))
                         encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(local_file_path)
-                        self.add_filter_event(local_file_path, FileSystemEvent.any)  # is actually create or modify ... will be correct when we have this class use the proper watchdog events
+                        self.add_filter_event(local_file_path, LatusFileSystemEvent.any)  # is actually create or modify ... will be correct when we have this class use the proper watchdog events
                         if encrypt:
                             expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
                             # todo: set mtime
@@ -379,8 +379,8 @@ class CloudSync(SyncBase):
                         this_node_db.clear_pending(info)
                     else:
                         latus.logger.log.warning('%s : hash is None for %s' % (pref.get_node_id(), local_file_path))
-            elif info['event'] == FileSystemEvent.deleted:
-                self.add_filter_event(local_file_path, FileSystemEvent.deleted)
+            elif info['event'] == LatusFileSystemEvent.deleted:
+                self.add_filter_event(local_file_path, LatusFileSystemEvent.deleted)
                 latus.logger.log.info('%s : %s : %s deleted %s' % (pref.get_node_id(), detection_source, info['originator'], info['path']))
                 try:
                     if os.path.exists(local_file_path):
@@ -389,15 +389,15 @@ class CloudSync(SyncBase):
                     # fallback
                     latus.logger.log.warn('%s : send2trash failed on %s' % (pref.get_node_id(), local_file_path))
                 this_node_db.clear_pending(info)
-            elif info['event'] == FileSystemEvent.moved:
+            elif info['event'] == LatusFileSystemEvent.moved:
                 # todo: make a specific 'moved' filter event - this one just uses the dest
                 latus_path = pref.get_latus_folder()
                 latus.logger.log.info('%s : %s : %s moved %s to %s' % (pref.get_node_id(), detection_source, info['originator'], info['path'], info['srcpath']))
                 dest_abs_path = os.path.join(latus_path, info['path'])
                 src_abs_path = os.path.join(latus_path, info['srcpath'])
                 # add both src and dest to filter, in case we get both events.  We'll rely on the timeout to remove extraneous ones.
-                self.add_filter_event(dest_abs_path, FileSystemEvent.moved)
-                self.add_filter_event(src_abs_path, FileSystemEvent.moved)
+                self.add_filter_event(dest_abs_path, LatusFileSystemEvent.moved)
+                self.add_filter_event(src_abs_path, LatusFileSystemEvent.moved)
                 try:
                     shutil.move(src_abs_path, dest_abs_path)
                 except IOError as e:
