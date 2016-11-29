@@ -24,12 +24,14 @@ base_log_file_path = None
 
 def init_from_args(args):
     if args.test:
-        init(args.appdatafolder, backup_count=0)
+        init(None, backup_count=0)
     else:
-        init(args.appdatafolder)
+        init(None)
     if args.verbose:
         set_console_log_level(logging.WARN)
         set_file_log_level(logging.INFO)
+    if args.test:
+        set_file_log_level(logging.DEBUG)
 
 
 def init(log_folder, delete_existing_log_files=False, backup_count=3):

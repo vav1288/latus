@@ -93,7 +93,7 @@ class SyncProc:
     def __init__(self, app_data_folder):
         self.app_data_folder = app_data_folder
         self.sync_process = None
-        self.cmd = '%s %s -a %s -v' % (sys.executable, os.path.join('latus', 'sync.py'), self.app_data_folder)
+        self.cmd = '%s %s -a %s -v -t' % (sys.executable, os.path.join('latus', 'sync.py'), self.app_data_folder)
 
     def start(self):
         latus.logger.log.info(self.cmd)
