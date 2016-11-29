@@ -70,7 +70,7 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
         try:
             self.observer.stop()
         except SystemError as e:
-            latus.logger.log.error(latus.util.exception_to_string(sys.exc_info(), e))
+            latus.logger.log.exception('error stopping observer : %s' % str(self.get_type()))
         self.observer.join(TIME_OUT)
 
         if len(self.filter_events) > 0:
@@ -458,13 +458,7 @@ if __name__ == '__main__':
     # Run latus from the command line with existing preferences.
     # This is particularly useful for testing.
     args = latus.util.arg_parse()
-    if args.verbose:
-        # test settings
-        latus.logger.init(backup_count=0)
-        latus.logger.set_console_log_level(logging.INFO)
-        latus.logger.set_file_log_level(logging.DEBUG)
-    else:
-        latus.logger.init()
+    latus.logger.init_from_args(args)
     sync = Sync(args.appdatafolder)
     sync.start()
     input('hit enter to exit')

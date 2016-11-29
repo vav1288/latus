@@ -1,7 +1,7 @@
 
 """
     latus (www.lat.us) - efficient and secure cloud-based folder sync
-    Copyright (C) 2014-2015  James C. Abel
+    Copyright (C) 2014-2016  James C. Abel
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,7 +32,8 @@ import latus.logger
 
 
 def main():
-    latus.logger.init()
+    args = latus.util.arg_parse()
+    latus.logger.init_from_args(args)
 
     # ensure the frozen app is execution on the version it needs.
     is_64bits = sys.maxsize > 2**32
@@ -40,18 +41,16 @@ def main():
         not_64_bit_message = 'error:not a 64 bit interpreter - exiting'
         print(not_64_bit_message)
         sys.exit(not_64_bit_message)
-    req_version = (3,4)
+    req_version = (3,5)
     if sys.version_info < req_version:
         old_version_message = 'expected python version %s or better, got %s - exiting' % (str(req_version), str(sys.version))
         print(old_version_message)
         sys.exit(old_version_message)
 
-    args = latus.util.arg_parse()
-
     try:
         latus.gui.main(args.appdatafolder)
-    except Exception:
-        latus.logger.log.exception("Fatal error")
+    except Exception as e:
+        latus.logger.log.exception('catch-all exception handler')
 
 
 if __name__ == "__main__":

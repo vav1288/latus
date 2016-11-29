@@ -21,13 +21,18 @@ dh = None
 log = None
 base_log_file_path = None
 
-# the general log message format is:
-# < message_type > : [ node id ] , ...
-#
-# message_type is things like sync, file_write, etc.
+
+def init_from_args(args):
+    if args.test:
+        init(args.appdatafolder, backup_count=0)
+    else:
+        init(args.appdatafolder)
+    if args.verbose:
+        set_console_log_level(logging.WARN)
+        set_file_log_level(logging.INFO)
 
 
-def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
+def init(log_folder, delete_existing_log_files=False, backup_count=3):
     """
 
     :param log_folder: folder where the log file will be written
@@ -52,7 +57,7 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
     # create file handler
     base_log_file_path = os.path.join(log_folder, LOG_FILE_NAME)
     if backup_count > 0:
-        max_bytes = 10*1E6  # normal usage
+        max_bytes = 100*1E6  # normal usage
     else:
         max_bytes = 0  # no limit - used during testing
     fh = logging.handlers.RotatingFileHandler(base_log_file_path, maxBytes=max_bytes, backupCount=backup_count)

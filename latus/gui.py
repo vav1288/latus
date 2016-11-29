@@ -127,7 +127,6 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
 
 
 def main(latus_appdata_folder):
-    latus.logger.log.info('gui')
 
     # check if we should run the setup wizard first
     pref = latus.preferences.Preferences(latus_appdata_folder)
@@ -155,6 +154,6 @@ def main(latus_appdata_folder):
 
 # for interactive testing
 if __name__ == "__main__":
-    latus_appdata_folder = sys.argv[1]
-    latus.logger.init(latus_appdata_folder)
-    main(latus_appdata_folder)
+    args = latus.util.arg_parse()
+    latus.logger.init_from_args(args)
+    main(args.latus_appdata_folder)

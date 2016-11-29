@@ -36,7 +36,7 @@ class NodeDB:
         self._login_string = 'login'
         self._heartbeat_string = 'heartbeat'
 
-        self.retry_count = None
+        self.retry_count = 0
 
         self.node_id = node_id
         # The DB file name is based on the node id.  This is important ... this way we never have a conflict
@@ -251,7 +251,7 @@ class NodeDB:
                 result = conn.execute(command)
             except sqlalchemy.exc.OperationalError:
                 self.retry_count += 1
-                latus.logger.log.warn('%s : execute retry : %s : %d' % (self.node_id, str(msg), self.retry_count))
+                latus.logger.log.info('%s : execute retry : %s : %s : %d' % (self.node_id, str(command), str(msg), self.retry_count))
                 result = None
                 latus.util.wait_random(3)
         if result is None:
@@ -259,7 +259,6 @@ class NodeDB:
         return result
 
     def _get_general(self, key):
-        self.retry_count = 0
         val_is_valid = False
         if self.db_engine is None:
             latus.logger.log.warn('_get_general: db_engine is None')
@@ -286,7 +285,6 @@ class NodeDB:
         if self.db_engine is None:
             latus.logger.log.warn('_set_general: db_engine is None')
             return None
-        self.retry_count = 0
         conn = self.db_engine.connect()
         select_command = self.general_table.select().where(self.general_table.c.key == key)
         select_result = self._execute_with_retry(conn, select_command, ('set', key, value))

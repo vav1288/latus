@@ -159,29 +159,8 @@ def arg_parse():
     parser = argparse.ArgumentParser(description="efficient and secure cloud-based folder sync")
     parser.add_argument('-a', '--appdatafolder', default=appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY),
                         help="app data folder (where preferences are stored)")
-    parser.add_argument('-v', '--verbose', action='store_true', help="output status messages during execution")
+    parser.add_argument('-v', '--verbose', action='store_true', help="more verbose logging")
+    parser.add_argument('-t', '--test', action='store_true', help="test mode")
     args = parser.parse_args()
     return args
 
-
-def exception_to_string(exc_info, e):
-    """
-    usage:
-
-        try:
-            self.observer.stop()
-        except SystemError as e:
-            latus.logger.log.error(latus.util.exception_to_string(sys.exc_info(), e))
-
-    :param exc_info: from call to sys.exc_info()
-    :param e: exception
-    :return: string that represents the exception (e.g. that can be written to a log file
-    """
-    exc_type, exc_value, exc_traceback = exc_info
-    traceback_details = {
-        'filename': exc_traceback.tb_frame.f_code.co_filename,
-        'lineno': exc_traceback.tb_lineno,
-        'name': exc_traceback.tb_frame.f_code.co_name,
-        'type': exc_type.__name__,
-    }
-    return str(traceback_details) + ':' + str(e)

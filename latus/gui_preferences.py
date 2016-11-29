@@ -161,7 +161,7 @@ class PreferencesDialog(QDialog):
 def main():
     import sys
 
-    latus.logger.init()
+    latus.logger.init(None)
     latus.logger.set_console_log_level(logging.INFO)
 
     app = QApplication(sys.argv)
