@@ -150,10 +150,10 @@ def compare_folders(folder_paths):
     """
     all_compare_ok = False
     attempt_count_down = 10
-    latus.logger.log.info('comparing %s' % str(folder_paths))
+    latus.logger.log.debug('comparing %s' % str(folder_paths))
     mismatch = None
     errors = None
-    while all_compare_ok and attempt_count_down > 0:
+    while not all_compare_ok and attempt_count_down > 0:
         for folder_a in folder_paths:
             for folder_b in folder_paths:
                 if folder_a != folder_b:
@@ -175,6 +175,8 @@ def compare_folders(folder_paths):
         s = 'compare folders error : mismatch=%s : errors=%s' % (str(mismatch), str(errors))
         print(s)
         latus.logger.log.fatal(s)
+    if all_compare_ok:
+        latus.logger.log.info('%d files compare OK : %s' % (len(os.listdir(folder_paths[0])), str(folder_paths)))
     return all_compare_ok
 
 
