@@ -49,6 +49,7 @@ class DialogBoxHandlerAndExit(logging.Handler):
     def emit(self, record):
         msg = self.format(record)
         cmd = '%s -c "%s" "%s"' % (sys.executable,  latus.messagedialog.program, msg)
+        log.info(cmd)
         try:
             subprocess.call(cmd, shell=True)
             sys.exit(msg)
