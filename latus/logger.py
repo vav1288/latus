@@ -6,6 +6,9 @@ import logging
 import logging.handlers
 import subprocess
 import shutil
+import copy
+
+import requests
 
 import latus.util
 import latus.const
@@ -16,7 +19,8 @@ import latus.preferences
 LOG_FILE_NAME = 'latus.log'
 LOGGER_NAME_BASE = 'latus'
 
-log = None
+log = None  # code that uses this module uses this logger
+
 g_fh = None
 g_ch = None
 g_dh = None
@@ -25,9 +29,11 @@ g_appdata_folder = None
 g_base_log_file_path = None
 
 
-# unfortunately HTTPHandler can't use a formatter, so inserting the node_id still needs to be done by the log caller
 class LatusFormatter(logging.Formatter):
     def format(self, record):
+        """
+        adds in the node_id, if available
+        """
         global g_appdata_folder
         if g_appdata_folder:
             pref = latus.preferences.Preferences(g_appdata_folder)
@@ -39,15 +45,50 @@ class LatusFormatter(logging.Formatter):
 g_formatter = LatusFormatter('%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(levelname)s - %(message)s')
 
 
+class DialogBoxHandlerAndExit(logging.Handler):
+    def emit(self, record):
+        msg = self.format(record)
+        cmd = '%s -c "%s" "%s"' % (sys.executable,  latus.messagedialog.program, msg)
+        try:
+            subprocess.call(cmd, shell=True)
+            sys.exit(msg)
+        except OSError:
+            # If the Python executable isn't actually accessible we should get this exception.
+            # We don't have the exit() here since we don't want to merely exit silently.
+            print(msg)  # at least try to communicate this message
+
+
+class LatusHttpHandler(logging.Handler):
+    """
+    send the log up to the log server
+    """
+    def __init__(self, latus_logging_url):
+        self.latus_logging_url = latus_logging_url
+        super().__init__()
+
+    def emit(self, record):
+        try:
+            # record.__dict__ is essentially what HTTPHandler uses
+            # (doesn't use the string formatter)
+            info = copy.deepcopy(record.__dict__)
+            if g_appdata_folder:
+                pref = latus.preferences.Preferences(g_appdata_folder)
+                info['nodeid'] = pref.get_node_id()
+            requests.post(self.latus_logging_url, data=info)
+        except requests.ConnectionError:
+            # let connection problems cause us to drop the log on the floor
+            pass
+
+
 def init_from_args(args):
     global g_appdata_folder
     g_appdata_folder = None
     if args.appdatafolder:
         g_appdata_folder = args.appdatafolder
     if args.test:
-        init(None, backup_count=0, param_appdata_folder=g_appdata_folder)
+        init(None, backup_count=0, appdata_folder=g_appdata_folder)
     else:
-        init(None, param_appdata_folder=g_appdata_folder)
+        init(None, appdata_folder=g_appdata_folder)
     if args.verbose:
         set_console_log_level(logging.WARN)
         set_file_log_level(logging.INFO)
@@ -55,20 +96,20 @@ def init_from_args(args):
         set_file_log_level(logging.DEBUG)
 
 
-def init(log_folder, delete_existing_log_files=False, backup_count=3, param_appdata_folder=None):
+def init(log_folder=None, delete_existing_log_files=False, backup_count=3, appdata_folder=None):
     """
 
-    :param log_folder: folder where the log file will be written
+    :param log_folder: folder where the log file will be written (None to take the default)
     :param delete_existing_log_files: True to remove all log files before writing to them
     :param backup_count: number of files in the rotating backup (0=a single file, which is necessary for testing)
     :param http_handler: True to upload logs to the latus log server (typically error level and higher)
-    :param parm_appdata_folder: appdata_folder
+    :param appdata_folder: appdata_folder
     :return: the log folder to be used
     """
     global g_fh, g_ch, g_dh, log, g_base_log_file_path, g_appdata_folder
 
-    if param_appdata_folder:
-        g_appdata_folder = param_appdata_folder
+    if appdata_folder:
+        g_appdata_folder = appdata_folder
 
     if not log_folder:
         log_folder = appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY)
@@ -106,6 +147,8 @@ def init(log_folder, delete_existing_log_files=False, backup_count=3, param_appd
     g_dh.setLevel(logging.FATAL)  # only pop this up as we're on the way out
     log.addHandler(g_dh)
 
+    add_http_handler()
+
     log.info('log_folder : %s' % os.path.abspath(log_folder))
 
     # real defaults
@@ -115,25 +158,12 @@ def init(log_folder, delete_existing_log_files=False, backup_count=3, param_appd
     return log_folder
 
 
-def add_http_handler(base_url='api.abel.co'):
+def add_http_handler(url='http://api.abel.co/latus/log'):
     global g_hh
-    log.info('adding http handler')
-    g_hh = logging.handlers.HTTPHandler(base_url, 'latus/log', method='POST')
+    log.info('adding http handler %s' % url)
+    g_hh = LatusHttpHandler(url)
     g_hh.setLevel(logging.ERROR)
     log.addHandler(g_hh)
-
-
-class DialogBoxHandlerAndExit(logging.Handler):
-    def emit(self, record):
-        msg = self.format(record)
-        cmd = '%s -c "%s" "%s"' % (sys.executable,  latus.messagedialog.program, msg)
-        try:
-            subprocess.call(cmd, shell=True)
-            sys.exit(msg)
-        except OSError:
-            # If the Python executable isn't actually accessible we should get this exception.
-            # We don't have the exit() here since we don't want to merely exit silently.
-            print(msg)  # at least try to communicate this message
 
 
 def set_file_log_level(new_level):
@@ -142,6 +172,11 @@ def set_file_log_level(new_level):
 
 def set_console_log_level(new_level):
     g_ch.setLevel(new_level)
+
+
+def set_appdata_folder(appdata_folder):
+    global g_appdata_folder
+    g_appdata_folder = appdata_folder
 
 
 def get_base_log_file_path():

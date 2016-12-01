@@ -2,7 +2,7 @@
 import os
 import logging
 
-from test_latus.tstutil import get_data_root
+from test_latus.tstutil import get_data_root, write_preferences, logger_init
 import latus.logger
 
 
@@ -11,13 +11,8 @@ def get_test_upload_root():
 
 
 def test_log_upload():
-    latus.logger.init(os.path.join(get_test_upload_root(), 'log'))
+    logger_init(os.path.join(get_data_root(), 'log'))
+    app_data_folder = write_preferences('testnode', get_test_upload_root(), 'test_key')
+    latus.logger.set_appdata_folder(app_data_folder)
     latus.logger.set_console_log_level(logging.INFO)
-    if True:
-        # local testing
-        url = 'localhost:5000'
-        latus.logger.add_http_handler(url)
-        latus.logger.log.info('adding handler : %s' % url)
-    else:
-        latus.logger.add_http_handler()
     latus.logger.log.error('test_upload_error_message')
