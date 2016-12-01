@@ -78,5 +78,6 @@ class Crypto:
             latus.logger.log.warn('does not exist : %s' % in_path)
         return success
 
-
+    def get_key(self):
+        return self.__key
 

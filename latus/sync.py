@@ -375,7 +375,7 @@ class CloudSync(SyncBase):
                             expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
                             # todo: set mtime
                             if not expand_ok:
-                                latus.logger.log.fatal('Latus Key Error - please reinitialize the Latus Key - exiting')
+                                latus.logger.log.fatal('Latus Key Error - please reinitialize the Latus Key : %s : %s' % (cloud_fernet_file, local_file_path))
                         else:
                             cloud_file = os.path.join(cloud_folders.cache, info['hash'] + UNENCRYPTED_EXTENSION)
                             shutil.copy2(cloud_file, local_file_path)
