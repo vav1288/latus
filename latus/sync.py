@@ -104,7 +104,11 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
                 events_to_remove.append(filter_event)
         for event_to_remove in events_to_remove:
             latus.logger.log.warn('%s : filter event timed out %s' % (pref.get_node_id(), str(event_to_remove)))
-            self.filter_events.remove(event_to_remove)
+            try:
+                self.filter_events.remove(event_to_remove)
+            except ValueError:
+                # it's possible another thread had removed this
+                latus.logger.log.info('%s already removed' % str(event_to_remove))
 
         # Look for this path in events.  If found, remove it and return True.
         event_to_remove = None
