@@ -117,19 +117,31 @@ class Preferences:
         self.__pref_set(self.__check_new_version_string, check_flag)
 
     def get_check_new_version(self):
-        return bool(int(self.__pref_get(self.__check_new_version_string)))
+        ul = self.__pref_get(self.__check_new_version_string)
+        if ul:
+            return bool(int(ul))
+        else:
+            return False
 
     def set_upload_usage(self, upload_usage_flag):
         self.__pref_set(self.__upload_usage_string, upload_usage_flag)
 
     def get_upload_usage(self):
-        return bool(int(self.__pref_get(self.__upload_usage_string)))
+        ul = self.__pref_get(self.__upload_usage_string)
+        if ul:
+            return bool(int(ul))
+        else:
+            return False
 
     def set_upload_logs(self, upload_logs_flag):
         self.__pref_set(self.__upload_logs_string, upload_logs_flag)
 
     def get_upload_logs(self):
-        return bool(int(self.__pref_get(self.__upload_logs_string)))
+        ul = self.__pref_get(self.__upload_logs_string)
+        if ul:
+            return bool(int(ul))
+        else:
+            return False
 
     def set_node_id(self, new_node_id):
         self.__pref_set(self.__id_string, new_node_id)

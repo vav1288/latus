@@ -7,6 +7,7 @@ import os
 import logging
 import hashlib
 import binascii
+import threading
 
 import requests
 
@@ -18,10 +19,12 @@ import latus.nodedb
 import latus.util
 import latus.folders
 
+
 def anonymize(s):
     m = hashlib.sha256()
     m.update(s.encode())
     return str(binascii.hexlify(m.digest()))
+
 
 def get_folder_size(root):
     total_size = 0
@@ -67,6 +70,22 @@ class LatusUsageInfo:
         yield ('nodedbversion', None, latus.nodedb.__db_version__)
 
 
+class LatusUsageUploader(threading.Thread):
+    def __init__(self, upload_period):
+        super().__init__()
+        self.upload_period = upload_period
+        self.exit_event = threading.Event()
+
+    def run(self):
+        latus.logger.log.info('latus usage uploader started')
+        while not self.exit_event.is_set():
+            upload_usage_info()
+            self.exit_event.wait(self.upload_period)
+
+    def request_exit(self):
+        self.exit_event.set()
+
+
 def upload_usage_info():
     latus_config_folder = appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)
     preferences = latus.preferences.Preferences(latus_config_folder)
@@ -83,7 +102,13 @@ def upload_usage_info():
 def main():
     latus.logger.init(os.path.join('temp', 'latus_usage'))
     latus.logger.set_console_log_level(logging.INFO)
-    upload_usage_info()
+
+    latus_usage_uploader = LatusUsageUploader(60*60)
+    latus_usage_uploader.start()
+    input('hit enter to exit')
+    latus_usage_uploader.request_exit()
+    latus_usage_uploader.join()
+
 
 if __name__ == '__main__':
     main()

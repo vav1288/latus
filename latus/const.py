@@ -16,7 +16,7 @@ DESCRIPTION = 'Secure file sync with low impact to cloud storage.'
 MAIN_FILE = 'main.py'
 
 API_ABEL_CO = 'https://api.abel.co'
-USAGE_API_URL = API_ABEL_CO + '/usage'
+USAGE_API_URL = API_ABEL_CO + '/latus/usage'
 
 BIG_FILE_SIZE = 1024 * 1024
 MAX_HASH_PERF_VALUES = 10  # determine how many longest hash times to store in the db

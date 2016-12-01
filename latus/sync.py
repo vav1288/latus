@@ -3,9 +3,7 @@ import os
 import shutil
 import time
 import datetime
-import sys
 import collections
-import logging
 from functools import wraps
 
 import watchdog.observers
@@ -26,6 +24,7 @@ import latus.folders
 import latus.key_management
 import latus.gui
 import latus.activity_timer
+import latus.usage
 
 
 FilterEvent = collections.namedtuple('FilterEvent', ['path', 'event', 'timestamp'])
@@ -429,7 +428,16 @@ class Sync:
         self.local_sync = LocalSync(self.app_data_folder, self.filter_events)
         self.cloud_sync = CloudSync(self.app_data_folder, self.filter_events)
 
+        if pref.get_upload_logs():
+            self.usage_uploader = latus.usage.LatusUsageUploader(60*60)  # todo: make usage upload period a preference variable
+            latus.logger.add_http_handler()
+        else:
+            self.usage_uploader = None
+
     def start(self):
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        if self.usage_uploader:
+            self.usage_uploader.start()
         self.local_sync.fs_scan(DetectionSource.initial_scan)
         self.cloud_sync.cloud_sync(DetectionSource.initial_scan)
         self.local_sync.start_observer()
@@ -440,6 +448,8 @@ class Sync:
         self.cloud_sync.cloud_sync(DetectionSource.periodic_poll)
 
     def request_exit(self):
+        if self.usage_uploader:
+            self.usage_uploader.request_exit()
         pref = latus.preferences.Preferences(self.app_data_folder)
         cloud_folder = latus.folders.CloudFolders(pref.get_cloud_root())
         node_id = pref.get_node_id()
