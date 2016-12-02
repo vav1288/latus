@@ -19,6 +19,7 @@ __db_version__ = '0.0.0'
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
+PREFERENCES_FILE = 'preferences' + latus.const.DB_EXTENSION
 
 class PreferencesTable(Base):
     __tablename__ = 'preferences'
@@ -29,8 +30,6 @@ class PreferencesTable(Base):
 
 
 class Preferences:
-
-    PREFERENCES_FILE = 'preferences' + latus.const.DB_EXTENSION
 
     def __init__(self, latus_appdata_folder, init=False):
 
@@ -48,7 +47,7 @@ class Preferences:
         self.__verbose_string = 'verbose'
 
         os.makedirs(latus_appdata_folder, exist_ok=True)
-        self.__db_path = os.path.abspath(os.path.join(latus_appdata_folder, self.PREFERENCES_FILE))
+        self.__db_path = os.path.abspath(os.path.join(latus_appdata_folder, PREFERENCES_FILE))
         sqlite_path = 'sqlite:///' + self.__db_path
         self.__db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
         # todo: check the version in the DB against the current __version__ to see if we need to force a drop table
@@ -106,12 +105,6 @@ class Preferences:
 
     def get_verbose(self):
         return bool(self.__pref_get(self.__verbose_string))
-
-    def set_key_folder(self, folder):
-        self.__pref_set(self.__most_recent_key_folder_string, folder)
-
-    def get_key_folder(self):
-        return self.__pref_get(self.__most_recent_key_folder_string)
 
     def set_check_new_version(self, check_flag):
         self.__pref_set(self.__check_new_version_string, check_flag)
