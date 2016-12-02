@@ -160,17 +160,18 @@ def compare_folders(folder_paths):
             for folder_b in folder_paths:
                 if folder_a != folder_b:
                     # both dirs should have the same files
-                    common_files = os.listdir(folder_a)
-                    latus.logger.log.debug('comparing %s to %s using %s' % (folder_a, folder_b, str(common_files)))
+                    common_files = set(os.listdir(folder_a)).union(set(os.listdir(folder_b)))
+                    latus.logger.log.debug('comparing %s to %s' % (folder_a, folder_b))
                     match, mismatch, errors = filecmp.cmpfiles(folder_a, folder_b, common_files)
-                    all_compare_ok = True
                     if len(mismatch) > 0 or len(errors) > 0:
                         all_compare_ok = False
                         error_a, error_b = folder_a, folder_b
-        if all_compare_ok is False:
+                    else:
+                        all_compare_ok = True
+        if not all_compare_ok:
             time.sleep(10)
-            latus.logger.log.warn('compare_folders issue - retrying : %s , %s : mismatch=%s : errors=%s' %
-                                  (error_a, error_b, str(mismatch), str(errors)))
+            latus.logger.log.warn('compare_folders issue - retrying : countdown=%d : folders=%s,%s : mismatch=%s : errors=%s' %
+                                  (attempt_count_down, error_a, error_b, str(mismatch), str(errors)))
         attempt_count_down -= 1
     if attempt_count_down < 1:
         latus.logger.log.error('comparing %s' % str(folder_paths))
