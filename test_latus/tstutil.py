@@ -27,6 +27,10 @@ def logger_init(log_folder):
     latus.logger.log.info('logger_init')
 
 
+def get_data_root():
+    return os.path.abspath(os.path.join('test_latus', 'data'))
+
+
 def get_python_exe():
     if latus.util.is_windows():
         bin_folder = 'Scripts'
@@ -109,12 +113,11 @@ class SyncProc:
         return rc
 
 
-def clean():
+def clean(path=get_data_root()):
     """
     clean up the test data
     :return:
     """
-    path = get_data_root()
     try_count = 10
     while os.path.exists(path) and try_count:
         try:
@@ -186,10 +189,6 @@ def compare_folders(folder_paths):
 sha512 = {
     'a' : "1f40fc92da241694750979ee6cf582f2d5d7d28e18335de05abc54d0560e0f5302860c652bf08d560252aa5e74210546f369fbbbce8c12cfc7957b2652fe9a75"
 }
-
-
-def get_data_root():
-    return os.path.abspath(os.path.join('test_latus', 'data'))
 
 
 def root_test_gui_wizard():

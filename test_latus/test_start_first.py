@@ -18,9 +18,6 @@ def get_start_first_root():
 
 
 def test_start_first(setup):
-    """
-    test a simple sync of 2 files across 2 nodes
-    """
 
     nodes = ['a', 'b']
 
