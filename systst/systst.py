@@ -210,7 +210,7 @@ def main():
 
     # backup_count=0 so we don't have log file rollover (the code that looks into the logs can't handle log file rollover)
     latus.logger.init(None, delete_existing_log_files=True, backup_count=0)
-    latus.logger.set_console_log_level(logging.INFO)
+    latus.logger.set_console_log_level(logging.WARN)
 
     # set up the preferences for the nodes we'll run
     app_data_folders = setup_preferences(test_root, number_of_nodes)
