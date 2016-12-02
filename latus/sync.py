@@ -216,7 +216,8 @@ class LocalSync(SyncBase):
         node_id = pref.get_node_id()
         cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
         node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node_id)
-        encrypt, shared, cloud = node_db.get_folder_preferences_from_path(full_path)
+        partial_path = os.path.relpath(full_path, pref.get_latus_folder())
+        encrypt, shared, cloud = node_db.get_folder_preferences_from_path(partial_path)
         hash, _ = latus.hash.calc_sha512(full_path)
         if encrypt:
             crypto_key = pref.get_crypto_key()
@@ -388,7 +389,7 @@ class CloudSync(SyncBase):
                         latus.logger.log.info('%s : %s : %s %s %s - propagating to %s %s' %
                                               (pref.get_node_id(), info['detection'], info['originator'], info['event'], info['path'],
                                                local_file_path, info['hash']))
-                        encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(local_file_path)
+                        encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(info['path'])
                         self.add_filter_event(local_file_path, LatusFileSystemEvent.any)  # is actually create or modify ... will be correct when we have this class use the proper watchdog events
                         if encrypt:
                             expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
