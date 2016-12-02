@@ -1,9 +1,7 @@
 
 import os
 import logging
-import subprocess
-import sys
-import threading
+import time
 
 import latus.const
 import latus.sync
@@ -16,7 +14,7 @@ from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, l
 
 
 def get_simple_root():
-    return os.path.join(get_data_root(), "simple")
+    return os.path.join(get_data_root(), "test_simple")
 
 
 def test_simple(setup):
@@ -44,6 +42,8 @@ def test_simple(setup):
         file_names.append(file_name)
         write_to_file(latus_folder, file_name, node, '')
 
+    time.sleep(1)
+
     # start the sync
     syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
@@ -53,6 +53,12 @@ def test_simple(setup):
     wait_for_file(b_to_a)
     a_to_b = os.path.join(local_folders[1], file_names[0])
     wait_for_file(a_to_b)
+
+    time.sleep(1)
+    latus.logger.log.info('wait for any pending (but will be filtered) watchdog events')
+    time.sleep(3)
+    latus.logger.log.info('done wait for any pending (but will be filtered) watchdog events')
+    time.sleep(1)
 
     # stop the syncs
     [sync.request_exit() for sync in syncs]

@@ -85,6 +85,14 @@ class SyncBase(watchdog.events.FileSystemEventHandler):
 
     @activity_trigger
     def start_observer(self):
+
+        # clear any pending filter events
+        for event in self.filter_events:
+            try:
+                self.filter_events.remove(event)
+            except ValueError:
+                latus.logger.log.info('error in clearing events : %s' % str(event))
+
         self.observer.start()
 
     def add_filter_event(self, path, latus_file_system_event):
@@ -149,7 +157,9 @@ class LocalSync(SyncBase):
 
     @activity_trigger
     def on_created(self, watchdog_event):
-        if not watchdog_event.is_directory:
+        if watchdog_event.is_directory:
+            latus.logger.log.debug(watchdog_event)
+        else:
             if self.filtered(watchdog_event):
                 latus.logger.log.info('%s : filtered local on_created event : %s' % (self.get_node_id(), str(watchdog_event)))
             else:
@@ -160,7 +170,9 @@ class LocalSync(SyncBase):
 
     @activity_trigger
     def on_deleted(self, watchdog_event):
-        if not watchdog_event.is_directory:
+        if watchdog_event.is_directory:
+            latus.logger.log.debug(watchdog_event)
+        else:
             if self.filtered(watchdog_event):
                 latus.logger.log.info('%s : filtered local on_deleted event : %s' % (self.get_node_id(), str(watchdog_event)))
             else:
@@ -170,7 +182,9 @@ class LocalSync(SyncBase):
 
     @activity_trigger
     def on_modified(self, watchdog_event):
-        if not watchdog_event.is_directory:
+        if watchdog_event.is_directory:
+            latus.logger.log.debug(watchdog_event)
+        else:
             if self.filtered(watchdog_event):
                 latus.logger.log.info('%s : filtered local on_modified event : %s' % (self.get_node_id(), str(watchdog_event)))
             else:
@@ -180,7 +194,9 @@ class LocalSync(SyncBase):
 
     @activity_trigger
     def on_moved(self, watchdog_event):
-        if not watchdog_event.is_directory:
+        if watchdog_event.is_directory:
+            latus.logger.log.debug(watchdog_event)
+        else:
             if self.filtered(watchdog_event):
                 latus.logger.log.info('%s : filtered local on_moved event : %s' % (self.get_node_id(), str(watchdog_event)))
             else:
@@ -286,6 +302,7 @@ class LocalSync(SyncBase):
                         node_db.update(miv, this_node_id, int(LatusFileSystemEvent.deleted),
                                        int(DetectionSource.initial_scan), partial_path, src_path, None, None, None, False)
 
+    # todo: get rid of this - it makes the line number irrelevant
     def sync_log(self, node_id, file_system_event, miv, file_path, detection_source, size, local_hash, mtime):
         latus.logger.log.info('sync : %s , %s , %s , "%s" , %s , %s , %s , %s' %
                               (node_id, str(file_system_event), str(miv), file_path, detection_source, size, local_hash, mtime))
@@ -398,9 +415,7 @@ class CloudSync(SyncBase):
                 latus.logger.log.info('%s : %s : %s moved %s to %s' % (pref.get_node_id(), detection_source, info['originator'], info['path'], info['srcpath']))
                 dest_abs_path = os.path.join(latus_path, info['path'])
                 src_abs_path = os.path.join(latus_path, info['srcpath'])
-                # add both src and dest to filter, in case we get both events.  We'll rely on the timeout to remove extraneous ones.
-                self.add_filter_event(dest_abs_path, LatusFileSystemEvent.moved)
-                self.add_filter_event(src_abs_path, LatusFileSystemEvent.moved)
+                self.add_filter_event(src_abs_path, LatusFileSystemEvent.moved)  # on moves, we only get a watchdog on the source
                 try:
                     shutil.move(src_abs_path, dest_abs_path)
                 except IOError as e:
@@ -439,7 +454,6 @@ class Sync:
             self.usage_uploader = None
 
     def start(self):
-        pref = latus.preferences.Preferences(self.app_data_folder)
         if self.usage_uploader:
             self.usage_uploader.start()
         self.local_sync.fs_scan(DetectionSource.initial_scan)

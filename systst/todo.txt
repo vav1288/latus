@@ -1,0 +1,7 @@
+
+- add an option to keep the number of files low (e.g. 5) so we continually
+  are modifying these same files.
+
+- given that we'll have a collection of options - e.g. let number of files grow, keep number of files low,
+  2 nodes, 3 nodes, a large number of nodes - create a way to run all of these in parallel.
+

@@ -26,7 +26,7 @@ def test_delete(setup):
 
     log_folder = os.path.join(get_delete_root(), 'log')
     logger_init(log_folder)
-    latus.logger.set_console_log_level(logging.INFO)
+    latus.logger.set_console_log_level(logging.DEBUG)
 
     key = latus.crypto.new_key()
     app_data_folders = [write_preferences(node, get_delete_root(), key) for node in nodes]

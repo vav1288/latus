@@ -14,7 +14,7 @@ from test_latus.tstutil import logger_init, get_latus_folder, wait_for_file, wri
 
 
 def get_move_root():
-    return os.path.join(get_data_root(), "move")
+    return os.path.join(get_data_root(), "test_move")
 
 
 def test_move(setup):

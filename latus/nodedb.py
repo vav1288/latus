@@ -363,18 +363,25 @@ class NodeDB:
         # todo: make this an interator, DB must stay open so to has to have a conn passed in
         infos = []
         with self.db_engine.connect() as conn:
-            cmd = self.change_table.select().distinct(self.change_table.c.path)
+
+            # get all the paths that have a pending
+            paths_pending = set()
+            cmd = self.change_table.select().where(self.change_table.c.pending).distinct(self.change_table.c.path)
             result = self._execute_with_retry(conn, cmd, 'get_last_seqs_info_0')
-            for row in result:
-                q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == row[int(ChangeAttributes.path)], self.change_table.c.pending))
+            if result:
+                for row in result.fetchall():
+                    paths_pending.add(row[int(ChangeAttributes.path)])
+
+            # get the last entry for each path
+            for path in paths_pending:
+                q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == path, self.change_table.c.pending))
                 q_result = self._execute_with_retry(conn, q_cmd, 'get_last_seqs_info_1')
                 all_rows = q_result.fetchall()
                 if all_rows:
                     last = all_rows[-1]
                     infos.append(self.db_row_to_info(last))
-                else:
-                    last = None
             conn.close()
+
         return infos
 
     def get_info_from_path_and_seq(self, path, seq):
@@ -399,7 +406,6 @@ class NodeDB:
             cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == path, self.change_table.c.pending == True))
             result = self._execute_with_retry(conn, cmd, 'any_pendings')
             rows = result.fetchall()
-            print(len(rows))
             if len(rows) > 0:
                 any_pending_flag = True
             conn.close()

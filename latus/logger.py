@@ -42,7 +42,7 @@ class LatusFormatter(logging.Formatter):
         else:
             return super().format(record)
 
-g_formatter = LatusFormatter('%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(levelname)s - %(message)s')
+g_formatter = LatusFormatter('%(asctime)s - %(name)s - %(filename)s - %(lineno)s - %(funcName)s - %(levelname)s - %(message)s')
 
 
 class DialogBoxHandlerAndExit(logging.Handler):
@@ -90,11 +90,13 @@ def init_from_args(args):
         init(None, backup_count=0, appdata_folder=g_appdata_folder)
     else:
         init(None, appdata_folder=g_appdata_folder)
-    if args.verbose:
+    if args.test:
+        # test is the more verbose mode
+        set_console_log_level(logging.DEBUG)
+        set_file_log_level(logging.DEBUG)
+    elif args.verbose:
         set_console_log_level(logging.WARN)
         set_file_log_level(logging.INFO)
-    if args.test:
-        set_file_log_level(logging.DEBUG)
 
 
 def init(log_folder=None, delete_existing_log_files=False, backup_count=3, appdata_folder=None):

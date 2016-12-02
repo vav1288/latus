@@ -18,9 +18,10 @@ import latus.folders
 
 def logger_init(log_folder):
     if latus.logger.log:
-        print('WARNING: logger already set up')
-    else:
-        latus.logger.init(log_folder)
+        latus.logger.log.info('logger already set up at %s (will NOT change to %s)' %
+                              (latus.logger.get_base_log_file_path(), log_folder))
+        return
+    latus.logger.init(log_folder)
     latus.logger.set_console_log_level(logging.INFO)
     latus.logger.set_file_log_level(logging.DEBUG)
     latus.logger.log.info('logger_init')
