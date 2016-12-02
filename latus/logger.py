@@ -92,7 +92,7 @@ def init_from_args(args):
         init(None, appdata_folder=g_appdata_folder)
     if args.test:
         # test is the more verbose mode
-        set_console_log_level(logging.DEBUG)
+        set_console_log_level(logging.INFO)
         set_file_log_level(logging.DEBUG)
     elif args.verbose:
         set_console_log_level(logging.WARN)
