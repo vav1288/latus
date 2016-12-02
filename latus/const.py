@@ -26,6 +26,7 @@ TIME_OUT = 10  # seconds
 
 FILTER_TIME_OUT = 5  # seconds
 
+FOLDER_PREFERENCE_DEFAULTS = (True, False, False)  # encrypt, shared, cloud
 
 class LatusFileSystemEvent(IntEnum):
     unknown = 0
