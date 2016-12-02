@@ -35,7 +35,7 @@ class About(QDialog):
         layout.addWidget(QLabel(latus.const.URL), 0, 0)
 
         self.add_line('Latus Node ID:', node_id, 2, layout)
-        self.add_line('Log folder:', latus.logger.log_folder, 5, layout)
+        self.add_line('Log folder:', latus.logger.get_base_log_file_path(), 5, layout)
 
         self.show()
 
