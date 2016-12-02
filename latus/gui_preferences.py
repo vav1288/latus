@@ -45,6 +45,7 @@ class LineUI:
 class PreferencesDialog(QDialog):
     def __init__(self, latus_appdata_folder):
         latus.logger.log.info('starting PreferencesDialog')
+        latus.logger.log.info('preferences folder : %s' % latus_appdata_folder)
 
         self.pref = latus.preferences.Preferences(latus_appdata_folder)
         cloud_folders = latus.folders.CloudFolders(self.pref.get_cloud_root())
@@ -69,7 +70,8 @@ class PreferencesDialog(QDialog):
                 folder_preferences_layout.addWidget(QLabel(folder))
                 col = 1
                 self.check_boxes[folder] = []
-                for attribute in self.node_db.get_folder_preferences_from_folder(folder):
+                partial_folder = os.path.relpath(folder, self.pref.get_latus_folder())
+                for attribute in self.node_db.get_folder_preferences_from_folder(partial_folder):
                     ss = Qt.Unchecked
                     if attribute:
                         ss = Qt.Checked
