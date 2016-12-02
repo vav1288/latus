@@ -36,11 +36,12 @@ class LatusFormatter(logging.Formatter):
         """
         global g_appdata_folder
         if g_appdata_folder:
-            pref = latus.preferences.Preferences(g_appdata_folder)
-            node_id = pref.get_node_id()
-            return node_id + ' : ' + super().format(record)
-        else:
-            return super().format(record)
+            if os.path.exists(os.path.join(g_appdata_folder, latus.preferences.PREFERENCES_FILE)):
+                pref = latus.preferences.Preferences(g_appdata_folder)
+                node_id = pref.get_node_id()
+                if node_id:
+                    return node_id + ' : ' + super().format(record)
+        return super().format(record)
 
 g_formatter = LatusFormatter('%(asctime)s - %(name)s - %(filename)s - %(lineno)s - %(funcName)s - %(levelname)s - %(message)s')
 
@@ -153,6 +154,8 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3, appda
     add_http_handler()
 
     log.info('log_folder : %s' % os.path.abspath(log_folder))
+    if g_appdata_folder:
+        log.info('preferences : %s' % latus.preferences.Preferences(g_appdata_folder).get_db_path())
 
     # real defaults
     g_fh.setLevel(logging.WARN)
