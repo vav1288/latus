@@ -12,6 +12,7 @@ import sqlalchemy.exc
 from latus.const import DB_EXTENSION, ChangeAttributes
 import latus.logger
 import latus.util
+import latus.const
 
 # DB schema version is the latus version where this schema was first introduced.  If your DB schema is earlier
 # than (i.e. "less than") this, you need to do a drop all tables and start over.  This value is MANUALLY copied from
@@ -87,15 +88,17 @@ class NodeDB:
 
         if write_flag:
             new_schema = False
-            if not self.db_engine.has_table('general'):
+            try:
+                if not self.db_engine.has_table('general'):
+                    latus.logger.log.info('%s : no tables in DB' % self.node_id)
+                    new_schema = True
+            except sqlalchemy.exc.OperationalError as e:
+                latus.logger.log.info('%s : no DB' % self.node_id)
                 new_schema = True
-                latus.logger.log.info('%s : no tables in DB' % self.node_id)
-            elif self._get_general('version')[0] is None:
-                new_schema = True
-                latus.logger.log.info('%s : no version in DB' % self.node_id)
-            elif latus.util.version_to_tuple(__db_version__) > latus.util.version_to_tuple(self._get_general('version')[0]):
-                new_schema = True
-                latus.logger.log.info('%s : new DB schema' % self.node_id)
+            if not new_schema:
+                if latus.util.version_to_tuple(__db_version__) > latus.util.version_to_tuple(self._get_general('version')[0]):
+                    new_schema = True
+                    latus.logger.log.info('%s : new DB schema' % self.node_id)
             if new_schema:
                 latus.logger.log.info('%s : start creating node DB version %s' % (node_id, __db_version__))
                 try:
@@ -125,6 +128,7 @@ class NodeDB:
         self.set_user(getpass.getuser())
         self.set_computer(platform.node())
         self.set_heartbeat()
+        self.set_folder_preferences('', latus.const.FOLDER_PREFERENCE_DEFAULTS[0], latus.const.FOLDER_PREFERENCE_DEFAULTS[1], latus.const.FOLDER_PREFERENCE_DEFAULTS[2])  # latus root defaults
 
     def update(self, seq, originator, event, detection, file_path, src_path, size, hash, mtime, pending):
         file_path = norm_latus_path(file_path)
@@ -422,16 +426,16 @@ class NodeDB:
 
             conn.close()
 
-    def get_folder_preferences_from_path(self, path):
-        return self.get_folder_preferences_from_folder(os.path.dirname(path))
+    def get_folder_preferences_from_path(self, partial_path):
+        return self.get_folder_preferences_from_folder(os.path.dirname(partial_path))
 
-    def get_folder_preferences_from_folder(self, folder):
+    def get_folder_preferences_from_folder(self, partial_folder_path):
         encrypt = True
         shared = False
         cloud = False
         if self.db_engine:
             conn = self.db_engine.connect()
-            command = self.folders_table.select().where(self.folders_table.c.name == folder)
+            command = self.folders_table.select().where(self.folders_table.c.name == partial_folder_path)
             result = self._execute_with_retry(conn, command, 'get_folder_preferences_from_folder')
             if result:
                 row = result.fetchone()
@@ -440,12 +444,12 @@ class NodeDB:
                     shared = row[2]
                     cloud = row[3]
                 else:
-                    latus.logger.log.warn('get_folder_preferences: %s : %s : no row, using defaults' % (self.get_node_id(), folder))
+                    latus.logger.log.warn('get_folder_preferences: %s : %s : no row, using defaults' % (self.get_node_id(), partial_folder_path))
             else:
-                latus.logger.log.warn('get_folder_preferences: %s : %s : no result' % (self.get_node_id(), folder))
+                latus.logger.log.warn('get_folder_preferences: %s : %s : no result' % (self.get_node_id(), partial_folder_path))
             conn.close()
         else:
-            latus.logger.log.warn('get_folder_preferences: %s : %s : db_engine error' % (self.get_node_id(), folder))
+            latus.logger.log.warn('get_folder_preferences: %s : %s : db_engine error' % (self.get_node_id(), partial_folder_path))
         return encrypt, shared, cloud
 
     def set_folder_preferences(self, name, encrypt, shared, cloud):
