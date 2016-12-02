@@ -423,7 +423,7 @@ class NodeDB:
             conn.close()
 
     def get_folder_preferences_from_path(self, path):
-        return self.get_folder_preferences_from_folder(os.path.basename(path))
+        return self.get_folder_preferences_from_folder(os.path.dirname(path))
 
     def get_folder_preferences_from_folder(self, folder):
         encrypt = True
@@ -440,7 +440,7 @@ class NodeDB:
                     shared = row[2]
                     cloud = row[3]
                 else:
-                    latus.logger.log.debug('get_folder_preferences: %s : %s : no row, using defaults' % (self.get_node_id(), folder))
+                    latus.logger.log.warn('get_folder_preferences: %s : %s : no row, using defaults' % (self.get_node_id(), folder))
             else:
                 latus.logger.log.warn('get_folder_preferences: %s : %s : no result' % (self.get_node_id(), folder))
             conn.close()
