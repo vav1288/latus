@@ -436,7 +436,7 @@ class CloudSync(SyncBase):
 
 
 class Sync:
-    def __init__(self, app_data_folder, status_folder_path=None):
+    def __init__(self, app_data_folder):
         self.app_data_folder = app_data_folder
         pref = latus.preferences.Preferences(self.app_data_folder)
         node_id = pref.get_node_id()
