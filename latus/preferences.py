@@ -5,6 +5,7 @@ import datetime
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.ext.declarative
+import sqlalchemy.exc
 
 import latus.util
 import latus.const
@@ -46,6 +47,9 @@ class Preferences:
         self.__version_key_string = 'version'
         self.__verbose_string = 'verbose'
 
+        if not latus_appdata_folder:
+            raise RuntimeError
+
         os.makedirs(latus_appdata_folder, exist_ok=True)
         self.__db_path = os.path.abspath(os.path.join(latus_appdata_folder, PREFERENCES_FILE))
         sqlite_path = 'sqlite:///' + self.__db_path
@@ -72,12 +76,14 @@ class Preferences:
 
     def __pref_get(self, key):
         # latus.logger.log.debug('pref_get : %s' % str(key))
+        value = None
         session = self.__Session()
-        row = session.query(PreferencesTable).filter_by(key=key).first()
+        try:
+            row = session.query(PreferencesTable).filter_by(key=key).first()
+        except sqlalchemy.exc.OperationalError as e:
+            row = None
         if row:
             value = row.value
-        else:
-            value = None
         session.close()
         # latus.logger.log.debug('pref_get : %s' % str(value))
         return value
@@ -147,3 +153,15 @@ class Preferences:
 
     def folders_are_set(self):
         return self.get_cloud_root() is not None and self.get_latus_folder() is not None
+
+
+def preferences_db_exists(folder):
+    """
+    Return True if preferences DB exists in the folder.
+    :param folder: folder that (potentially) holds the preferences DB
+    :return: True if DB found, False otherwise
+    """
+    try:
+        return os.path.exists(os.path.join(folder, PREFERENCES_FILE))
+    except TypeError:
+        return False
