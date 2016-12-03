@@ -16,17 +16,17 @@ import latus.gui
 import latus.messagedialog
 import latus.preferences
 
-LOG_FILE_NAME = 'latus.log'
 LOGGER_NAME_BASE = 'latus'
+LOG_FILE_NAME = LOGGER_NAME_BASE + '.log'
 
 log = None  # code that uses this module uses this logger
 
-g_fh = None
-g_ch = None
-g_dh = None
-g_hh = None
+g_fh = None  # file handler
+g_ch = None  # console handler
+g_dh = None  # dialog handler
+g_hh = None  # HTTP (log server) handler
 g_appdata_folder = None
-g_base_log_file_path = None
+g_base_log_file_path = None  # 'base' since the file rotator can create files based on this file name
 
 
 class LatusFormatter(logging.Formatter):
@@ -35,12 +35,11 @@ class LatusFormatter(logging.Formatter):
         adds in the node_id, if available
         """
         global g_appdata_folder
-        if g_appdata_folder:
-            if os.path.exists(os.path.join(g_appdata_folder, latus.preferences.PREFERENCES_FILE)):
-                pref = latus.preferences.Preferences(g_appdata_folder)
-                node_id = pref.get_node_id()
-                if node_id:
-                    return node_id + ' : ' + super().format(record)
+        if latus.preferences.preferences_db_exists(g_appdata_folder):
+            pref = latus.preferences.Preferences(g_appdata_folder)
+            node_id = pref.get_node_id()
+            if node_id:
+                return node_id + ' : ' + super().format(record)
         return super().format(record)
 
 g_formatter = LatusFormatter('%(asctime)s - %(name)s - %(filename)s - %(lineno)s - %(funcName)s - %(levelname)s - %(message)s')
@@ -73,24 +72,22 @@ class LatusHttpHandler(logging.Handler):
             # record.__dict__ is essentially what HTTPHandler uses
             # (doesn't use the string formatter)
             info = copy.deepcopy(record.__dict__)
-            if g_appdata_folder:
+            if latus.preferences.preferences_db_exists(g_appdata_folder):
                 pref = latus.preferences.Preferences(g_appdata_folder)
                 info['nodeid'] = pref.get_node_id()
             requests.post(self.latus_logging_url, data=info)
         except requests.ConnectionError:
-            # let connection problems cause us to drop the log on the floor
+            # drop the log on the floor if we have connection problems (it's still in the log file)
             pass
 
 
 def init_from_args(args):
-    global g_appdata_folder
-    g_appdata_folder = None
     if args.appdatafolder:
-        g_appdata_folder = args.appdatafolder
+        set_appdata_folder(args.appdatafolder)
     if args.test:
-        init(None, backup_count=0, appdata_folder=g_appdata_folder)
+        init(None, backup_count=0)
     else:
-        init(None, appdata_folder=g_appdata_folder)
+        init(None)
     if args.test:
         # test is the more verbose mode
         set_console_log_level(logging.WARN)
@@ -100,7 +97,7 @@ def init_from_args(args):
         set_file_log_level(logging.INFO)
 
 
-def init(log_folder=None, delete_existing_log_files=False, backup_count=3, appdata_folder=None):
+def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
     """
 
     :param log_folder: folder where the log file will be written (None to take the default)
@@ -111,9 +108,6 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3, appda
     :return: the log folder to be used
     """
     global g_fh, g_ch, g_dh, log, g_base_log_file_path, g_appdata_folder
-
-    if appdata_folder:
-        g_appdata_folder = appdata_folder
 
     if not log_folder:
         log_folder = appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY)
