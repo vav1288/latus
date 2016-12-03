@@ -128,18 +128,23 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
 
 def main(latus_appdata_folder):
 
-    # check if we should run the setup wizard first
-    pref = latus.preferences.Preferences(latus_appdata_folder)
     latus.logger.log.info("latus_app_data: %s" % latus_appdata_folder)
+
+    # check if we should run the setup wizard first
+    if latus.preferences.preferences_db_exists(latus_appdata_folder):
+        pref = latus.preferences.Preferences(latus_appdata_folder)
+    else:
+        pref = None
 
     app = QApplication(sys.argv)  # need this even for the GUIWizard
 
-    if not pref.folders_are_set():
+    if pref and not pref.folders_are_set():
         latus.logger.log.info('not all preferences are set - starting WizardGUI')
         app_gui_wizard = latus.gui_wizard.GUIWizard(latus_appdata_folder)
         app_gui_wizard.exec_()
+        pref = latus.preferences.Preferences(latus_appdata_folder)
 
-    if pref.folders_are_set():
+    if pref and pref.folders_are_set():
         app.setQuitOnLastWindowClosed(False)  # so popup dialogs don't close the system tray icon
         system_tray = LatusSystemTrayIcon(app, latus_appdata_folder)
         system_tray.start_latus()
