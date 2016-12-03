@@ -76,7 +76,7 @@ class FilesTest(threading.Thread):
                 # the nodes even more time to settle out (I know ... this "delay" shouldn't be needed).
                 time.sleep(latus.const.FILTER_TIME_OUT)
             elif latus.util.is_windows():
-                time.sleep(2 * latus.const.FILTER_TIME_OUT)  # examining the log file doesn't work for Windows
+                time.sleep(2 * latus.const.FILTER_TIME_OUT + 10)  # examining the log file doesn't work for Windows, so apply a SWAG
 
             test_latus.tstutil.compare_folders(self.latus_folders)
 
