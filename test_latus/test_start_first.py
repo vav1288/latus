@@ -43,7 +43,7 @@ def test_start_first(setup):
         file_name = get_file_name(node)
         local_folders.append(latus_folder)
         file_names.append(file_name)
-        write_to_file(latus_folder, file_name, node, '')
+        write_to_file(latus_folder, file_name, node)
 
     # wait for files to sync
     b_to_a = os.path.join(local_folders[0], file_names[1])

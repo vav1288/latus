@@ -60,7 +60,7 @@ def do_sequential(start_first):
         [sync.request_exit() for sync in syncs]
         time.sleep(3)
 
-    write_to_file(latus_folders[0], latus_file, nodes[0], '')
+    write_to_file(latus_folders[0], latus_file, nodes[0])
 
     syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
     syncs[0].start()  # just start 'a'

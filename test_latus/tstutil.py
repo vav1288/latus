@@ -133,13 +133,13 @@ def clean(path=get_data_root()):
         exit('clean failed')
 
 
-def write_to_file(dir_path, file_name, contents, subdir=None):
+def write_to_file(dir_path, file_name, contents, subdir=None, mode='w'):
     if subdir:
         p = os.path.join(dir_path, subdir, file_name)
     else:
         p = os.path.join(dir_path, file_name)
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p, "w") as f:
+    with open(p, mode) as f:
         f.write(contents)
         f.close()
     return p
