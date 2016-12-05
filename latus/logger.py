@@ -48,9 +48,9 @@ g_formatter = LatusFormatter('%(asctime)s - %(name)s - %(filename)s - %(lineno)s
 class DialogBoxHandlerAndExit(logging.Handler):
     def emit(self, record):
         msg = self.format(record)
-        cmd = '%s -c "%s" "%s"' % (sys.executable,  latus.messagedialog.program, msg)
-        print(cmd)
-        subprocess.check_call(cmd)
+        args = [sys.executable, '-c', latus.messagedialog.program, msg]
+        print(str(args))
+        subprocess.check_call(args)
 
 
 class LatusHttpHandler(logging.Handler):
