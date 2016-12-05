@@ -15,7 +15,8 @@ AUTHOR = 'James Abel'
 DESCRIPTION = 'Secure file sync with low impact to cloud storage.'
 MAIN_FILE = 'main.py'
 
-API_ABEL_CO = 'https://api.abel.co'
+# todo: make this https once I get the SSL Error fixed
+API_ABEL_CO = 'http://api.abel.co'
 USAGE_API_URL = API_ABEL_CO + '/latus/usage'
 
 BIG_FILE_SIZE = 1024 * 1024

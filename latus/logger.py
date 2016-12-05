@@ -106,15 +106,14 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
     if not log_folder:
         log_folder = appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY)
 
-    if delete_existing_log_files:
-        shutil.rmtree(log_folder, ignore_errors=True)
-    os.makedirs(log_folder, exist_ok=True)
-
     logger_name = LOGGER_NAME_BASE
     log = logging.getLogger(logger_name)
     
     log.setLevel(logging.DEBUG)
 
+    if delete_existing_log_files:
+        shutil.rmtree(log_folder, ignore_errors=True)
+    os.makedirs(log_folder, exist_ok=True)
     # create file handler
     g_base_log_file_path = os.path.join(log_folder, LOG_FILE_NAME)
     if backup_count > 0:
@@ -146,8 +145,8 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
         log.info('preferences : %s' % latus.preferences.Preferences(g_appdata_folder).get_db_path())
 
     # real defaults
-    g_fh.setLevel(logging.WARN)
-    g_ch.setLevel(logging.ERROR)
+    set_file_log_level(logging.WARN)
+    set_console_log_level(logging.ERROR)
 
     return log_folder
 
@@ -161,11 +160,13 @@ def add_http_handler(url='http://api.abel.co/latus/log'):
 
 
 def set_file_log_level(new_level):
-    g_fh.setLevel(new_level)
+    if g_fh:
+        g_fh.setLevel(new_level)
 
 
 def set_console_log_level(new_level):
-    g_ch.setLevel(new_level)
+    if g_ch:
+        g_ch.setLevel(new_level)
 
 
 def set_appdata_folder(appdata_folder):

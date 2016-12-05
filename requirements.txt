@@ -1,6 +1,5 @@
 appdirs
 cryptography
-osnap
 python-dateutil
 PyQt5
 pytest
@@ -10,3 +9,4 @@ sqlalchemy
 watchdog
 pypiwin32 ; sys_platform == 'win32'
 jinja2
+osnap >= 0.0.6
