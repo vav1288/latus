@@ -138,7 +138,7 @@ def main(latus_appdata_folder):
 
     app = QApplication(sys.argv)  # need this even for the GUIWizard
 
-    if pref and not pref.folders_are_set():
+    if not pref or (pref and not pref.folders_are_set()):
         latus.logger.log.info('not all preferences are set - starting WizardGUI')
         app_gui_wizard = latus.gui_wizard.GUIWizard(latus_appdata_folder)
         app_gui_wizard.exec_()
