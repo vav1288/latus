@@ -46,7 +46,7 @@ class GUIWizard(QWizard):
 
     def accept(self):
         latus.logger.log.info('accept')
-        pref = latus.preferences.Preferences(self.app_data_folder)
+        pref = latus.preferences.Preferences(self.app_data_folder, True)
         pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
         pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
 

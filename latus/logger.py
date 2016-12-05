@@ -49,14 +49,8 @@ class DialogBoxHandlerAndExit(logging.Handler):
     def emit(self, record):
         msg = self.format(record)
         cmd = '%s -c "%s" "%s"' % (sys.executable,  latus.messagedialog.program, msg)
-        log.info(cmd)
-        try:
-            subprocess.call(cmd, shell=True)
-            sys.exit(msg)
-        except OSError:
-            # If the Python executable isn't actually accessible we should get this exception.
-            # We don't have the exit() here since we don't want to merely exit silently.
-            print(msg)  # at least try to communicate this message
+        print(cmd)
+        subprocess.check_call(cmd)
 
 
 class LatusHttpHandler(logging.Handler):
@@ -181,3 +175,7 @@ def set_appdata_folder(appdata_folder):
 
 def get_base_log_file_path():
     return g_base_log_file_path
+
+if __name__ == '__main__':
+    init()
+    log.fatal('fatal test')
