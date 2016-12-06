@@ -2,4 +2,4 @@
 venv\Scripts\pip3 install -U pip
 venv\Scripts\pip3 install -U setuptools
 venv\Scripts\pip3 install -r requirements.txt
-call install_osnap.bat
+REM call install_osnap.bat

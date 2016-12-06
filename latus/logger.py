@@ -79,9 +79,9 @@ def init_from_args(args):
     if args.appdatafolder:
         set_appdata_folder(args.appdatafolder)
     if args.test:
-        init(None, backup_count=0)
+        init(backup_count=0)
     else:
-        init(None)
+        init()
     if args.test:
         # test is the more verbose mode
         set_console_log_level(logging.WARN)
@@ -145,8 +145,9 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
         log.info('preferences : %s' % latus.preferences.Preferences(g_appdata_folder).get_db_path())
 
     # real defaults
-    set_file_log_level(logging.WARN)
     set_console_log_level(logging.ERROR)
+    # set the file log level last so we'll see the set of the console level in the log file
+    set_file_log_level(logging.WARN)
 
     return log_folder
 
@@ -161,11 +162,13 @@ def add_http_handler(url='http://api.abel.co/latus/log'):
 
 def set_file_log_level(new_level):
     if g_fh:
+        log.info('setting file logging to %s' % logging.getLevelName(new_level))
         g_fh.setLevel(new_level)
 
 
 def set_console_log_level(new_level):
     if g_ch:
+        log.info('setting console logging to %s' % logging.getLevelName(new_level))
         g_ch.setLevel(new_level)
 
 
@@ -175,6 +178,7 @@ def set_appdata_folder(appdata_folder):
 
 
 def get_base_log_file_path():
+    global g_base_log_file_path
     return g_base_log_file_path
 
 if __name__ == '__main__':
