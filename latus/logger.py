@@ -162,15 +162,18 @@ def add_http_handler(url='http://api.abel.co/latus/log'):
 
 def set_file_log_level(new_level):
     if g_fh:
+        # log the new level twice so we will likely see one of them, regardless if it's going up or down
         log.info('setting file logging to %s' % logging.getLevelName(new_level))
         g_fh.setLevel(new_level)
+        log.info('setting file logging to %s' % logging.getLevelName(new_level))
 
 
 def set_console_log_level(new_level):
     if g_ch:
+        # log the new level twice so we will likely see one of them, regardless if it's going up or down
         log.info('setting console logging to %s' % logging.getLevelName(new_level))
         g_ch.setLevel(new_level)
-
+        log.info('setting console logging to %s' % logging.getLevelName(new_level))
 
 def set_appdata_folder(appdata_folder):
     global g_appdata_folder
