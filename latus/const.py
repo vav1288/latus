@@ -15,6 +15,8 @@ AUTHOR = 'James Abel'
 DESCRIPTION = 'Secure file sync with low impact to cloud storage.'
 MAIN_FILE = 'main.py'
 
+MAKE_DIRS_MODE = 0o775
+
 # todo: make this https once I get the SSL Error fixed
 API_ABEL_CO = 'http://api.abel.co'
 USAGE_API_URL = API_ABEL_CO + '/latus/usage'
