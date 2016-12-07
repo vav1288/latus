@@ -46,7 +46,7 @@ def test_move_out_of_latus_root(setup):
     time.sleep(3)  # todo: something more sophisticated
 
     temp_folder = os.path.join('temp', 'move_out_of_latus')
-    os.makedirs(temp_folder, exist_ok=True)
+    os.makedirs(temp_folder, mode=latus.const.MAKE_DIRS_MODE, exist_ok=True)
     temp_path = os.path.join(temp_folder, file_name)
     try:
         os.remove(temp_path)
