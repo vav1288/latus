@@ -50,6 +50,12 @@ class NodeDB:
             self.db_engine = None
             return
 
+        if write_flag:
+            try:
+                os.makedirs(cloud_node_db_folder, mode=latus.const.MAKE_DIRS_MODE, exist_ok=True)
+            except PermissionError as e:
+                latus.logger.log.error('%s : %s (%s)' % (str(e), cloud_node_db_folder, os.path.abspath(cloud_node_db_folder)))
+
         # the 'bind' and 'connection' seem to be redundant - what do I really need????
         # (I seem to need the bind, so perhaps I can get rid of the connection?)
         self.db_engine = sqlalchemy.create_engine('sqlite:///' + os.path.abspath(self.sqlite_file_path))  # , echo=True)
