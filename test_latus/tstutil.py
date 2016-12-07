@@ -14,6 +14,7 @@ import latus.preferences
 import latus.sync
 import latus.nodedb
 import latus.folders
+import latus.const
 
 
 def logger_init(log_folder):
@@ -138,7 +139,11 @@ def write_to_file(dir_path, file_name, contents, subdir=None, mode='w'):
         p = os.path.join(dir_path, subdir, file_name)
     else:
         p = os.path.join(dir_path, file_name)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
+    try:
+        os.makedirs(os.path.dirname(p), mode=latus.const.MAKE_DIRS_MODE, exist_ok=True)
+    except PermissionError as e:
+        latus.logger.log.error('%s : %s (%s)' % (str(e), dir_path, os.path.abspath(dir_path)))
+
     with open(p, mode) as f:
         f.write(contents)
         f.close()
