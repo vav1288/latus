@@ -289,22 +289,6 @@ class LocalSync(SyncBase):
                 else:
                     latus.logger.log.warn('%s : could not calculate hash for %s' % (this_node_id, local_full_path))
 
-        if False:
-            for partial_path in node_db.get_paths():
-                full_path = os.path.join(pref.get_latus_folder(), partial_path)
-                if not os.path.exists(full_path):
-                    most_recent_hash = node_db.get_most_recent_hash(partial_path)
-                    if most_recent_hash is not None:
-                        if node_db.any_pendings(partial_path):
-                            latus.logger.log.warning('%s : there are still pendings for %s' % (this_node_id, partial_path))
-                        else:
-                            latus.logger.log.info('%s : %s deleted' % (this_node_id, partial_path))
-                            miv = latus.miv.get_miv(this_node_id)
-                            self.sync_log(this_node_id, LatusFileSystemEvent.deleted, miv, partial_path, detection_source, None, None, None)
-                            self.add_filter_event(node_db.get_database_file_abs_path(), LatusFileSystemEvent.modified)
-                            node_db.update(miv, this_node_id, int(LatusFileSystemEvent.deleted),
-                                           int(detection_source), partial_path, src_path, None, None, None, True)
-
     # todo: get rid of this - it makes the line number irrelevant
     def sync_log(self, node_id, file_system_event, miv, file_path, detection_source, size, local_hash, mtime):
         latus.logger.log.info('sync : %s , %s , %s , "%s" , %s , %s , %s , %s' %
