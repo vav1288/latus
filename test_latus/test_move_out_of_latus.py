@@ -43,16 +43,19 @@ def test_move_out_of_latus_root(setup):
     syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
-    time.sleep(3)  # todo: something more sophisticated
+    time.sleep(5)  # todo: something more sophisticated
 
     temp_folder = os.path.join('temp', 'move_out_of_latus')
     os.makedirs(temp_folder, mode=latus.const.MAKE_DIRS_MODE, exist_ok=True)
     temp_path = os.path.join(temp_folder, file_name)
+    # make sure there's not already something in the dest (e.g. from another test)
     try:
         os.remove(temp_path)
     except FileNotFoundError:
         pass
     shutil.move(os.path.join(local_folders[0], file_name), temp_path)
+
+    time.sleep(5)
 
     # wait for files to sync
     for local_folder in local_folders:
@@ -60,6 +63,8 @@ def test_move_out_of_latus_root(setup):
 
     # stop the syncs
     [sync.request_exit() for sync in syncs]
+
+    time.sleep(2)
 
     # check the results
     for local_folder in local_folders:
