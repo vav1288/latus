@@ -44,7 +44,7 @@ def test_move_into_latus_root(setup):
     syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
-    time.sleep(3)  # todo: something more sophisticated
+    time.sleep(3)  # wait for syncs to come up
 
     shutil.move(os.path.join(temp_folder, file_name), os.path.join(local_folders[0], file_name))
 
