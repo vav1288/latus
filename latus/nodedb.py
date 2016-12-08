@@ -388,6 +388,8 @@ class NodeDB:
                 q_result = self._execute_with_retry(conn, q_cmd, 'get_last_seqs_info_1')
                 all_rows = q_result.fetchall()
                 if all_rows:
+                    # get the most senior sequence entry for each path
+                    all_rows = sorted(all_rows, key=lambda x: x[int(ChangeAttributes.seq)])
                     last = all_rows[-1]
                     infos.append(self.db_row_to_info(last))
             conn.close()
