@@ -95,7 +95,8 @@ def upload_usage_info():
         r = requests.post(latus.const.USAGE_API_URL, json=info)
         latus.logger.log.info(r.text)
         if r.status_code != 200:
-            latus.logger.log.error('%s failed with %s status' % (latus.const.USAGE_API_URL, str(r.status_code)))
+            latus.logger.log.error('%s failed : status=%s : operation=%s : error_message=%s' %
+                                   (latus.const.USAGE_API_URL, str(r.status_code), str(info), str(r.text)))
             break
 
 
