@@ -63,8 +63,8 @@ class LatusUsageInfo:
             for info in infos:
                 yield (info, None, infos[info])
 
-        yield ('username', None, anonymize(getpass.getuser()))
-        yield ('computername', None, anonymize(platform.node()))
+        yield ('username', None, getpass.getuser())
+        yield ('computername', None, platform.node())
         yield ('version', None, latus.__version__)
         yield ('preferencesdbversion', None, latus.preferences.__db_version__)
         yield ('nodedbversion', None, latus.nodedb.__db_version__)
