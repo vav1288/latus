@@ -9,4 +9,5 @@ sqlalchemy
 watchdog
 pypiwin32 ; sys_platform == 'win32'
 jinja2
+coverage
 osnap >= 0.0.6
