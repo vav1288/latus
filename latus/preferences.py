@@ -15,12 +15,13 @@ import latus.logger
 # DB schema version is the latus version where this schema was first introduced.  If your DB schema is earlier
 # than (i.e. "less than") this, you need to do a drop all tables and start over.  This value is MANUALLY copied from
 # latus.__version__ when a new and incompatible schema is introduced.
-__db_version__ = '0.0.0'
+__db_version__ = '0.0.2'
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
 PREFERENCES_FILE = 'preferences' + latus.const.DB_EXTENSION
+
 
 class PreferencesTable(Base):
     __tablename__ = 'preferences'
@@ -50,8 +51,9 @@ class Preferences:
         if not latus_appdata_folder:
             raise RuntimeError
 
-        os.makedirs(latus_appdata_folder, exist_ok=True)
-        self.__db_path = os.path.abspath(os.path.join(latus_appdata_folder, PREFERENCES_FILE))
+        self.app_data_folder = latus_appdata_folder
+        os.makedirs(self.app_data_folder, exist_ok=True)
+        self.__db_path = os.path.abspath(os.path.join(self.app_data_folder, PREFERENCES_FILE))
         sqlite_path = 'sqlite:///' + self.__db_path
         self.__db_engine = sqlalchemy.create_engine(sqlite_path)  # , echo=True)
         # todo: check the version in the DB against the current __version__ to see if we need to force a drop table
@@ -153,6 +155,9 @@ class Preferences:
 
     def folders_are_set(self):
         return self.get_cloud_root() is not None and self.get_latus_folder() is not None
+
+    def get_app_data_folder(self):
+        return self.app_data_folder
 
 
 def preferences_db_exists(folder):
