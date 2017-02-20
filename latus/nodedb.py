@@ -17,7 +17,7 @@ import latus.const
 # DB schema version is the latus version where this schema was first introduced.  If your DB schema is earlier
 # than (i.e. "less than") this, you need to do a drop all tables and start over.  This value is MANUALLY copied from
 # latus.__version__ when a new and incompatible schema is introduced.
-__db_version__ = '0.0.1'
+__db_version__ = '0.0.2'
 
 
 # A note on OS interoperability on paths:
