@@ -15,6 +15,7 @@ import latus.logger
 import latus.preferences
 import latus.sync
 import latus.util
+import latus.gui_advanced
 
 
 def message_box(msg):
@@ -62,11 +63,18 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
         menu = QMenu(parent)
         menu.addAction("Open Latus Folder").triggered.connect(self.open_latus_folder)
         menu.addSeparator()
-        menu.addAction("Import Latus Key").triggered.connect(self.import_latus_key)
-        menu.addAction("Export Latus Key").triggered.connect(self.export_latus_key)
-        menu.addAction("Nodes").triggered.connect(self.nodes)
         menu.addAction("Preferences").triggered.connect(self.preferences)
+
+        # Generally importing of a latus key should be done during initial setup.  It's dangerous to change the
+        # key while running.  So, for now anyway, let's not even give the option to the user.
+        # menu.addAction("Import Latus Key").triggered.connect(self.import_latus_key)
+
+        menu.addAction("Export Latus Key").triggered.connect(self.export_latus_key)
+        menu.addSeparator()
         menu.addAction("About").triggered.connect(self.about)
+        menu.addAction("Nodes").triggered.connect(self.nodes)
+        menu.addAction("Advanced").triggered.connect(self.advanced)
+        menu.addSeparator()
         menu.addAction("Exit").triggered.connect(self.exit)
         self.setContextMenu(menu)
 
@@ -117,6 +125,27 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
     def nodes(self):
         management_dialog = latus.gui_node_management.ManagementDialog(self.latus_appdata_folder)
         management_dialog.exec_()
+
+    def advanced(self):
+        d = latus.gui_advanced.AdvancedDialog(self.latus_appdata_folder, self.stop_handler)
+        d.show()
+        d.exec_()
+        if self.sync is None:
+            # we did something that caused sync to quit, so just exit
+            d = QMessageBox()
+            d.setWindowTitle('Exiting ...')
+            d.setText('FYI: Recent actions required sync to be stopped, so latus will now exit ...')
+            d.exec_()
+            QApplication.exit()  # todo: what should this parameter be?
+
+    def stop_handler(self):
+        latus.logger.log.info('stop_handler start')
+        if self.sync:
+            # force sync stop
+            self.sync.request_exit()
+            del self.sync
+            self.sync = None
+        latus.logger.log.info('stop_handler finished')
 
     def exit(self):
         latus.logger.log.info('exit')
