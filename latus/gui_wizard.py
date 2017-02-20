@@ -1,6 +1,7 @@
 
 import time
 import os
+import appdirs
 
 from PyQt5.QtWidgets import QLabel, QWizard, QWizardPage, QVBoxLayout, QLineEdit, QPushButton, QGridLayout, \
      QListWidget, QFileDialog, QApplication, QAbstractItemView
@@ -16,6 +17,8 @@ import latus.crypto
 import latus.util
 import latus.nodedb
 import latus.key_management
+import latus.gui_advanced
+import latus.const
 
 CLOUD_FOLDER_FIELD_STRING = 'cloud_folder'
 LATUS_FOLDER_FIELD_STRING = 'latus_folder'
@@ -83,7 +86,19 @@ class IntroPage(QWizardPage):
 
         layout = QVBoxLayout()
         layout.addWidget(label)
+
+        advanced_button = QPushButton()
+        advanced_button.setText('Advanced Setup Options')
+        advanced_button.pressed.connect(self.advanced_setup)
+        layout.addWidget(advanced_button)
+
         self.setLayout(layout)
+
+    def advanced_setup(self):
+        advanced_dialog = latus.gui_advanced.AdvancedDialog(appdirs.user_config_dir(latus.const.NAME,
+                                                                                    latus.const.COMPANY))
+        advanced_dialog.show()
+        advanced_dialog.exec_()
 
 
 class WizardFolderListWidget(QListWidget):
