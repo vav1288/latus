@@ -63,16 +63,20 @@ class LatusHttpHandler(logging.Handler):
 
     def emit(self, record):
         try:
-            # record.__dict__ is essentially what HTTPHandler uses
-            # (doesn't use the string formatter)
             info = copy.deepcopy(record.__dict__)
-            if latus.preferences.preferences_db_exists(g_appdata_folder):
-                pref = latus.preferences.Preferences(g_appdata_folder)
-                info['nodeid'] = pref.get_node_id()
-            requests.post(self.latus_logging_url, data=info)
-        except requests.ConnectionError:
-            # drop the log on the floor if we have connection problems (it's still in the log file)
-            pass
+        except TypeError:
+            info = None
+        if info:
+            try:
+                # record.__dict__ is essentially what HTTPHandler uses
+                # (doesn't use the string formatter)
+                if latus.preferences.preferences_db_exists(g_appdata_folder):
+                    pref = latus.preferences.Preferences(g_appdata_folder)
+                    info['nodeid'] = pref.get_node_id()
+                requests.post(self.latus_logging_url, data=info)
+            except requests.ConnectionError:
+                # drop the log on the floor if we have connection problems (it's still in the log file)
+                pass
 
 
 def init_from_args(args):

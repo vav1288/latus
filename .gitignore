@@ -40,3 +40,4 @@ install-pyrun.sh
 install_osnap.*
 aws/
 installers/
+.coverage

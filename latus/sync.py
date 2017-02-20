@@ -208,7 +208,8 @@ class LocalSync(SyncBase):
                     # remove leading /
                     src_path = src_path[1:]
 
-                file_hash, _ = latus.hash.calc_sha512(watchdog_event.dest_path)
+                pref = latus.preferences.Preferences(self.app_data_folder)
+                file_hash, _ = latus.hash.calc_sha512(watchdog_event.dest_path, pref.get_crypto_key())
                 self.__write_db(watchdog_event.dest_path, src_path, LatusFileSystemEvent.moved, DetectionSource.watchdog, file_hash)
 
     def __fill_cache(self, full_path):
@@ -218,7 +219,7 @@ class LocalSync(SyncBase):
         node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node_id)
         partial_path = os.path.relpath(full_path, pref.get_latus_folder())
         encrypt, shared, cloud = node_db.get_folder_preferences_from_path(partial_path)
-        hash, _ = latus.hash.calc_sha512(full_path)
+        hash, _ = latus.hash.calc_sha512(full_path, pref.get_crypto_key())
         if encrypt:
             crypto_key = pref.get_crypto_key()
             if crypto_key is None:
@@ -231,7 +232,7 @@ class LocalSync(SyncBase):
                 crypto = latus.crypto.Crypto(crypto_key, pref.get_node_id())
                 if not os.path.exists(cloud_fernet_file):
                     latus.logger.log.info('%s : file_write , %s' % (node_id, cloud_fernet_file))
-                    crypto.encrypt(full_path, os.path.abspath(cloud_fernet_file))
+                    crypto.encrypt_file(full_path, os.path.abspath(cloud_fernet_file))
         else:
             destination = os.path.join(cloud_folders.cache, hash + UNENCRYPTED_EXTENSION)
             if not os.path.exists(destination):
@@ -270,7 +271,7 @@ class LocalSync(SyncBase):
         for partial_path in local_walker:
             local_full_path = local_walker.full_path(partial_path)
             if os.path.exists(local_full_path):
-                local_hash, _ = latus.hash.calc_sha512(local_full_path)
+                local_hash, _ = latus.hash.calc_sha512(local_full_path, pref.get_crypto_key())
                 if local_hash:
                     most_recent_hash = node_db.get_most_recent_hash(partial_path)
                     if most_recent_hash is None:
@@ -354,7 +355,7 @@ class CloudSync(SyncBase):
         for info in this_node_db.get_last_seqs_info():
             local_file_path = os.path.join(pref.get_latus_folder(), info['path'])
             if os.path.exists(local_file_path):
-                local_file_hash, _ = latus.hash.calc_sha512(local_file_path)  # todo: get this pre-computed from the db
+                local_file_hash, _ = latus.hash.calc_sha512(local_file_path, pref.get_crypto_key())  # todo: get this pre-computed from the db
             else:
                 local_file_hash = None
 
@@ -376,7 +377,7 @@ class CloudSync(SyncBase):
                         encrypt, shared, cloud = this_node_db.get_folder_preferences_from_path(info['path'])
                         self.add_filter_event(local_file_path, LatusFileSystemEvent.any)  # is actually create or modify ... will be correct when we have this class use the proper watchdog events
                         if encrypt:
-                            expand_ok = crypto.decrypt(cloud_fernet_file, local_file_path)
+                            expand_ok = crypto.decrypt_file(cloud_fernet_file, local_file_path)
                             # todo: set mtime
                             if not expand_ok:
                                 latus.logger.log.fatal('Latus Key Error - please reinitialize the Latus Key : %s : %s' % (cloud_fernet_file, local_file_path))

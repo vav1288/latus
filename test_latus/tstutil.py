@@ -16,6 +16,8 @@ import latus.nodedb
 import latus.folders
 import latus.const
 
+DO_COVERAGE = True  # set to True to use coverage.py, else set to False
+
 
 def logger_init(log_folder):
     if latus.logger.log:
@@ -99,7 +101,12 @@ class SyncProc:
     def __init__(self, app_data_folder):
         self.app_data_folder = app_data_folder
         self.sync_process = None
-        self.cmd = '%s %s -a %s -v -t' % (sys.executable, os.path.join('latus', 'sync.py'), self.app_data_folder)
+
+        if DO_COVERAGE:
+            exec_path = os.path.join('venv', 'bin', 'coverage') + ' run -a'
+        else:
+            exec_path = sys.executable
+        self.cmd = '%s %s -a %s -v -t' % (exec_path, os.path.join('latus', 'sync.py'), self.app_data_folder)
 
     def start(self):
         latus.logger.log.info(self.cmd)
@@ -132,6 +139,10 @@ def clean(path=get_data_root()):
     assert(try_count > 0)
     if try_count == 0:
         exit('clean failed')
+    try:
+        os.remove('.coverage')
+    except FileNotFoundError:
+        pass
 
 
 def write_to_file(dir_path, file_name, contents, subdir=None, mode='w'):
@@ -191,10 +202,6 @@ def compare_folders(folder_paths):
     return all_compare_ok
 
 
-sha512 = {
-    'a' : "1f40fc92da241694750979ee6cf582f2d5d7d28e18335de05abc54d0560e0f5302860c652bf08d560252aa5e74210546f369fbbbce8c12cfc7957b2652fe9a75"
-}
-
-
 def root_test_gui_wizard():
     return os.path.join('test_latus', 'test_gui_wizard')
+
