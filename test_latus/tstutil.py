@@ -16,8 +16,6 @@ import latus.nodedb
 import latus.folders
 import latus.const
 
-DO_COVERAGE = True  # set to True to use coverage.py, else set to False
-
 
 def logger_init(log_folder):
     if latus.logger.log:
@@ -102,7 +100,7 @@ class SyncProc:
         self.app_data_folder = app_data_folder
         self.sync_process = None
 
-        if DO_COVERAGE:
+        if latus.util.is_mac():
             exec_path = os.path.join('venv', 'bin', 'coverage') + ' run -a'
         else:
             exec_path = sys.executable
