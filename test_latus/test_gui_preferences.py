@@ -6,6 +6,9 @@ import time
 import pyautogui
 
 import latus.gui_preferences
+import latus.util
+
+coord = None
 
 
 def automation():
@@ -18,8 +21,11 @@ def automation():
 
 
 def test_gui_preferences():
-    t = threading.Thread(target=automation)
-    t.start()
-    latus.gui_preferences.main()
-    t.join()
-    time.sleep(1)
+    if latus.util.is_mac():
+        # todo: get this to work on Windows (I use virtualization - that might be a problem)
+        t = threading.Thread(target=automation)
+        t.start()
+        latus.gui_preferences.main()
+        t.join()
+        time.sleep(1)
+        assert(coord is not None)  # for PyCharm to flag test as failed the assert needs to be in the main thread
