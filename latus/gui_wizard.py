@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QLabel, QWizard, QWizardPage, QVBoxLayout, QLineEdit
      QListWidget, QFileDialog, QApplication, QAbstractItemView
 from PyQt5.QtCore import pyqtSignal
 
+import latus
 import latus.wizard
 import latus.preferences
 import latus.gui
@@ -18,7 +19,6 @@ import latus.util
 import latus.nodedb
 import latus.key_management
 import latus.gui_advanced
-import latus.const
 
 CLOUD_FOLDER_FIELD_STRING = 'cloud_folder'
 LATUS_FOLDER_FIELD_STRING = 'latus_folder'
@@ -95,8 +95,8 @@ class IntroPage(QWizardPage):
         self.setLayout(layout)
 
     def advanced_setup(self):
-        advanced_dialog = latus.gui_advanced.AdvancedDialog(appdirs.user_config_dir(latus.const.NAME,
-                                                                                    latus.const.COMPANY))
+        advanced_dialog = latus.gui_advanced.AdvancedDialog(appdirs.user_config_dir(latus.__application_name__,
+                                                                                    latus.__author__))
         advanced_dialog.show()
         advanced_dialog.exec_()
 

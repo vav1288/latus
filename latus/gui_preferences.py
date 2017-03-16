@@ -8,11 +8,11 @@ from PyQt5.QtWidgets import QLabel, QDialogButtonBox, QVBoxLayout, QLineEdit, QG
 from PyQt5.QtCore import Qt
 from PyQt5.Qt import QApplication
 
+import latus
 import latus.logger
 import latus.sync
 import latus.preferences
 import latus.util
-import latus.const
 import latus.crypto
 import latus.gui_wizard
 import latus.nodedb
@@ -47,10 +47,10 @@ class PreferencesDialog(QDialog):
         latus.logger.log.info('starting PreferencesDialog')
         latus.logger.log.info('preferences folder : %s' % latus_appdata_folder)
 
+        # todo: self.pref and preferences are redundant - get rid of one
         self.pref = latus.preferences.Preferences(latus_appdata_folder)
         cloud_folders = latus.folders.CloudFolders(self.pref.get_cloud_root())
         self.node_db = latus.nodedb.NodeDB(cloud_folders.nodes, self.pref.get_node_id())
-        preferences = latus.preferences.Preferences(latus_appdata_folder)
 
         super().__init__()
         overall_layout = QVBoxLayout()
@@ -101,9 +101,9 @@ class PreferencesDialog(QDialog):
             col += 1
         row = 1
         self.support_selections = []
-        self.support_selections.append({'str': 'Check For New Version', 'set': preferences.set_check_new_version, 'get': preferences.get_check_new_version})
-        self.support_selections.append({'str': 'Upload Issue Logs', 'set': preferences.set_upload_logs, 'get': preferences.get_upload_logs})
-        self.support_selections.append({'str': 'Upload Usage Information', 'set': preferences.set_upload_usage, 'get': preferences.get_upload_usage})
+        self.support_selections.append({'str': 'Check For New Version', 'set': self.pref.set_check_new_version, 'get': self.pref.get_check_new_version})
+        self.support_selections.append({'str': 'Upload Issue Logs', 'set': self.pref.set_upload_logs, 'get': self.pref.get_upload_logs})
+        self.support_selections.append({'str': 'Upload Usage Information', 'set': self.pref.set_upload_usage, 'get': self.pref.get_upload_usage})
         for ss in self.support_selections:
             support_preferences_layout.addWidget(QLabel(ss['str']), row, 0)
             ss['cb'] = QCheckBox()
@@ -168,7 +168,7 @@ def main():
 
     app = QApplication(sys.argv)
 
-    app_data_folder = appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)
+    app_data_folder = appdirs.user_config_dir(latus.__application_name__, latus.__author__)
     preferences = latus.preferences.Preferences(app_data_folder)
     if not preferences.get_node_id():
         preferences.set_node_id(latus.util.new_node_id())
