@@ -378,8 +378,10 @@ class CloudSync(SyncBase):
                         self.add_filter_event(local_file_path, LatusFileSystemEvent.any)  # is actually create or modify ... will be correct when we have this class use the proper watchdog events
                         if encrypt:
                             expand_ok = crypto.decrypt_file(cloud_fernet_file, local_file_path)
-                            # todo: set mtime
-                            if not expand_ok:
+                            if expand_ok:
+                                mtime = (info['mtime'] - datetime.datetime.utcfromtimestamp(0)).total_seconds()
+                                os.utime(local_file_path, (mtime, mtime))
+                            else:
                                 latus.logger.log.fatal('Latus Key Error - please reinitialize the Latus Key : %s : %s' % (cloud_fernet_file, local_file_path))
                         else:
                             cloud_file = os.path.join(cloud_folders.cache, info['hash'] + UNENCRYPTED_EXTENSION)
