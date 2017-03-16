@@ -10,8 +10,8 @@ import copy
 
 import requests
 
+import latus
 import latus.util
-import latus.const
 import latus.gui
 import latus.messagedialog
 import latus.preferences
@@ -108,7 +108,7 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
     global g_fh, g_ch, g_dh, log, g_base_log_file_path, g_appdata_folder
 
     if not log_folder:
-        log_folder = appdirs.user_log_dir(latus.const.NAME, latus.const.COMPANY)
+        log_folder = appdirs.user_log_dir(latus.__application_name__, latus.__author__)
 
     logger_name = LOGGER_NAME_BASE
     log = logging.getLogger(logger_name)
@@ -178,6 +178,7 @@ def set_console_log_level(new_level):
         log.info('setting console logging to %s' % logging.getLevelName(new_level))
         g_ch.setLevel(new_level)
         log.info('setting console logging to %s' % logging.getLevelName(new_level))
+
 
 def set_appdata_folder(appdata_folder):
     global g_appdata_folder
