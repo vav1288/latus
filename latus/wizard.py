@@ -4,8 +4,8 @@ import threading
 import time
 import glob
 
+import latus
 import latus.util
-import latus.const
 import latus.logger
 
 # setup wizard
@@ -78,7 +78,7 @@ class FolderWizard(threading.Thread):
 
 
 def latus_folder_from_cloud_folder(path):
-    return os.path.join(os.path.dirname(path), latus.const.NAME)
+    return os.path.join(os.path.dirname(path), latus.__application_name__)
 
 
 if __name__ == "__main__":
