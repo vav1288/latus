@@ -1,13 +1,12 @@
 
 import os
-import pathlib
 
-import latus.const
+import latus
 
 
 class CloudFolders:
     def __init__(self, cloud_root):
-        self.__latus_cloud_folder = os.path.join(cloud_root, '.' + latus.const.NAME)
+        self.__latus_cloud_folder = os.path.join(cloud_root, '.' + latus.__application_name__)
 
     @property
     def latus(self):
