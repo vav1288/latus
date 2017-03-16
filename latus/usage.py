@@ -12,7 +12,6 @@ import threading
 import requests
 
 import latus
-import latus.const
 import latus.logger
 import latus.preferences
 import latus.nodedb
@@ -87,16 +86,16 @@ class LatusUsageUploader(threading.Thread):
 
 
 def upload_usage_info():
-    latus_config_folder = appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY)
+    latus_config_folder = appdirs.user_config_dir(latus.__application_name__, latus.__author__)
     preferences = latus.preferences.Preferences(latus_config_folder)
     usage_info = LatusUsageInfo(latus_config_folder)
     for k,n,v in usage_info:
-        info = {'app': latus.const.NAME, 'id': preferences.get_node_id(), 'k': k, 'n': n, 'v': v}
-        r = requests.post(latus.const.USAGE_API_URL, json=info)
+        info = {'app': latus.__application_name__, 'id': preferences.get_node_id(), 'k': k, 'n': n, 'v': v}
+        r = requests.post(latus.__url__, json=info)
         latus.logger.log.info(r.text)
         if r.status_code != 200:
             latus.logger.log.error('%s failed : status=%s : operation=%s : error_message=%s' %
-                                   (latus.const.USAGE_API_URL, str(r.status_code), str(info), str(r.text)))
+                                   (latus.__url__, str(r.status_code), str(info), str(r.text)))
             break
 
 
