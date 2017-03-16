@@ -17,7 +17,7 @@ import latus.const
 # DB schema version is the latus version where this schema was first introduced.  If your DB schema is earlier
 # than (i.e. "less than") this, you need to do a drop all tables and start over.  This value is MANUALLY copied from
 # latus.__version__ when a new and incompatible schema is introduced.
-__db_version__ = '0.0.2'
+__db_version__ = '0.0.3'
 
 
 # A note on OS interoperability on paths:
@@ -71,7 +71,7 @@ class NodeDB:
 
         self.change_table = sqlalchemy.Table('change', self.sa_metadata,
                                              sqlalchemy.Column('index', sqlalchemy.Integer, primary_key=True),
-                                             sqlalchemy.Column('seq', sqlalchemy.Float, index=True),  # todo: make this a string
+                                             sqlalchemy.Column('seq', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('originator', sqlalchemy.String),
                                              sqlalchemy.Column('event', sqlalchemy.Integer),
                                              sqlalchemy.Column('detection', sqlalchemy.Integer),
@@ -367,7 +367,7 @@ class NodeDB:
             else:
                 last_seq = -1
                 conn.close()
-            return last_seq
+            return float(last_seq)
 
     def get_last_seqs_info(self):
         # todo: make this an interator, DB must stay open so to has to have a conn passed in
