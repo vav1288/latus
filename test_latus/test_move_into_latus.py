@@ -41,7 +41,7 @@ def test_move_into_latus_root(setup):
     write_to_file(temp_folder, file_name, 'move_to_latus', '')
 
     # start the sync
-    syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
+    syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
     time.sleep(3)  # wait for syncs to come up

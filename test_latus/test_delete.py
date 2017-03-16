@@ -44,7 +44,7 @@ def test_delete(setup):
     path_node_1 = os.path.join(get_latus_folder(get_delete_root(), nodes[1]), file_name)
 
     # start the sync
-    syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
+    syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
     time.sleep(2)

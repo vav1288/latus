@@ -41,7 +41,7 @@ def test_subdir(setup):
         write_to_file(latus_folder, file_name, node, subdir_name)
 
     # start the sync
-    syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
+    syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
     b_to_a = os.path.join(local_folders[0], subdir_name, file_names[1])

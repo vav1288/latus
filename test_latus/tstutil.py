@@ -96,7 +96,7 @@ class SyncProc:
     underlying OS doesn't work well if there are multiple watchers watching the same path in the same process
     (i.e. we can't merely start multiple syncs in the test process - we have to create multiple separate processes).
     """
-    def __init__(self, app_data_folder):
+    def __init__(self, app_data_folder, log_folder):
         self.app_data_folder = app_data_folder
         self.sync_process = None
 
@@ -104,7 +104,7 @@ class SyncProc:
             exec_path = os.path.join('venv', 'bin', 'coverage') + ' run -a'
         else:
             exec_path = sys.executable
-        self.cmd = '%s %s -a %s -v -t' % (exec_path, os.path.join('latus', 'sync.py'), self.app_data_folder)
+        self.cmd = '%s %s -a %s -v -t -l %s' % (exec_path, os.path.join('latus', 'sync.py'), self.app_data_folder, log_folder)
 
     def start(self):
         latus.logger.log.info(self.cmd)

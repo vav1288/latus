@@ -54,7 +54,7 @@ def do_sequential(start_first):
         latus_paths.append(path)
 
     if start_first:
-        syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
+        syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
         [sync.start() for sync in syncs]
         time.sleep(3)
         [sync.request_exit() for sync in syncs]
@@ -62,7 +62,7 @@ def do_sequential(start_first):
 
     write_to_file(latus_folders[0], latus_file, nodes[0])
 
-    syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
+    syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     syncs[0].start()  # just start 'a'
 
     # check we have the proper files

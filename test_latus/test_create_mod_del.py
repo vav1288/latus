@@ -41,7 +41,7 @@ def test_create_modify_delete(setup):
         latus_folders.append(folder)
         latus_paths.append(os.path.join(folder, latus_file))
 
-    syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
+    syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
     time.sleep(1)

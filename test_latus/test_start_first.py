@@ -30,7 +30,7 @@ def test_start_first(setup):
     app_data_folders = [write_preferences(node, get_start_first_root(), key) for node in nodes]
 
     # start the sync BEFORE we have any files
-    syncs = [SyncProc(app_data_folder) for app_data_folder in app_data_folders]
+    syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
     time.sleep(2)
