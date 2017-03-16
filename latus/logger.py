@@ -83,16 +83,16 @@ def init_from_args(args):
     if args.appdatafolder:
         set_appdata_folder(args.appdatafolder)
     if args.test:
-        init(backup_count=0)
+        init(log_folder = args.logfolder, backup_count=0)
     else:
-        init()
+        init(log_folder = args.logfolder)
+    if args.verbose:
+        set_console_log_level(logging.WARN)
+        set_file_log_level(logging.INFO)
     if args.test:
         # test is the more verbose mode
         set_console_log_level(logging.WARN)
         set_file_log_level(logging.DEBUG)
-    elif args.verbose:
-        set_console_log_level(logging.WARN)
-        set_file_log_level(logging.INFO)
 
 
 def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
