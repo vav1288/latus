@@ -51,6 +51,7 @@ def test_create_modify_delete(setup):
     [wait_for_file(p) for p in latus_paths]
 
     # check we have the proper files
+    time.sleep(1)
     assert(os.path.exists(latus_paths[0]))
     assert(os.path.exists(latus_paths[1]))
 
