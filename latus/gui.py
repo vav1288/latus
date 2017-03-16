@@ -6,6 +6,7 @@ from PyQt5.QtGui import QFontMetrics, QFont, QIcon, QPixmap
 from PyQt5.QtWidgets import QGridLayout, QLabel, QLineEdit, QSystemTrayIcon, QMenu, QDialog, QApplication, QMessageBox
 
 import latus
+import latus.build
 import latus.crypto
 import latus.gui_node_management
 import latus.gui_preferences
@@ -35,8 +36,9 @@ class About(QDialog):
         self.setLayout(layout)
         layout.addWidget(QLabel(latus.__url__), 0, 0)
 
-        self.add_line('Latus Node ID:', node_id, 2, layout)
-        self.add_line('Log folder:', latus.logger.get_base_log_file_path(), 5, layout)
+        self.add_line('Latus Version:', '%s (%s)' % (latus.__version__, latus.build.BUILD_TIMESTAMP), 2, layout)
+        self.add_line('Latus Node ID:', node_id, 5, layout)
+        self.add_line('Log folder:', latus.logger.get_base_log_file_path(), 7, layout)
 
         self.show()
 
