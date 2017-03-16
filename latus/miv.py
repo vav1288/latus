@@ -3,7 +3,6 @@ import requests
 import requests.exceptions
 import time
 import logging
-import random
 
 import latus.logger
 
@@ -18,6 +17,11 @@ g_miv_count = 0
 
 
 def _get_miv(node_id):
+    """
+    get miv as a string
+    :param node_id: node ID, mainly for debug
+    :return: miv as a string
+    """
     global g_miv_count
     # todo: Make this https.  I get this error with https:
     #       SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:645)
@@ -36,7 +40,7 @@ def _get_miv(node_id):
         if r and r.status_code == 200:
             # do a 'try' in case we get some strange text back
             try:
-                miv = float(r.text)
+                miv = r.text
             except ValueError:
                 miv = None
             if miv:
@@ -48,20 +52,24 @@ def _get_miv(node_id):
 
     if miv is None:
         # the monotonic value from the server is based on time(), so if we can't use the server then use our local time
-        miv = time.time()
+        miv = str(time.time())
         latus.logger.log.warn('%s : could not get miv from %s - using local time() : %s' % (node_id, server, str(miv)))
 
     g_miv_count += 1
     return miv
 
 
-# node_id is for debug (logging)
 def get_miv(node_id):
+    """
+    get miv
+    :param node_id: node ID, mainly for debugging
+    :return: miv as a string
+    """
     # make sure we are actually monotonically increasing
     global g_prior_miv
     miv = _get_miv(node_id)
     retry_count = 10
-    while g_prior_miv and miv <= g_prior_miv and retry_count > 0:
+    while g_prior_miv and float(miv) <= float(g_prior_miv) and retry_count > 0:
         time.sleep(10)
         latus.logger.log.warn('%s : miv retry' % node_id)
         miv = _get_miv(node_id)
@@ -69,6 +77,7 @@ def get_miv(node_id):
     if retry_count <= 0:
         miv = None
         latus.logger.log.fatal('%s : miv fatal' % node_id)
+    g_prior_miv = miv
     return miv
 
 if __name__ == '__main__':
