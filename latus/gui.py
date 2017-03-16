@@ -5,7 +5,7 @@ import subprocess
 from PyQt5.QtGui import QFontMetrics, QFont, QIcon, QPixmap
 from PyQt5.QtWidgets import QGridLayout, QLabel, QLineEdit, QSystemTrayIcon, QMenu, QDialog, QApplication, QMessageBox
 
-import latus.const
+import latus
 import latus.crypto
 import latus.gui_node_management
 import latus.gui_preferences
@@ -20,7 +20,7 @@ import latus.gui_advanced
 
 def message_box(msg):
     w = QMessageBox()
-    w.setWindowTitle(latus.const.NAME)
+    w.setWindowTitle(latus.__application_name__)
     w.setText(msg)
     w.show()
     return w
@@ -30,10 +30,10 @@ class About(QDialog):
 
     def __init__(self, node_id):
         super().__init__()  # todo: fill in parameter?
-        self.setWindowTitle(latus.const.NAME)
+        self.setWindowTitle(latus.__application_name__)
         layout = QGridLayout(self)
         self.setLayout(layout)
-        layout.addWidget(QLabel(latus.const.URL), 0, 0)
+        layout.addWidget(QLabel(latus.__url__), 0, 0)
 
         self.add_line('Latus Node ID:', node_id, 2, layout)
         self.add_line('Log folder:', latus.logger.get_base_log_file_path(), 5, layout)
