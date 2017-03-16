@@ -3,10 +3,11 @@ import os
 import threading
 import time
 
-import pyautogui
-
 import latus.gui_preferences
 import latus.util
+
+if latus.util.is_mac():
+    import pyautogui
 
 g_coord = None
 
