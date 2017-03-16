@@ -1,17 +1,13 @@
 
+import latus
+
 from enum import IntEnum
 
-# not sure if this is terribly pythonic, but it's pretty clean ...
-COMPANY = 'abel'
-NAME = 'latus'
-LOG_FILE = NAME + '.log'
+LOG_FILE = latus.__application_name__ + '.log'
 LATUS_KEY_FILE_EXT = '.lky'
 DB_EXTENSION = '.db'
 ENCRYPTION_EXTENSION = '.fer'
 UNENCRYPTED_EXTENSION = '.une'
-URL = 'www.lat.us'
-EMAIL = 'j@abel.co'
-AUTHOR = 'James Abel'
 DESCRIPTION = 'Secure file sync with low impact to cloud storage.'
 MAIN_FILE = 'main.py'
 
@@ -30,6 +26,7 @@ TIME_OUT = 10  # seconds
 FILTER_TIME_OUT = 5  # seconds
 
 FOLDER_PREFERENCE_DEFAULTS = (True, False, False)  # encrypt, shared, cloud
+
 
 class LatusFileSystemEvent(IntEnum):
     unknown = 0
