@@ -71,7 +71,13 @@ class NodeDB:
 
         self.change_table = sqlalchemy.Table('change', self.sa_metadata,
                                              sqlalchemy.Column('index', sqlalchemy.Integer, primary_key=True),
+
+                                             # seq is from the miv which is a monotonically increasing floating point
+                                             # number.  We store it as a string so we don't lose precision across
+                                             # platforms or implementations and we can do == on it.  Externally to this
+                                             # module it's used as a float.
                                              sqlalchemy.Column('seq', sqlalchemy.String, index=True),
+
                                              sqlalchemy.Column('originator', sqlalchemy.String),
                                              sqlalchemy.Column('event', sqlalchemy.Integer),
                                              sqlalchemy.Column('detection', sqlalchemy.Integer),
@@ -111,8 +117,6 @@ class NodeDB:
                     self.sa_metadata.drop_all()
                     self.sa_metadata.create_all()
                 except sqlalchemy.exc.OperationalError as e:
-                    # todo: this is really odd ... it keeps throwing these errors and I don't know why.  I shouldn't need
-                    # to do this since create_all() is supposed to check first.
                     latus.logger.log.fatal(str(e))
                 self.set_all(node_id)
                 self._set_general('version', __db_version__)  # keep track of this DB version as it was created
@@ -157,7 +161,7 @@ class NodeDB:
                                                             pending=pending, timestamp=datetime.datetime.utcnow())
             result = self._execute_with_retry(conn, command, 'update_insert')
         else:
-            latus.logger.log.warn('seq %s already found - not updating' % seq)
+            latus.logger.log.warn('seq %s already found - not updating' % str(seq))
         conn.close()
 
     def update_info(self, info, pending):
