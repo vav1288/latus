@@ -5,10 +5,9 @@ import argparse
 import appdirs
 import random
 import time
-import logging
 
+import latus
 import latus.logger
-import latus.const
 
 
 def is_windows():
@@ -157,7 +156,7 @@ def get_latus_folders(pref):
 
 def arg_parse():
     parser = argparse.ArgumentParser(description="efficient and secure cloud-based folder sync")
-    parser.add_argument('-a', '--appdatafolder', default=appdirs.user_config_dir(latus.const.NAME, latus.const.COMPANY),
+    parser.add_argument('-a', '--appdatafolder', default=appdirs.user_config_dir(latus.__application_name__, latus.__author__),
                         help="app data folder (where preferences are stored)")
     parser.add_argument('-v', '--verbose', action='store_true', help="more verbose logging")
     parser.add_argument('-t', '--test', action='store_true', help="test mode")
