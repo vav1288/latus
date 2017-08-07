@@ -11,12 +11,12 @@ import latus
 import latus.wizard
 import latus.preferences
 import latus.gui
-import latus.sync
-import latus.folders
+import latus.csp.sync_csp
+import latus.csp.cloud_folders
 import latus.logger
 import latus.crypto
 import latus.util
-import latus.nodedb
+from latus import nodedb
 import latus.key_management
 import latus.gui_advanced
 
@@ -64,8 +64,8 @@ class GUIWizard(QWizard):
         pref.set_upload_logs(False)
         pref.set_upload_usage(False)
 
-        folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        node = latus.nodedb.NodeDB(folders.nodes, pref.get_node_id(), write_flag=True)
+        folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
+        node = nodedb.NodeDB(folders.nodes, pref.get_node_id(), write_flag=True)
         node.set_all(pref.get_node_id())
 
         # todo: write node info out to 'state' that this node is on Latus, even if it hasn't sync'd yet
@@ -246,8 +246,8 @@ class LatusKeyPage(QWizardPage):
         first_time = True
 
         cloud_folder_field = self.field(CLOUD_FOLDER_FIELD_STRING)
-        cloud_folders = latus.folders.CloudFolders(cloud_folder_field)
-        existing_nodes = latus.nodedb.get_existing_nodes(cloud_folders.nodes)
+        cloud_folders = latus.csp.cloud_folders.CloudFolders(cloud_folder_field)
+        existing_nodes = nodedb.get_existing_nodes(cloud_folders.nodes)
         latus.logger.log.info('existing nodes: %s' % str(existing_nodes))
         if len(existing_nodes) > 0:
             first_time = False

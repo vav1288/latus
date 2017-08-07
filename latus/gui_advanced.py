@@ -9,7 +9,7 @@ from PyQt5.Qt import QApplication
 
 import latus.logger
 import latus.preferences
-import latus.folders
+import latus.csp.cloud_folders
 
 
 class AdvancedDialog(QDialog):

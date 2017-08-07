@@ -5,20 +5,20 @@ import time
 import shutil
 
 import latus.const
-import latus.sync
 import latus.util
 import latus.logger
-import latus.folders
 import latus.crypto
 import latus.preferences
 from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncProc
 
+test_name = "move_into_latus"
+
 
 def get_move_into_latus_root():
-    return os.path.join(get_data_root(), "move_into_latus")
+    return os.path.join(get_data_root(), test_name)
 
 
-def test_move_into_latus_root(setup):
+def test_move_into_latus(session_setup, module_setup):
 
     nodes = ['a', 'b']
 
@@ -34,19 +34,16 @@ def test_move_into_latus_root(setup):
     local_folders = []
     for node in nodes:
         latus_folder = get_latus_folder(get_move_into_latus_root(), node)
+        os.makedirs(latus_folder, exist_ok=True)
         local_folders.append(latus_folder)
-
-    temp_folder = os.path.join('temp', 'move_to_latus')
     file_name = 'a.txt'
-    write_to_file(temp_folder, file_name, 'move_to_latus', '')
+    src = write_to_file(os.path.join('temp', test_name), file_name, test_name)
 
     # start the sync
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
-    time.sleep(3)  # wait for syncs to come up
-
-    shutil.move(os.path.join(temp_folder, file_name), os.path.join(local_folders[0], file_name))
+    shutil.move(src, os.path.join(local_folders[0], file_name))
 
     # wait for files to sync
     for local_folder in local_folders:
@@ -59,6 +56,6 @@ def test_move_into_latus_root(setup):
     for local_folder in local_folders:
         assert(os.path.exists(os.path.join(local_folder, file_name)))
 
-    latus.logger.log.info('test_move_into_latus_root exiting')
+    latus.logger.log.info('test_move_into_latus exiting')
 
     return

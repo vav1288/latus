@@ -10,9 +10,9 @@ import latus.gui_wizard
 import latus.util
 import latus.logger
 import latus.preferences
-import latus.sync
 import latus.key_management
-import latus.folders
+import latus.csp.sync_csp
+import latus.csp.cloud_folders
 
 import test_latus.tstutil
 
@@ -50,12 +50,12 @@ if __name__ == '__main__':
         run_one(test_node)
         pref[test_node] = latus.preferences.Preferences(this_node_folders['app_data'])
         pref[test_node].set_cloud_root(this_node_folders['cloud'])  # for testing
-        syncs[test_node] = latus.sync.Sync(this_node_folders['app_data'], False, True)  # creates the node DBs
+        syncs[test_node] = latus.csp.sync_csp.Sync(this_node_folders['app_data'])  # creates the node DBs
         syncs[test_node].start()
         time.sleep(5)  # sleep long enough to make the node DBs
 
     b_folders = get_folders('b')
-    b_cloud_folders = latus.folders.CloudFolders(b_folders['cloud'])
+    b_cloud_folders = latus.csp.cloud_folders.CloudFolders(b_folders['cloud'])
     latus_key = latus.key_management.get_latus_key(pref['b'].get_node_id(), b_cloud_folders.keys,
                                                    pref['b'].get_private_key())
     pref['b'].set_crypto_key(latus_key)

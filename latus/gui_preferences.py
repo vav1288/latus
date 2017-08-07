@@ -4,19 +4,19 @@ import logging
 import appdirs
 
 from PyQt5.QtWidgets import QLabel, QDialogButtonBox, QVBoxLayout, QLineEdit, QGridLayout, QFileDialog, QDialog, \
-    QGroupBox, QCheckBox
+    QGroupBox, QCheckBox, QRadioButton, QHBoxLayout
 from PyQt5.QtCore import Qt
 from PyQt5.Qt import QApplication
 
 import latus
 import latus.logger
-import latus.sync
+import latus.csp.sync_csp
 import latus.preferences
 import latus.util
 import latus.crypto
 import latus.gui_wizard
-import latus.nodedb
-import latus.folders
+from latus import nodedb
+import latus.csp.cloud_folders
 
 
 class LineUI:
@@ -49,10 +49,11 @@ class PreferencesDialog(QDialog):
 
         # todo: self.pref and preferences are redundant - get rid of one
         self.pref = latus.preferences.Preferences(latus_appdata_folder)
-        cloud_folders = latus.folders.CloudFolders(self.pref.get_cloud_root())
-        self.node_db = latus.nodedb.NodeDB(cloud_folders.nodes, self.pref.get_node_id())
+        cloud_folders = latus.csp.cloud_folders.CloudFolders(self.pref.get_cloud_root())
+        self.node_db = nodedb.NodeDB(cloud_folders.nodes, self.pref.get_node_id())
 
         super().__init__()
+        self.blank = QLabel('')
         overall_layout = QVBoxLayout()
         col = 0
         row = 1
@@ -84,13 +85,24 @@ class PreferencesDialog(QDialog):
         else:
             folder_preferences_layout.addWidget(QLabel("(No Folders Created Yet)"))
         folder_preferences_group_box.setLayout(folder_preferences_layout)
-        overall_layout.addWidget(folder_preferences_group_box)
+
+        self.cloud_mode = self.pref.get_cloud_mode()
+        cloud_preferences_group_box = QGroupBox("Cloud Preferences")
+        cloud_preferences_layout = QHBoxLayout()
+        radio_button_aws = QRadioButton("AWS")
+        radio_button_aws.setChecked(self.cloud_mode == 'aws')
+        radio_button_aws.toggled.connect(self.radio_button_aws)
+        cloud_preferences_layout.addWidget(radio_button_aws)
+        radio_button_csp = QRadioButton("Cloud Storage Provider")
+        radio_button_csp.setChecked(self.cloud_mode == 'csp')
+        radio_button_csp.toggled.connect(self.radio_button_csp)
+        cloud_preferences_layout.addWidget(radio_button_csp)
+        cloud_preferences_group_box.setLayout(cloud_preferences_layout)
 
         folder_locations_group_box = QGroupBox("Folder Locations")
         folder_locations_layout = QGridLayout()
         self.latus_folder = LineUI('Latus Folder', self.pref.get_latus_folder(), self.new_folder)
         self.cloud_folder = LineUI('Cloud Folder', self.pref.get_cloud_root(), self.new_folder)
-        self.blank = QLabel('')
 
         support_preferences_group_box = QGroupBox("Support Preferences")
         support_preferences_layout = QGridLayout()
@@ -122,6 +134,8 @@ class PreferencesDialog(QDialog):
         self.cloud_folder.layout(folder_locations_layout, row + 1)
         folder_locations_group_box.setLayout(folder_locations_layout)
 
+        overall_layout.addWidget(folder_preferences_group_box)
+        overall_layout.addWidget(cloud_preferences_group_box)
         overall_layout.addWidget(folder_locations_group_box)
         overall_layout.addWidget(support_preferences_group_box)
 
@@ -133,12 +147,20 @@ class PreferencesDialog(QDialog):
 
         self.setWindowTitle("Preferences")
 
+    def radio_button_aws(self, state):
+        if state:
+            self.cloud_mode = 'aws'
+
+    def radio_button_csp(self, state):
+        if state:
+            self.cloud_mode = 'csp'
+
     def ok(self):
         if self.pref.get_latus_folder() != self.latus_folder.get():
-            latus.logger.log.info('new latus folder location %s' % self.latus_folder.get())
+            latus.logger.log.info('new latus folder location "%s"' % self.latus_folder.get())
             self.pref.set_latus_folder(self.latus_folder.get())
         if self.pref.get_cloud_root() != self.cloud_folder.get():
-            latus.logger.log.info('new cloud folder location %s' % self.cloud_folder.get())
+            latus.logger.log.info('new cloud folder location "%s"' % self.cloud_folder.get())
             self.pref.set_cloud_root(self.cloud_folder.get())
         for folder in self.folders:
             cb_states = tuple([cb.isChecked() for cb in self.check_boxes[folder]])
@@ -150,6 +172,9 @@ class PreferencesDialog(QDialog):
             if ss['cb'].isChecked() != ss['get']():
                 latus.logger.log.info('new support preferences for %s : %s --> %s' % (ss['str'], str(ss['get']()), str(ss['cb'].isChecked())))
                 ss['set'](ss['cb'].isChecked())
+        if self.pref.get_cloud_mode() != self.cloud_mode:
+            latus.logger.log.info('new cloud mode "%s"' % self.cloud_mode)
+            self.pref.set_cloud_mode(self.cloud_mode)
         self.close()
 
     def cancel(self):
@@ -163,9 +188,6 @@ class PreferencesDialog(QDialog):
 def main():
     import sys
 
-    latus.logger.init(None)
-    latus.logger.set_console_log_level(logging.INFO)
-
     app = QApplication(sys.argv)
 
     app_data_folder = appdirs.user_config_dir(latus.__application_name__, latus.__author__)
@@ -177,4 +199,6 @@ def main():
     preferences_dialog.exec_()
 
 if __name__ == '__main__':
+    latus.logger.init(None)
+    latus.logger.set_console_log_level(logging.INFO)
     main()

@@ -14,8 +14,8 @@ from PyQt5.QtGui import QFontMetrics, QFont
 import latus.key_management
 import latus.logger
 import latus.preferences
-import latus.folders
-import latus.nodedb
+import latus.csp.cloud_folders
+from latus import nodedb
 import latus.util
 
 
@@ -52,8 +52,8 @@ class ManagementDialog(QDialog):
         cells = [[QLabel('User Name'), QLabel('Computer Name'), QLabel('Latus Node ID'),
                   QLabel('How Long Since Last Seen'), QLabel(''), datetime.timedelta.max]]
 
-        for node in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
-            node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node)
+        for node in nodedb.get_existing_nodes(cloud_folders.nodes):
+            node_db = nodedb.NodeDB(cloud_folders.nodes, node)
             row_widgets = [QLineEdit(node_db.get_user()), QLineEdit(node_db.get_computer()),
                            QLineEdit(node)]
             button = ForgetButton(node, node_db, row_widgets)

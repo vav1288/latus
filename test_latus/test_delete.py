@@ -4,10 +4,8 @@ import logging
 import time
 
 import latus.const
-import latus.sync
 import latus.util
 import latus.logger
-import latus.folders
 import latus.crypto
 import latus.preferences
 from test_latus.tstutil import logger_init, get_latus_folder, wait_for_file, write_to_file, get_data_root, write_preferences, get_file_name, SyncProc
@@ -17,7 +15,7 @@ def get_delete_root():
     return os.path.join(get_data_root(), "delete")
 
 
-def test_delete(setup):
+def test_delete(session_setup, module_setup):
     """
     test a simple delete across 2 nodes
     """
@@ -47,7 +45,7 @@ def test_delete(setup):
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
-    time.sleep(2)
+    time.sleep(10)
 
     # wait for the file to get sync'd
     wait_for_file(path_node_1)
@@ -61,7 +59,7 @@ def test_delete(setup):
     # now remove the file on the node that it was sync'd to
     os.remove(path_node_1)
 
-    time.sleep(5)  # todo: determine why these delays are needed on Windows
+    time.sleep(latus.const.FILTER_TIME_OUT * 2)
 
     # wait for the file to be removed from both nodes
     wait_for_file(path_node_0, False)
@@ -69,6 +67,8 @@ def test_delete(setup):
 
     # ok .. should be done ... exit
     [sync.request_exit() for sync in syncs]
+
+    time.sleep(5)
 
     # make sure it worked OK
     assert(not os.path.exists(path_node_0))

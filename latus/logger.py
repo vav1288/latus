@@ -10,6 +10,10 @@ import copy
 
 import requests
 
+import raven
+from raven.handlers.logging import SentryHandler
+
+import keys.sentry
 import latus
 import latus.util
 import latus.gui
@@ -25,8 +29,10 @@ g_fh = None  # file handler
 g_ch = None  # console handler
 g_dh = None  # dialog handler
 g_hh = None  # HTTP (log server) handler
+g_sh = None  # Sentry handler
 g_appdata_folder = None
 g_base_log_file_path = None  # 'base' since the file rotator can create files based on this file name
+g_sentry_client = None
 
 
 class LatusFormatter(logging.Formatter):
@@ -87,15 +93,14 @@ def init_from_args(args):
     else:
         init(log_folder = args.logfolder)
     if args.verbose:
-        set_console_log_level(logging.WARN)
-        set_file_log_level(logging.INFO)
+        set_console_log_level(logging.INFO)
+        set_file_log_level(logging.DEBUG)
     if args.test:
-        # test is the more verbose mode
         set_console_log_level(logging.WARN)
         set_file_log_level(logging.DEBUG)
 
 
-def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
+def init(log_folder=None, delete_existing_log_files=False, backup_count=3, node_id=None):
     """
 
     :param log_folder: folder where the log file will be written (None to take the default)
@@ -103,6 +108,7 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
     :param backup_count: number of files in the rotating backup (0=a single file, which is necessary for testing)
     :param http_handler: True to upload logs to the latus log server (typically error level and higher)
     :param appdata_folder: appdata_folder
+    :param node_id: node_id
     :return: the log folder to be used
     """
     global g_fh, g_ch, g_dh, log, g_base_log_file_path, g_appdata_folder
@@ -112,13 +118,15 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
 
     logger_name = LOGGER_NAME_BASE
     log = logging.getLogger(logger_name)
+
+    add_sentry_handler(node_id)
     
     log.setLevel(logging.DEBUG)
 
+    # create file handler
     if delete_existing_log_files:
         shutil.rmtree(log_folder, ignore_errors=True)
     os.makedirs(log_folder, exist_ok=True)
-    # create file handler
     g_base_log_file_path = os.path.join(log_folder, LOG_FILE_NAME)
     if backup_count > 0:
         max_bytes = 100*1E6  # normal usage
@@ -149,19 +157,34 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3):
         log.info('preferences : %s' % latus.preferences.Preferences(g_appdata_folder).get_db_path())
 
     # real defaults
-    set_console_log_level(logging.ERROR)
-    # set the file log level last so we'll see the set of the console level in the log file
-    set_file_log_level(logging.WARN)
+    set_file_log_level(logging.INFO)
+    set_console_log_level(logging.WARN)
 
     return log_folder
 
 
-def add_http_handler(url='http://api.abel.co/latus/log'):
+def add_http_handler():
     global g_hh
+    url = 'http://api.abel.co/latus/log'
     log.info('adding http handler %s' % url)
     g_hh = LatusHttpHandler(url)
     g_hh.setLevel(logging.ERROR)
     log.addHandler(g_hh)
+
+
+def add_sentry_handler(node_id):
+    global g_sh
+    global g_sentry_client
+
+    g_sh = SentryHandler()
+    log.addHandler(g_sh)
+
+    g_sentry_client = raven.Client(dsn=keys.sentry.DSN, include_paths=[__name__.split('.', 1)[0]],
+                                   release=latus.__version__)
+
+    if node_id:
+        # use the node_id as the username in Sentry
+        g_sentry_client.context.merge({'user': {'username': node_id}})
 
 
 def set_file_log_level(new_level):

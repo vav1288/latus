@@ -26,7 +26,7 @@ __db_version__ = '0.0.3'
 # passed into the NodeDB class in the native OS format and they are returned in the native OS format.
 
 class NodeDB:
-    def __init__(self, cloud_node_db_folder, node_id, write_flag=False):
+    def __init__(self, db_folder, node_id, write_flag=False, cloud_mode='csp'):
 
         self._node_id_string = 'nodeid'
         self._local_ip_string = 'localip'
@@ -36,14 +36,19 @@ class NodeDB:
         self._computer_string = 'computer'
         self._login_string = 'login'
         self._heartbeat_string = 'heartbeat'
+        self._cloud_mode = cloud_mode
 
         self.retry_count = 0
-
         self.node_id = node_id
-        # The DB file name is based on the node id.  This is important ... this way we never have a conflict
-        # writing to the DB since there is only one writer.
-        self.database_file_name = node_id + DB_EXTENSION
-        self.sqlite_file_path = os.path.join(cloud_node_db_folder, self.database_file_name)
+        if cloud_mode == 'csp':
+            # The DB file name is based on the node id.  This is important ... this way we never have a conflict
+            # writing to the DB since there is only one writer.
+            self.database_file_name = node_id + DB_EXTENSION
+        elif cloud_mode == 'aws':
+            self.database_file_name = 'fsevents' + DB_EXTENSION
+        else:
+            raise NotImplementedError
+        self.sqlite_file_path = os.path.join(db_folder, self.database_file_name)
 
         if not os.path.exists(self.sqlite_file_path) and not write_flag:
             latus.logger.log.error('DB does not exist and write_flag not set, can not initialize : %s' % self.sqlite_file_path)
@@ -52,9 +57,9 @@ class NodeDB:
 
         if write_flag:
             try:
-                os.makedirs(cloud_node_db_folder, mode=latus.const.MAKE_DIRS_MODE, exist_ok=True)
+                os.makedirs(db_folder, mode=latus.const.MAKE_DIRS_MODE, exist_ok=True)
             except PermissionError as e:
-                latus.logger.log.error('%s : %s (%s)' % (str(e), cloud_node_db_folder, os.path.abspath(cloud_node_db_folder)))
+                latus.logger.log.error('%s : %s (%s)' % (str(e), db_folder, os.path.abspath(db_folder)))
 
         # the 'bind' and 'connection' seem to be redundant - what do I really need????
         # (I seem to need the bind, so perhaps I can get rid of the connection?)
@@ -71,20 +76,14 @@ class NodeDB:
 
         self.change_table = sqlalchemy.Table('change', self.sa_metadata,
                                              sqlalchemy.Column('index', sqlalchemy.Integer, primary_key=True),
-
-                                             # seq is from the miv which is a monotonically increasing floating point
-                                             # number.  We store it as a string so we don't lose precision across
-                                             # platforms or implementations and we can do == on it.  Externally to this
-                                             # module it's used as a float.
-                                             sqlalchemy.Column('seq', sqlalchemy.String, index=True),
-
+                                             sqlalchemy.Column('mivui', sqlalchemy.Integer, index=True),
                                              sqlalchemy.Column('originator', sqlalchemy.String),
-                                             sqlalchemy.Column('event', sqlalchemy.Integer),
+                                             sqlalchemy.Column('event_type', sqlalchemy.Integer),
                                              sqlalchemy.Column('detection', sqlalchemy.Integer),
-                                             sqlalchemy.Column('path', sqlalchemy.String, index=True),
-                                             sqlalchemy.Column('srcpath', sqlalchemy.String),  # source path for moves
+                                             sqlalchemy.Column('file_path', sqlalchemy.String, index=True),
+                                             sqlalchemy.Column('src_path', sqlalchemy.String),  # source path for moves
                                              sqlalchemy.Column('size', sqlalchemy.Integer),
-                                             sqlalchemy.Column('hash', sqlalchemy.String, index=True),
+                                             sqlalchemy.Column('file_hash', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('mtime', sqlalchemy.DateTime),
                                              sqlalchemy.Column('pending', sqlalchemy.Boolean),
                                              sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
@@ -140,45 +139,45 @@ class NodeDB:
         self.set_heartbeat()
         self.set_folder_preferences('', latus.const.FOLDER_PREFERENCE_DEFAULTS[0], latus.const.FOLDER_PREFERENCE_DEFAULTS[1], latus.const.FOLDER_PREFERENCE_DEFAULTS[2])  # latus root defaults
 
-    def update(self, seq, originator, event, detection, file_path, src_path, size, hash, mtime, pending):
+    def update(self, mivui, originator, event_type, detection, file_path, src_path, size, file_hash, mtime, pending):
         file_path = norm_latus_path(file_path)
         src_path = norm_latus_path(src_path)
         conn = self.db_engine.connect()
-        latus.logger.log.info('%s updating %s %s %s %s %s %s %s %s %s %s' % (self.node_id, seq, originator, event, detection,
-                                                                       file_path, src_path, size, hash, mtime, pending))
-        command = self.change_table.select().where(self.change_table.c.seq == seq)
+        latus.logger.log.info('%s updating %d %s %s %s %s %s %s %s %s %s' % (self.node_id, mivui, originator, event_type, detection,
+                                                                             file_path, src_path, size, file_hash, mtime, pending))
+        command = self.change_table.select().where(self.change_table.c.mivui == mivui)
         result = self._execute_with_retry(conn, command, 'update_select')
         if not result.fetchone():
             if mtime:
-                command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
-                                                            detection=detection, path=file_path, srcpath=src_path,
-                                                            size=size, hash=hash, mtime=mtime, pending=pending,
+                command = self.change_table.insert().values(mivui=mivui, originator=originator, event_type=event_type,
+                                                            detection=detection, file_path=file_path, src_path=src_path,
+                                                            size=size, file_hash=file_hash, mtime=mtime, pending=pending,
                                                             timestamp=datetime.datetime.utcnow())
             else:
                 # if file has been deleted, there's no mtime (but we can't pass None into a datetime)
-                command = self.change_table.insert().values(seq=seq, originator=originator, event=event,
-                                                            detection=detection, path=file_path, srcpath=src_path,
+                command = self.change_table.insert().values(mivui=mivui, originator=originator, event_type=event_type,
+                                                            detection=detection, file_path=file_path, src_path=src_path,
                                                             pending=pending, timestamp=datetime.datetime.utcnow())
             result = self._execute_with_retry(conn, command, 'update_insert')
         else:
-            latus.logger.log.warn('seq %s already found - not updating' % str(seq))
+            latus.logger.log.warn('mivui %d already found - not updating' % mivui)
         conn.close()
 
     def update_info(self, info, pending):
-        self.update(info['seq'], info['originator'], info['event'], info['detection'], info['path'], info['srcpath'],
-                    info['size'], info['hash'], info['mtime'], pending)
+        self.update(info['mivui'], info['originator'], info['event_type'], info['detection'], info['file_path'], info['src_path'],
+                    info['size'], info['file_hash'], info['mtime'], pending)
 
     def db_row_to_info(self, row):
         entry = {}
         entry['index'] = row[int(ChangeAttributes.index)]
-        entry['seq'] = row[int(ChangeAttributes.seq)]
+        entry['mivui'] = row[int(ChangeAttributes.mivui)]
         entry['originator'] = row[int(ChangeAttributes.originator)]
-        entry['event'] = row[int(ChangeAttributes.event)]
+        entry['event_type'] = row[int(ChangeAttributes.event_type)]
         entry['detection'] = row[int(ChangeAttributes.detection)]
-        entry['path'] = row[int(ChangeAttributes.path)]
-        entry['srcpath'] = row[int(ChangeAttributes.srcpath)]
+        entry['path'] = row[int(ChangeAttributes.file_path)]
+        entry['src_path'] = row[int(ChangeAttributes.src_path)]
         entry['size'] = row[int(ChangeAttributes.size)]
-        entry['hash'] = row[int(ChangeAttributes.hash)]
+        entry['file_hash'] = row[int(ChangeAttributes.file_hash)]
         entry['mtime'] = row[int(ChangeAttributes.mtime)]
         entry['pending'] = row[int(ChangeAttributes.pending)]
         entry['timestamp'] = row[int(ChangeAttributes.timestamp)]
@@ -218,7 +217,7 @@ class NodeDB:
             command = self.change_table.select()
             result = self._execute_with_retry(conn, command, 'get_paths')
             for row in result:
-                file_path = row[int(ChangeAttributes.path)]
+                file_path = row[int(ChangeAttributes.file_path)]
                 if file_path not in file_paths:
                     # return the file paths in the native OS format
                     file_paths.add(os.path.normpath(file_path))
@@ -231,14 +230,62 @@ class NodeDB:
         file_path = norm_latus_path(file_path)
         conn = self.db_engine.connect()
         file_hash = None
-        command = self.change_table.select().where(self.change_table.c.path == file_path)
+        command = self.change_table.select().where(self.change_table.c.file_path == file_path)
         result = self._execute_with_retry(conn, command, 'get_most_recent_hash')
         if result:
             all_hashes = result.fetchall()
             if all_hashes:
-                file_hash = all_hashes[-1][int(ChangeAttributes.hash)]
+                file_hash = all_hashes[-1][int(ChangeAttributes.file_hash)]
         conn.close()
         return file_hash
+
+    def get_most_recent_entry_for_path(self, non_norm_file_path):
+        # get the most recent entry from either 'path' or 'src_path'
+
+        conn = self.db_engine.connect()
+        file_path = norm_latus_path(non_norm_file_path)
+
+        # first the 'path' entry
+        most_recent_path = None
+        command = self.change_table.select().where(self.change_table.c.file_path == file_path)
+        result = self._execute_with_retry(conn, command, 'get_most_recent_path')
+        if result:
+            all_entries = result.fetchall()
+            if all_entries:
+                most_recent_path = all_entries[-1]
+
+        # second the 'src_path' entry
+        most_recent_src_path = None
+        command = self.change_table.select().where(self.change_table.c.src_path == file_path)
+        result = self._execute_with_retry(conn, command, 'get_most_recent_src_path')
+        if result:
+            all_entries = result.fetchall()
+            if all_entries:
+                most_recent_src_path = all_entries[-1]
+
+        conn.close()
+
+        most_recent = most_recent_path
+        if most_recent_src_path is not None and most_recent_path is not None:
+            if most_recent_src_path['mivui'] > most_recent_path['mivui']:
+                most_recent = most_recent_src_path
+
+        return most_recent
+
+    def get_most_recent_entry(self, originator_node_id):
+        conn = self.db_engine.connect()
+        most_recent = None
+        if originator_node_id:
+            command = self.change_table.select().where(self.change_table.c.originator == originator_node_id)
+        else:
+            command = self.change_table.select()
+        result = self._execute_with_retry(conn, command, 'get_most_recent_entry')
+        if result:
+            all_rows = result.fetchall()
+            if all_rows:
+                most_recent = all_rows[-1]
+        conn.close()
+        return most_recent
 
     def get_rows_as_info(self):
         # todo: make this an interator, DB must stay open so to has to have a conn passed in
@@ -296,6 +343,9 @@ class NodeDB:
         return val, timestamp
 
     def _set_general(self, key, value):
+        # todo: I noticed that sometimes somehow this test for doesn't exist fails - i.e. it says it doesn't
+        # exist and it actually does, then the insert() causes a unique key exception.  Somehow this
+        # should be fixed.
         if self.db_engine is None:
             latus.logger.log.warn('_set_general: db_engine is None')
             return None
@@ -360,20 +410,20 @@ class NodeDB:
     def get_login(self):
         return self._get_general(self._login_string)  # tuple of (is_logged_in, login_timestamp)
 
-    def get_last_seq(self, file_path):
+    def get_last_mivui(self, file_path):
         with self.db_engine.connect() as conn:
             q_cmd = self.change_table.select().where(self.change_table.c.path == file_path)
-            q_result = self._execute_with_retry(conn, q_cmd, 'get_last_seq')
+            q_result = self._execute_with_retry(conn, q_cmd, 'get_last_mivui')
             all_rows = q_result.fetchall()
             if all_rows:
                 last = all_rows[-1]
-                last_seq = last[0]
+                last_mivui = last[0]
             else:
-                last_seq = -1
+                last_mivui = -1
                 conn.close()
-            return float(last_seq)
+            return last_mivui
 
-    def get_last_seqs_info(self):
+    def get_last_mivuis_info(self):
         # todo: make this an interator, DB must stay open so to has to have a conn passed in
         infos = []
         with self.db_engine.connect() as conn:
@@ -381,7 +431,7 @@ class NodeDB:
             # get all the paths that have a pending
             paths_pending = set()
             cmd = self.change_table.select().where(self.change_table.c.pending).distinct(self.change_table.c.path)
-            result = self._execute_with_retry(conn, cmd, 'get_last_seqs_info_0')
+            result = self._execute_with_retry(conn, cmd, 'get_last_mivuis_info_0')
             if result:
                 for row in result.fetchall():
                     paths_pending.add(row[int(ChangeAttributes.path)])
@@ -389,22 +439,22 @@ class NodeDB:
             # get the last entry for each path
             for path in paths_pending:
                 q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.path == path, self.change_table.c.pending))
-                q_result = self._execute_with_retry(conn, q_cmd, 'get_last_seqs_info_1')
+                q_result = self._execute_with_retry(conn, q_cmd, 'get_last_mivuis_info_1')
                 all_rows = q_result.fetchall()
                 if all_rows:
-                    # get the most senior sequence entry for each path
-                    all_rows = sorted(all_rows, key=lambda x: x[int(ChangeAttributes.seq)])
+                    # get the most senior miv entry for each path
+                    all_rows = sorted(all_rows, key=lambda x: x[int(ChangeAttributes.mivui)])
                     last = all_rows[-1]
                     infos.append(self.db_row_to_info(last))
             conn.close()
 
         return infos
 
-    def get_info_from_path_and_seq(self, path, seq):
+    def get_info_from_path_and_mivui(self, path, mivui):
         with self.db_engine.connect() as conn:
             path = norm_latus_path(path)  # paths are stored in DB as latus normalized paths
-            q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.seq == seq, self.change_table.c.path == path))
-            q_result = self._execute_with_retry(conn, q_cmd, 'get_info_from_path_and_seq')
+            q_cmd = self.change_table.select().where(sqlalchemy.and_(self.change_table.c.mivui == mivui, self.change_table.c.path == path))
+            q_result = self._execute_with_retry(conn, q_cmd, 'get_info_from_path_and_mivui')
             # todo: check that there is indeed only one entry returned
             if q_result:
                 row = q_result.fetchone()
@@ -430,11 +480,11 @@ class NodeDB:
     def clear_pending(self, info):
         with self.db_engine.connect() as conn:
             result = None
-            stmt = self.change_table.update().values(pending=False).where(self.change_table.c.path == info['path'] and
-                                                                          self.change_table.c.seq == info['seq'])
+            stmt = self.change_table.update().values(pending=False).where(self.change_table.c.file_path == info['file_path'] and
+                                                                          self.change_table.c.mivui == info['mivui'])
             result = self._execute_with_retry(conn, stmt, 'clear_pending')
             if not result:
-                latus.logger.log.error('clear_pending of %s %s failed' % (info['path'], info['seq']))
+                latus.logger.log.error('clear_pending of %s %s failed' % (info['path'], info['mivui']))
 
             conn.close()
 
@@ -503,7 +553,7 @@ def sync_dbs(cloud_node_folder, source_node_id, destination_node_id):
     destination_node_db = NodeDB(cloud_node_folder, destination_node_id)
     source_infos = source_node_db.get_rows_as_info()
     for source_info in source_infos:
-        dest_info = destination_node_db.get_info_from_path_and_seq(source_info['path'], source_info['seq'])
+        dest_info = destination_node_db.get_info_from_path_and_mivui(source_info['path'], source_info['mivui'])
         if dest_info is None:
             destination_node_db.update_info(source_info, True)  # mark as pending
 

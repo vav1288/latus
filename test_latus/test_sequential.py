@@ -4,10 +4,8 @@ import logging
 import time
 
 import latus.const
-import latus.sync
 import latus.util
 import latus.logger
-import latus.folders
 import latus.crypto
 import latus.preferences
 from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncProc, clean
@@ -17,11 +15,11 @@ def get_sequential_root():
     return os.path.join(get_data_root(), "test_sequential")
 
 
-def test_sequential_start_first(setup):
+def test_sequential_start_first(session_setup, module_setup):
     do_sequential(True)
 
 
-def test_sequential_do_not_start_first(setup):
+def test_sequential_do_not_start_first(session_setup, module_setup):
     do_sequential(False)
 
 
@@ -34,7 +32,7 @@ def do_sequential(start_first):
     nodes = ['a', 'b']
 
     # so we can run this multiple times
-    clean(get_sequential_root())
+    clean(get_sequential_root(), False)
 
     log_folder = os.path.join(get_sequential_root(), 'log')
     logger_init(log_folder)

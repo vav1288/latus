@@ -9,4 +9,8 @@ sqlalchemy
 watchdog
 pypiwin32 ; sys_platform == 'win32'
 jinja2
-osnap >= 0.0.8
+osnap
+raven
+boto3
+awscli
+maya

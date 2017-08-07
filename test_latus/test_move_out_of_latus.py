@@ -5,10 +5,8 @@ import time
 import shutil
 
 import latus.const
-import latus.sync
 import latus.util
 import latus.logger
-import latus.folders
 import latus.crypto
 import latus.preferences
 from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncProc
@@ -18,7 +16,7 @@ def get_move_out_of_latus_root():
     return os.path.join(get_data_root(), "move_out_of_latus")
 
 
-def test_move_out_of_latus_root(setup):
+def test_move_out_of_latus(session_setup, module_setup):
 
     nodes = ['a', 'b']
 
@@ -57,6 +55,8 @@ def test_move_out_of_latus_root(setup):
         pass
     shutil.move(os.path.join(local_folders[0], file_name), temp_path)
 
+    time.sleep(1)
+
     # wait for files to sync
     for local_folder in local_folders:
         wait_for_file(os.path.join(local_folder, file_name), False)
@@ -64,7 +64,7 @@ def test_move_out_of_latus_root(setup):
     # stop the syncs
     [sync.request_exit() for sync in syncs]
 
-    time.sleep(2)
+    # time.sleep(5)
 
     # check the results
     for local_folder in local_folders:

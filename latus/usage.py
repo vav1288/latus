@@ -14,9 +14,9 @@ import requests
 import latus
 import latus.logger
 import latus.preferences
-import latus.nodedb
+from latus import nodedb
 import latus.util
-import latus.folders
+import latus.csp.cloud_folders
 
 
 def anonymize(s):
@@ -52,8 +52,8 @@ class LatusUsageInfo:
         yield ('ip', None, None)  # special case - the server side provides the IP address
         pref = latus.preferences.Preferences(self.latus_config_folder)
 
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        self.node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
+        cloud_folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
+        self.node_db = nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
         for latus_folder in latus.util.get_latus_folders(pref):
             yield ('folderpref', anonymize(latus_folder), str(self.node_db.get_folder_preferences_from_folder(latus_folder)))
 
@@ -66,7 +66,7 @@ class LatusUsageInfo:
         yield ('computername', None, platform.node())
         yield ('version', None, latus.__version__)
         yield ('preferencesdbversion', None, latus.preferences.__db_version__)
-        yield ('nodedbversion', None, latus.nodedb.__db_version__)
+        yield ('cspnodedbversion', None, nodedb.__db_version__)
 
 
 class LatusUsageUploader(threading.Thread):

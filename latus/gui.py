@@ -14,7 +14,7 @@ import latus.gui_wizard
 import latus.key_management
 import latus.logger
 import latus.preferences
-import latus.sync
+import latus.csp.sync_csp
 import latus.util
 import latus.gui_advanced
 
@@ -53,7 +53,7 @@ class About(QDialog):
 
 class LatusSystemTrayIcon(QSystemTrayIcon):
 
-    def __init__(self, app, latus_appdata_folder, parent=None):
+    def __init__(self, app, latus_appdata_folder, awslocal, parent=None):
         latus.logger.log.info('starting LatusSystemTrayIcon')
         self.app = app
 
@@ -61,6 +61,8 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
         icon = QIcon(QPixmap(':active.png'))
         super().__init__(icon, parent)
         self.latus_appdata_folder = latus_appdata_folder
+
+        self.awslocal = awslocal
 
         menu = QMenu(parent)
         menu.addAction("Open Latus Folder").triggered.connect(self.open_latus_folder)
@@ -88,7 +90,7 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
             self.open_latus_folder()
 
     def start_latus(self):
-        self.sync = latus.sync.Sync(self.latus_appdata_folder)
+        self.sync = latus.csp.sync_csp.Sync(self.latus_appdata_folder, self.awslocal)
         self.sync.start()
 
     def show(self):
@@ -157,7 +159,7 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
         QApplication.exit()  # todo: what should this parameter be?
 
 
-def main(latus_appdata_folder):
+def main(latus_appdata_folder, awslocal):
 
     latus.logger.log.info("latus_app_data: %s" % latus_appdata_folder)
 
@@ -177,7 +179,7 @@ def main(latus_appdata_folder):
 
     if pref and pref.folders_are_set():
         app.setQuitOnLastWindowClosed(False)  # so popup dialogs don't close the system tray icon
-        system_tray = LatusSystemTrayIcon(app, latus_appdata_folder)
+        system_tray = LatusSystemTrayIcon(app, latus_appdata_folder, awslocal)
         system_tray.start_latus()
         system_tray.show()
         app.exec_()

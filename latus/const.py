@@ -23,7 +23,7 @@ ASYMMETRIC_KEY_LENGTH = 1024  # Asymmetric key size (in bits)
 
 TIME_OUT = 10  # seconds
 
-FILTER_TIME_OUT = 5  # seconds
+FILTER_TIME_OUT = 3  # seconds
 
 FOLDER_PREFERENCE_DEFAULTS = (True, False, False)  # encrypt, shared, cloud
 
@@ -48,14 +48,14 @@ class DetectionSource(IntEnum):
 # DB columns
 class ChangeAttributes(IntEnum):
     index = 0
-    seq = 1
+    mivui = 1
     originator = 2
-    event = 3       # FileSystemEvent
-    detection = 4   # DetectionSource
-    path = 5
-    srcpath = 6
+    event_type = 3  # FileSystemEvent
+    detection = 4  # DetectionSource
+    file_path = 5
+    src_path = 6  # for moves file_path is the dest
     size = 7
-    hash = 8
+    file_hash = 8
     mtime = 9
     pending = 10  # this node has not yet acted on it
     timestamp = 11

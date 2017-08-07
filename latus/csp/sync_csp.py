@@ -18,9 +18,9 @@ import latus.preferences
 import latus.walker
 import latus.hash
 import latus.crypto
-import latus.nodedb
+from latus import nodedb
 import latus.miv
-import latus.folders
+import latus.csp.cloud_folders
 import latus.key_management
 import latus.gui
 import latus.activity_timer
@@ -215,8 +215,8 @@ class LocalSync(SyncBase):
     def __fill_cache(self, full_path):
         pref = latus.preferences.Preferences(self.app_data_folder)
         node_id = pref.get_node_id()
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node_id)
+        cloud_folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
+        node_db = nodedb.NodeDB(cloud_folders.nodes, node_id)
         partial_path = os.path.relpath(full_path, pref.get_latus_folder())
         encrypt, shared, cloud = node_db.get_folder_preferences_from_path(partial_path)
         hash, _ = latus.hash.calc_sha512(full_path, pref.get_crypto_key())
@@ -242,7 +242,7 @@ class LocalSync(SyncBase):
     # todo: encrypt the hash?
     def __write_db(self, full_path, src_path, filesystem_event_type, detection_source, file_hash):
         pref = latus.preferences.Preferences(self.app_data_folder)
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+        cloud_folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
         latus_path = full_path.replace(pref.get_latus_folder() + os.sep, '')
         node_id = pref.get_node_id()
         if os.path.exists(full_path):
@@ -251,21 +251,21 @@ class LocalSync(SyncBase):
         else:
             mtime = None
             size = None
-        miv = latus.miv.get_miv(node_id)
-        self.sync_log(node_id, miv, filesystem_event_type, full_path, detection_source, size, file_hash, mtime)
-        node_db = latus.nodedb.NodeDB(cloud_folders.nodes, node_id)
+        mivui = latus.miv.get_mivui(node_id)
+        self.sync_log(node_id, mivui, filesystem_event_type, full_path, detection_source, size, file_hash, mtime)
+        node_db = nodedb.NodeDB(cloud_folders.nodes, node_id)
         most_recent_hash = node_db.get_most_recent_hash(latus_path)
         if most_recent_hash != file_hash:
-            node_db.update(miv, node_id, int(filesystem_event_type), int(detection_source),
+            node_db.update(mivui, node_id, int(filesystem_event_type), int(detection_source),
                            latus_path, src_path, size, file_hash, mtime, False)
 
     @activity_trigger
     def fs_scan(self, detection_source):
         latus.logger.log.info('starting fs_scan')
         pref = latus.preferences.Preferences(self.app_data_folder)
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+        cloud_folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
         this_node_id = pref.get_node_id()
-        node_db = latus.nodedb.NodeDB(cloud_folders.nodes, this_node_id)
+        node_db = nodedb.NodeDB(cloud_folders.nodes, this_node_id)
         local_walker = latus.walker.Walker(pref.get_latus_folder())
         src_path = None  # no moves in file system scan
         for partial_path in local_walker:
@@ -281,11 +281,11 @@ class LocalSync(SyncBase):
                     if local_hash != most_recent_hash:
                         mtime = datetime.datetime.utcfromtimestamp(os.path.getmtime(local_full_path))
                         size = os.path.getsize(local_full_path)
-                        miv = latus.miv.get_miv(this_node_id)
-                        self.sync_log(this_node_id, file_system_event, miv, partial_path, detection_source, size, local_hash, mtime)
+                        mivui = latus.miv.get_mivui(this_node_id)
+                        self.sync_log(this_node_id, file_system_event, mivui, partial_path, detection_source, size, local_hash, mtime)
                         self.__fill_cache(local_full_path)
                         self.add_filter_event(node_db.get_database_file_abs_path(), LatusFileSystemEvent.modified)
-                        node_db.update(miv, this_node_id, int(file_system_event),
+                        node_db.update(mivui, this_node_id, int(file_system_event),
                                        int(detection_source), partial_path, src_path, size, local_hash, mtime, False)
                 else:
                     latus.logger.log.warn('%s : could not calculate hash for %s' % (this_node_id, local_full_path))
@@ -304,7 +304,7 @@ class CloudSync(SyncBase):
         super().__init__(app_data_folder, filter_events)
 
         pref = latus.preferences.Preferences(self.app_data_folder)
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
+        cloud_folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
 
         latus.logger.log.info('cloud_nodedb : %s' % cloud_folders.nodes)
         latus.logger.log.info('cloud_cache : %s' % cloud_folders.cache)
@@ -318,8 +318,7 @@ class CloudSync(SyncBase):
         # make the node DB if it isn't already there
         pref = latus.preferences.Preferences(self.app_data_folder)
         node_id = pref.get_node_id()
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        latus.nodedb.NodeDB(cloud_folders.nodes, node_id, True)
+        nodedb.NodeDB(cloud_folders.nodes, node_id, True)
 
         self.observer.schedule(self, cloud_folders.nodes, recursive=True)
 
@@ -333,9 +332,9 @@ class CloudSync(SyncBase):
             latus.logger.log.info('%s : filtered cloud on_any_event : %s' % (pref.get_node_id(), str(event)))
         else:
             latus.logger.log.info('%s : cloud on_any_event : %s' % (pref.get_node_id(), str(event)))
-            cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-            this_node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
-            event_node_id = latus.nodedb.get_node_id_from_db_file_path(event.src_path)
+            cloud_folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
+            this_node_db = nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
+            event_node_id = nodedb.get_node_id_from_db_file_path(event.src_path)
             # if this dispatch was caused by an event on our own DB, ignore it
             if not event.is_directory and event_node_id != this_node_db.get_node_id() and 'db-journal' not in event.src_path:
                 latus.logger.log.info('%s : cloud dispatch : event : %s' % (pref.get_node_id(), event))
@@ -344,15 +343,15 @@ class CloudSync(SyncBase):
     @activity_trigger
     def cloud_sync(self, detection_source):
         pref = latus.preferences.Preferences(self.app_data_folder)
-        cloud_folders = latus.folders.CloudFolders(pref.get_cloud_root())
-        this_node_db = latus.nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
+        cloud_folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
+        this_node_db = nodedb.NodeDB(cloud_folders.nodes, pref.get_node_id())
 
         # ensure this node's DB has all the entries that other node's DBs have
-        for db_node_id in latus.nodedb.get_existing_nodes(cloud_folders.nodes):
+        for db_node_id in nodedb.get_existing_nodes(cloud_folders.nodes):
             if db_node_id != this_node_db.get_node_id():
-                latus.nodedb.sync_dbs(cloud_folders.nodes, db_node_id, this_node_db.get_node_id())
+                nodedb.sync_dbs(cloud_folders.nodes, db_node_id, this_node_db.get_node_id())
 
-        for info in this_node_db.get_last_seqs_info():
+        for info in this_node_db.get_last_mivuis_info():
             local_file_path = os.path.join(pref.get_latus_folder(), info['path'])
             if os.path.exists(local_file_path):
                 local_file_hash, _ = latus.hash.calc_sha512(local_file_path, pref.get_crypto_key())  # todo: get this pre-computed from the db
@@ -425,6 +424,7 @@ class CloudSync(SyncBase):
 class Sync:
     def __init__(self, app_data_folder):
         self.app_data_folder = app_data_folder
+
         pref = latus.preferences.Preferences(self.app_data_folder)
         node_id = pref.get_node_id()
         latus.logger.log.info('node_id : %s' % node_id)
@@ -459,9 +459,9 @@ class Sync:
         if self.usage_uploader:
             self.usage_uploader.request_exit()
         pref = latus.preferences.Preferences(self.app_data_folder)
-        cloud_folder = latus.folders.CloudFolders(pref.get_cloud_root())
+        cloud_folder = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
         node_id = pref.get_node_id()
-        node = latus.nodedb.NodeDB(cloud_folder.nodes, node_id)
+        node = nodedb.NodeDB(cloud_folder.nodes, node_id)
         latus.logger.log.info('%s - sync - request_exit begin' % node_id)
         timed_out = self.local_sync.request_exit()
         timed_out |= self.cloud_sync.request_exit()

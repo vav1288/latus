@@ -2,7 +2,7 @@
 python3 -m venv --clear venv
 venv/bin/pip install -U pip
 venv/bin/pip install -U setuptools
-venv/bin/pip install -r requirements.txt
+venv/bin/pip install -U -r requirements.txt
 #
 # testing tools - these can be ignored when creating the production release - i.e. the frozen executables
 venv/bin/pip install -U coverage

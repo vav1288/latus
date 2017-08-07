@@ -4,10 +4,8 @@ import logging
 import time
 
 import latus.const
-import latus.sync
 import latus.util
 import latus.logger
-import latus.folders
 import latus.crypto
 import latus.preferences
 from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncProc
@@ -17,7 +15,7 @@ def get_start_first_root():
     return os.path.join(get_data_root(), "start_first")
 
 
-def test_start_first(setup):
+def test_start_first(session_setup, module_setup):
 
     nodes = ['a', 'b']
 

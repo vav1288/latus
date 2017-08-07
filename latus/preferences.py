@@ -37,16 +37,19 @@ class Preferences:
 
         # todo: do I still need 'init' parameter?  I think I can just get rid of it and act as if it's True
 
-        self.__id_string = 'nodeid'
-        self.__key_string = 'cryptokey'
-        self.__most_recent_key_folder_string = 'keyfolder'
-        self.__cloud_root_string = 'cloudroot'
-        self.__latus_folder_string = 'latusfolder'
-        self.__check_new_version_string = 'checknewversion'
-        self.__upload_usage_string = 'uploadusage'
-        self.__upload_logs_string = 'uploadlogs'
-        self.__version_key_string = 'version'
-        self.__verbose_string = 'verbose'
+        self._id_string = 'nodeid'
+        self._key_string = 'cryptokey'
+        self._most_recent_key_folder_string = 'keyfolder'
+        self._cloud_root_string = 'cloudroot'
+        self._cloud_mode_string = 'cloudmode'
+        self._latus_folder_string = 'latusfolder'
+        self._check_new_version_string = 'checknewversion'
+        self._upload_usage_string = 'uploadusage'
+        self._upload_logs_string = 'uploadlogs'
+        self._version_key_string = 'version'
+        self._verbose_string = 'verbose'
+
+        self._cloud_mode = None
 
         if not latus_appdata_folder:
             raise RuntimeError
@@ -63,9 +66,9 @@ class Preferences:
         self.__Session = sqlalchemy.orm.sessionmaker(bind=self.__db_engine)
         if init:
             latus.logger.log.info('creating preferences DB version %s' % __db_version__)
-            self.__pref_set(self.__version_key_string, __db_version__)
+            self._pref_set(self._version_key_string, __db_version__)
 
-    def __pref_set(self, key, value):
+    def _pref_set(self, key, value):
         latus.logger.log.debug('pref_set : %s to %s' % (str(key), str(value)))
         session = self.__Session()
         pref_table = PreferencesTable(key=key, value=value, datetime=datetime.datetime.utcnow())
@@ -76,7 +79,7 @@ class Preferences:
         session.commit()
         session.close()
 
-    def __pref_get(self, key):
+    def _pref_get(self, key):
         # latus.logger.log.debug('pref_get : %s' % str(key))
         value = None
         session = self.__Session()
@@ -91,64 +94,70 @@ class Preferences:
         return value
 
     def set_crypto_key(self, key):
-        self.__pref_set(self.__key_string, key)
+        self._pref_set(self._key_string, key)
 
     def get_crypto_key(self):
-        return self.__pref_get(self.__key_string)
+        return self._pref_get(self._key_string)
 
     def set_cloud_root(self, folder):
-        self.__pref_set(self.__cloud_root_string, os.path.abspath(folder))
+        self._pref_set(self._cloud_root_string, os.path.abspath(folder))
 
     def get_cloud_root(self):
-        return self.__pref_get(self.__cloud_root_string)
+        return self._pref_get(self._cloud_root_string)
 
     def set_latus_folder(self, folder):
-        self.__pref_set(self.__latus_folder_string, os.path.abspath(folder))
+        self._pref_set(self._latus_folder_string, os.path.abspath(folder))
 
     def get_latus_folder(self):
-        return self.__pref_get(self.__latus_folder_string)
+        return self._pref_get(self._latus_folder_string)
 
     def set_verbose(self, value):
-        self.__pref_set(self.__verbose_string, str(value))
+        self._pref_set(self._verbose_string, str(value))
 
     def get_verbose(self):
-        return bool(self.__pref_get(self.__verbose_string))
+        return bool(self._pref_get(self._verbose_string))
+
+    def set_cloud_mode(self, mode):
+        self._pref_set(self._cloud_mode_string, mode)
+
+    def get_cloud_mode(self):
+        return self._pref_get(self._cloud_mode_string)
 
     def set_check_new_version(self, check_flag):
-        self.__pref_set(self.__check_new_version_string, check_flag)
+        self._pref_set(self._check_new_version_string, check_flag)
 
     def get_check_new_version(self):
-        ul = self.__pref_get(self.__check_new_version_string)
+        ul = self._pref_get(self._check_new_version_string)
         if ul:
             return bool(int(ul))
         else:
             return False
 
     def set_upload_usage(self, upload_usage_flag):
-        self.__pref_set(self.__upload_usage_string, upload_usage_flag)
+        self._pref_set(self._upload_usage_string, upload_usage_flag)
 
     def get_upload_usage(self):
-        ul = self.__pref_get(self.__upload_usage_string)
+        ul = self._pref_get(self._upload_usage_string)
         if ul:
             return bool(int(ul))
         else:
             return False
 
     def set_upload_logs(self, upload_logs_flag):
-        self.__pref_set(self.__upload_logs_string, upload_logs_flag)
+        self._pref_set(self._upload_logs_string, upload_logs_flag)
 
     def get_upload_logs(self):
-        ul = self.__pref_get(self.__upload_logs_string)
+        ul = self._pref_get(self._upload_logs_string)
         if ul:
             return bool(int(ul))
         else:
             return False
 
     def set_node_id(self, new_node_id):
-        self.__pref_set(self.__id_string, new_node_id)
+        self._pref_set(self._id_string, new_node_id)
 
     def get_node_id(self):
-        return self.__pref_get(self.__id_string)
+        return self._pref_get(self._id_string)
 
     def get_db_path(self):
         return self.__db_path
@@ -158,6 +167,9 @@ class Preferences:
 
     def get_app_data_folder(self):
         return self.app_data_folder
+
+    def get_cache_folder(self):
+        return os.path.join(self.app_data_folder, 'cache')
 
 
 def preferences_db_exists(folder):

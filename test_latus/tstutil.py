@@ -11,10 +11,9 @@ import latus.logger
 import latus.util
 import latus.crypto
 import latus.preferences
-import latus.sync
-import latus.nodedb
-import latus.folders
 import latus.const
+
+import test_latus
 
 
 def logger_init(log_folder):
@@ -42,10 +41,10 @@ def get_python_exe():
 
 # waits for a file to exist
 # set "to_exist" parameter to False if you want to wait until the file does NOT exist
-def wait_for_file(file_path, to_exist=True):
-    time_out_sec = 20
-    sleep_time_sec = 0.1
-    time_out_count_down = time_out_sec / sleep_time_sec
+def wait_for_file(file_path, to_exist=True, message_prefix=''):
+    time_out_sec = 30
+    sleep_time_sec = 3
+    time_out_count_down = int(round(time_out_sec / sleep_time_sec))
 
     if to_exist:
         message = ''
@@ -53,10 +52,11 @@ def wait_for_file(file_path, to_exist=True):
         message = ' not'
 
     while (to_exist ^ os.path.exists(file_path)) and time_out_count_down > 0:
+        latus.logger.log.info('%s waiting for %s to %s exist' % (message_prefix, file_path, message))
         time.sleep(sleep_time_sec)
         time_out_count_down -= 1
     if time_out_count_down <= 0:
-        print('timeout waiting for %s to%s exist' % (file_path, message))
+        latus.logger.log.warn('%s timeout waiting for %s to%s exist' % (message_prefix, file_path, message))
         return False
     return True
 
@@ -104,27 +104,34 @@ class SyncProc:
             exec_path = os.path.join('venv', 'bin', 'coverage') + ' run -a'
         else:
             exec_path = sys.executable
-        self.cmd = '%s %s -a %s -v -t -l %s' % (exec_path, os.path.join('latus', 'sync.py'), self.app_data_folder, log_folder)
+        if test_latus.cloud_storage_mode == 'csp':
+            sync_py_path = os.path.join('latus', 'csp', 'sync_csp.py')
+        elif test_latus.cloud_storage_mode == 'aws':
+            sync_py_path = os.path.join('latus', 'aws', 'sync_aws.py')
+        else:
+            raise ValueError
+        # may want to put in -v
+        self.cmd = '%s %s -a %s -t -l %s' % (exec_path, sync_py_path, self.app_data_folder, log_folder)
 
     def start(self):
         latus.logger.log.info(self.cmd)
         self.sync_process = subprocess.Popen(self.cmd, shell=True, stdin=subprocess.PIPE)
 
-    def request_exit(self):
+    def request_exit(self, time_out=latus.const.TIME_OUT):
         self.sync_process.communicate(b'\n\r')  # emulate 'enter' key to shutdown (one of these should do it)
-        self.sync_process.wait(5*60)  # if there are no issues shutdown should take just a few seconds
+        self.sync_process.wait(time_out)  # if there are no issues shutdown should take just a few seconds
         rc = self.sync_process.poll()
         if rc != 0:
-            latus.logger.log.fatal('%s returned %s' % (self.cmd, str(rc)))
+            latus.logger.log.error('%s returned %s' % (self.cmd, str(rc)))
         return rc
 
 
-def clean(path=get_data_root()):
+def clean(path=get_data_root(), delete_coverage=True):
     """
     clean up the test data
     :return:
     """
-    try_count = 10
+    try_count = 100
     while os.path.exists(path) and try_count:
         try:
             shutil.rmtree(path)
@@ -132,15 +139,17 @@ def clean(path=get_data_root()):
             # log isn't set up yet, so just print
             print('can not rmtree %s - retrying' % path)
             print(str(e))
-            time.sleep(1)
+            time.sleep(0.2)
             try_count -= 1
     assert(try_count > 0)
     if try_count == 0:
         exit('clean failed')
-    try:
-        os.remove('.coverage')
-    except FileNotFoundError:
-        pass
+    if delete_coverage:
+        try:
+            print('deleting .coverage')
+            os.remove('.coverage')
+        except FileNotFoundError:
+            pass
 
 
 def write_to_file(dir_path, file_name, contents, subdir=None, mode='w'):
@@ -153,6 +162,7 @@ def write_to_file(dir_path, file_name, contents, subdir=None, mode='w'):
     except PermissionError as e:
         latus.logger.log.error('%s : %s (%s)' % (str(e), dir_path, os.path.abspath(dir_path)))
 
+    latus.logger.log.info('writing %s' % p)
     with open(p, mode) as f:
         f.write(contents)
         f.close()
@@ -186,7 +196,7 @@ def compare_folders(folder_paths):
                     else:
                         all_compare_ok = True
         if not all_compare_ok:
-            time.sleep(10)
+            time.sleep(1)
             latus.logger.log.warn('compare_folders issue - retrying : countdown=%d : folders=%s,%s : mismatch=%s : errors=%s' %
                                   (attempt_count_down, error_a, error_b, str(mismatch), str(errors)))
         attempt_count_down -= 1

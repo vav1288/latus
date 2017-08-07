@@ -45,5 +45,7 @@ def calc_sha512(path, latus_key, time_it=False):
     else:
         elapsed_time = None
 
+    logger.log.debug('%s : %s' % (path, sha512_val))
+
     return sha512_val, elapsed_time
 

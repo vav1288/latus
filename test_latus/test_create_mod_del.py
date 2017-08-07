@@ -4,20 +4,18 @@ import logging
 import time
 
 import latus.const
-import latus.sync
 import latus.util
 import latus.logger
-import latus.folders
 import latus.crypto
 import latus.preferences
-from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncProc, clean
+from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncProc
 
 
 def get_create_modify_delete_root():
     return os.path.join(get_data_root(), "test_create_modify_delete")
 
 
-def test_create_modify_delete(setup):
+def test_create_modify_delete(session_setup, module_setup):
     """
     test that we can bring up nodes sequentially and they do the right thing (e.g. when a 2nd node comes up
     it doesn't signal a file delete just because it doesn't have the file to start with).
@@ -44,14 +42,14 @@ def test_create_modify_delete(setup):
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
-    time.sleep(1)
+    time.sleep(latus.const.FILTER_TIME_OUT * 2)
 
     write_to_file(latus_folders[0], latus_file, 'abc')
 
     [wait_for_file(p) for p in latus_paths]
 
     # check we have the proper files
-    time.sleep(1)
+    time.sleep(latus.const.FILTER_TIME_OUT * 2)
     assert(os.path.exists(latus_paths[0]))
     assert(os.path.exists(latus_paths[1]))
 

@@ -1,7 +1,7 @@
 
 import os
-
 import logging
+
 import latus.logger
 import test_latus.tstutil
 
@@ -17,7 +17,7 @@ def print_all_levels(msg):
     latus.logger.log.debug('debug test_latus message %s' % msg)
 
 
-def test_logger(setup):
+def test_logger(session_setup, module_setup):
 
     latus.logger.init(get_logger_root())
 
