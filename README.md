@@ -15,7 +15,7 @@ database.
 
 I wanted to use cloud storage for my personal files, but I didn't like the idea of using
 proprietary closed source solutions.  I wanted something that I could view and modify, and was written 
-in a language I and others could readily understand.  So I wrote it in Python and made it Open Source.
+in a language I and others could readily understand.  So I wrote latus in Python and made it Open Source.
 
 # How does latus work? #
 
