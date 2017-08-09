@@ -7,7 +7,7 @@ latus is a personal cloud client written in Python.
 
 latus is provides synchronization of personal files across your computers.  It is similar in nature
 to popular offerings such as DropBox, Google Drive and Microsoft One Drive except that latus is Open Source and
-provides 'zero' knowledge encryption.   latus is written in Python and uses commodity cloud storage - 
+provides "zero knowledge" encryption.   latus is written in Python and uses commodity cloud storage - 
 specifically Amazon Web Services (AWS) - to store (encrypted) files to the cloud and for the file system 
 database.
 
