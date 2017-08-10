@@ -24,18 +24,20 @@ class TableBase:
         resource = aws.get_db_resource()
         client = aws.get_db_client()
         tables = client.list_tables()
+        logger.log.info('tables : %s' % str(tables))
         if self.table_name not in tables['TableNames']:
+            r = None
             try:
-                resource.create_table(TableName=self.table_name, KeySchema=self.key_schema,
-                                      AttributeDefinitions=self.attribute_definitions,
-                                      ProvisionedThroughput=self.provisioned_throughput)
+                r = resource.create_table(TableName=self.table_name, KeySchema=self.key_schema,
+                                          AttributeDefinitions=self.attribute_definitions,
+                                          ProvisionedThroughput=self.provisioned_throughput)
             except botocore.vendored.requests.exceptions.ConnectionError:
                 logger.log.warn('create_table "%s" : connection error' % self.table_name)
             except botocore.exceptions.ClientError as e:
                 logger.log.warn(str(e))
             else:
                 created_ok = True
-            logger.log.debug('create_table : %s : %s' % (self.table_name, created_ok))
+            logger.log.debug('create_table : %s : %s' % (self.table_name, str(r)))
         else:
             logger.log.debug('%s already exists' % self.table_name)
         return created_ok

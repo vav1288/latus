@@ -85,7 +85,11 @@ class NodeDB:
                                              sqlalchemy.Column('size', sqlalchemy.Integer),
                                              sqlalchemy.Column('file_hash', sqlalchemy.String, index=True),
                                              sqlalchemy.Column('mtime', sqlalchemy.DateTime),
+
+                                             # AWS: True = pending write to the cloud
+                                             # csp: True = action has been taken
                                              sqlalchemy.Column('pending', sqlalchemy.Boolean),
+
                                              sqlalchemy.Column('timestamp', sqlalchemy.DateTime),
                                              )
 
@@ -477,15 +481,13 @@ class NodeDB:
             conn.close()
         return any_pending_flag
 
-    def clear_pending(self, info):
+    def update_pending(self, info, pending_flag=False):
         with self.db_engine.connect() as conn:
             result = None
-            stmt = self.change_table.update().values(pending=False).where(self.change_table.c.file_path == info['file_path'] and
-                                                                          self.change_table.c.mivui == info['mivui'])
+            stmt = self.change_table.update().values(pending=pending_flag).where(self.change_table.c.file_path == info['file_path'] and self.change_table.c.mivui == info['mivui'])
             result = self._execute_with_retry(conn, stmt, 'clear_pending')
             if not result:
                 latus.logger.log.error('clear_pending of %s %s failed' % (info['path'], info['mivui']))
-
             conn.close()
 
     def get_folder_preferences_from_path(self, partial_path):

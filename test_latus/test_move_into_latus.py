@@ -21,6 +21,7 @@ def get_move_into_latus_root():
 def test_move_into_latus(session_setup, module_setup):
 
     nodes = ['a', 'b']
+    sleep_time = latus.const.FILTER_TIME_OUT * 2
 
     log_folder = os.path.join(get_move_into_latus_root(), 'log')
     logger_init(log_folder)
@@ -39,18 +40,28 @@ def test_move_into_latus(session_setup, module_setup):
     file_name = 'a.txt'
     src = write_to_file(os.path.join('temp', test_name), file_name, test_name)
 
+    time.sleep(sleep_time)
+
     # start the sync
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
+    time.sleep(sleep_time)
+
     shutil.move(src, os.path.join(local_folders[0], file_name))
+
+    time.sleep(sleep_time)
 
     # wait for files to sync
     for local_folder in local_folders:
         wait_for_file(os.path.join(local_folder, file_name))
 
+    time.sleep(sleep_time)
+
     # stop the syncs
     [sync.request_exit() for sync in syncs]
+
+    time.sleep(sleep_time)
 
     # check the results
     for local_folder in local_folders:

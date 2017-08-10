@@ -8,7 +8,7 @@ import latus.util
 import latus.logger
 import latus.crypto
 import latus.preferences
-from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncProc
+from test_latus.tstutil import get_latus_folder, get_file_name, wait_for_file, logger_init, get_data_root, write_preferences, write_to_file, SyncProc, set_cloud_config, get_cloud_config
 
 
 def get_simple_root():
@@ -21,7 +21,7 @@ def test_simple(session_setup, module_setup):
     """
 
     nodes = ['a', 'b']
-    sleep_time = 2
+    sleep_time = latus.const.FILTER_TIME_OUT * 2
 
     log_folder = os.path.join(get_simple_root(), 'log')
     logger_init(log_folder)

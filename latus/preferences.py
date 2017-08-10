@@ -41,7 +41,8 @@ class Preferences:
         self._key_string = 'cryptokey'
         self._most_recent_key_folder_string = 'keyfolder'
         self._cloud_root_string = 'cloudroot'
-        self._cloud_mode_string = 'cloudmode'
+        self._cloud_mode_string = 'cloudmode'  # e.g. 'aws', 'csp'
+        self._use_aws_local_string = 'awslocal'
         self._latus_folder_string = 'latusfolder'
         self._check_new_version_string = 'checknewversion'
         self._upload_usage_string = 'uploadusage'
@@ -115,13 +116,19 @@ class Preferences:
         self._pref_set(self._verbose_string, str(value))
 
     def get_verbose(self):
-        return bool(self._pref_get(self._verbose_string))
+        return eval(self._pref_get(self._verbose_string))
 
     def set_cloud_mode(self, mode):
         self._pref_set(self._cloud_mode_string, mode)
 
     def get_cloud_mode(self):
         return self._pref_get(self._cloud_mode_string)
+
+    def set_aws_local(self, value):
+        self._pref_set(self._use_aws_local_string, value)
+
+    def get_aws_local(self):
+        return eval(self._pref_get(self._use_aws_local_string))
 
     def set_check_new_version(self, check_flag):
         self._pref_set(self._check_new_version_string, check_flag)

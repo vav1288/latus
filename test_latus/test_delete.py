@@ -21,6 +21,7 @@ def test_delete(session_setup, module_setup):
     """
 
     nodes = ['a', 'b']
+    sleep_time = latus.const.FILTER_TIME_OUT * 2
 
     log_folder = os.path.join(get_delete_root(), 'log')
     logger_init(log_folder)
@@ -45,13 +46,13 @@ def test_delete(session_setup, module_setup):
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
-    time.sleep(10)
+    time.sleep(sleep_time)
 
     # wait for the file to get sync'd
     wait_for_file(path_node_1)
     wait_for_file(path_node_0)
 
-    time.sleep(2)
+    time.sleep(sleep_time)
 
     assert(os.path.exists(path_node_0))
     assert(os.path.exists(path_node_1))
@@ -59,7 +60,7 @@ def test_delete(session_setup, module_setup):
     # now remove the file on the node that it was sync'd to
     os.remove(path_node_1)
 
-    time.sleep(latus.const.FILTER_TIME_OUT * 2)
+    time.sleep(sleep_time)
 
     # wait for the file to be removed from both nodes
     wait_for_file(path_node_0, False)
@@ -68,7 +69,7 @@ def test_delete(session_setup, module_setup):
     # ok .. should be done ... exit
     [sync.request_exit() for sync in syncs]
 
-    time.sleep(5)
+    time.sleep(sleep_time)
 
     # make sure it worked OK
     assert(not os.path.exists(path_node_0))

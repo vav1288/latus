@@ -1,4 +1,6 @@
 
+# todo: put these in a better place
+
 
 def get_local_aws_db_url():
 
@@ -18,5 +20,3 @@ def get_local_aws_s3_url():
 
     print(url)
     return url
-
-

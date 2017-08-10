@@ -56,13 +56,15 @@ class EventFilter(threading.Thread):
         super().__init__()
         self.filter_list = []
         self.exit_event = threading.Event()
+        self.filter_sample_period = 0.25
+        self.filter_timeout_count = int(round(float(FILTER_TIME_OUT)/self.filter_sample_period))
 
     def run(self):
         while not self.exit_event.is_set():
             events_to_remove = []
             for filter_event in self.filter_list:
                 if filter_event['countdown'] > 0:
-                    logger.log.info('counting down filter event %s' % str(filter_event))
+                    logger.log.debug('counting down filter event %s' % str(filter_event))
                     filter_event['countdown'] -= 1
                 else:
                     events_to_remove.append(filter_event)
@@ -71,12 +73,12 @@ class EventFilter(threading.Thread):
                     logger.log.warn('seen_count is not 1 : %s' % (event_to_remove))
                 self.filter_list.remove(event_to_remove)
                 logger.log.info('removing filter event %s' % str(event_to_remove))
-            self.exit_event.wait(1)
+            self.exit_event.wait(self.filter_sample_period)
 
     # todo: need src and dest for moves - right now we just use the dest
     def add_event(self, path, event_type):
-        event = {'path': path, 'countdown': FILTER_TIME_OUT, 'seen_count': 0, 'event_type': event_type}
-        logger.log.info('filter add_event : %s' % str(event))
+        event = {'path': path, 'countdown': self.filter_timeout_count, 'seen_count': 0, 'event_type': event_type}
+        logger.log.info('filter add_event : %s (timeout_count=%d, sample_period=%.2f)' % (str(event), self.filter_timeout_count, self.filter_sample_period))
         self.filter_list.append(event)
 
     def test_event(self, watchdog_event):
@@ -111,7 +113,7 @@ class Sync(watchdog.events.FileSystemEventHandler):
     """
     Local sync folder
     """
-    def __init__(self, app_data_folder, aws_local):
+    def __init__(self, app_data_folder):
 
         # there is no "super().__init__()"
 
@@ -126,8 +128,7 @@ class Sync(watchdog.events.FileSystemEventHandler):
         else:
             self.usage_uploader = None
 
-        self.aws_local = aws_local
-        if aws_local:
+        if pref.get_aws_local():
             latus.aws.local_testing()
         latus.aws.init()
         self.s3 = latus.aws.LatusS3()
@@ -145,14 +146,14 @@ class Sync(watchdog.events.FileSystemEventHandler):
 
         self.fs_scan(DetectionSource.initial_scan)
 
-        if aws_local:
-            poll_period = 5
+        if pref.get_aws_local():
+            poll_period = latus.const.FILTER_TIME_OUT * 2
         else:
             poll_period = 10*60
         self.aws_db_sync = AWSDBSync(self.app_data_folder, poll_period)
 
     def get_type(self):
-        return 'local'
+        return 'local_aws_sync'
 
     def get_node_id(self):
         pref = latus.preferences.Preferences(self.app_data_folder)
@@ -244,8 +245,13 @@ class Sync(watchdog.events.FileSystemEventHandler):
         if most_recent_hash != file_hash:
             partial_path = os.path.relpath(full_path, pref.get_latus_folder())
             event_table = TableEvents()
+            # update locally first (pending True)
+            node_db.update(mivui, this_node_id, int(filesystem_event_type), int(detection_source), partial_path, src_path, size, file_hash, mtime, True)
+            # then AWS
             aws_success = event_table.add(mivui, this_node_id, int(filesystem_event_type), int(detection_source), latus_path, src_path, size, file_hash, mtime)
-            node_db.update(mivui, this_node_id, int(filesystem_event_type), int(detection_source), partial_path, src_path, size, file_hash, mtime, not aws_success)
+            # now set the pending flag based on aws_success
+            if aws_success:
+                node_db.update_pending({'miviu': mivui, 'file_path': partial_path})
 
     def _fill_cache(self, full_path):
         pref = latus.preferences.Preferences(self.app_data_folder)
@@ -336,6 +342,8 @@ class AWSDBSync(threading.Thread):
         self.poll_period_sec = poll_period_sec
         self.s3 = latus.aws.LatusS3()
 
+        latus.logger.log.info('poll period : %f sec' % float(self.poll_period_sec))
+
     def run(self):
         pref = preferences.Preferences(self.app_data_folder)
         while not self.exit_event.is_set():
@@ -345,6 +353,7 @@ class AWSDBSync(threading.Thread):
 
     def _pull_down_new_db_entries(self, pref):
 
+        logger.log.info('pulling down new entries')
         this_node_id = pref.get_node_id()
         node_db = nodedb.NodeDB(self.app_data_folder, this_node_id)
         event_table_resource = self.event_table.get_table_resource()
@@ -380,6 +389,7 @@ class AWSDBSync(threading.Thread):
             self._one_sync(path, pref)
 
     def _one_sync(self, path, pref):
+        logger.log.info('start _one_sync')
         this_node_id = pref.get_node_id()
         node_db = nodedb.NodeDB(self.app_data_folder, this_node_id)
         most_recent = node_db.get_most_recent_entry_for_path(path)
@@ -416,12 +426,11 @@ class AWSDBSync(threading.Thread):
                             mtime = (most_recent['mtime'] - datetime.datetime.utcfromtimestamp(0)).total_seconds()
                             os.utime(local_file_path, (mtime, mtime))
                         else:
-                            # todo: upgrade to fatal once we quit seeing this error in some tests
-                            latus.logger.log.error('Latus Key Error : %s : %s' % (cache_fernet_file, local_file_path))
+                            # todo: something more elegant than just calling fatal here
+                            latus.logger.log.fatal('Unable to decrypt (possible latus key error) : %s : %s' % (cache_fernet_file, local_file_path))
                     else:
                         cloud_file = os.path.join(pref.get_cache_folder(), most_recent['file_hash'] + UNENCRYPTED_EXTENSION)
                         shutil.copy2(cloud_file, local_file_path)
-                    node_db.clear_pending(most_recent)
                 else:
                     latus.logger.log.warning('%s : hash is None for %s' % (pref.get_node_id(), local_file_path))
         elif event == LatusFileSystemEvent.deleted:
@@ -433,7 +442,6 @@ class AWSDBSync(threading.Thread):
             except OSError:
                 # fallback
                 latus.logger.log.warn('%s : send2trash failed on %s' % (pref.get_node_id(), local_file_path))
-            node_db.clear_pending(most_recent)
         elif event == LatusFileSystemEvent.moved:
             # todo: make a specific 'moved' filter event - this one just uses the dest
             latus_path = pref.get_latus_folder()
@@ -455,7 +463,6 @@ class AWSDBSync(threading.Thread):
                     latus.logger.log.error('%s : attempting move but %s already exists' % (pref.get_node_id(), dest_abs_path))
                 if not os.path.exists(src_abs_path):
                     latus.logger.log.error('%s : attempting move but %s not found' % (pref.get_node_id(), src_abs_path))
-            node_db.clear_pending(most_recent)
         else:
             latus.logger.log.error('not yet implemented : %s' % str(event))
 
@@ -470,7 +477,7 @@ if __name__ == '__main__':
     # This is particularly useful for testing.
     args = latus.util.arg_parse()
     latus.logger.init_from_args(args)
-    sync = Sync(args.appdatafolder, True)  # todo: make aws_local a command line option
+    sync = Sync(args.appdatafolder)
     sync.start()
     input('hit enter to exit')
     if sync.request_exit():

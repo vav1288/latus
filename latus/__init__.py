@@ -1,7 +1,7 @@
 
 # PEP 440 compliant
 # adhere to http://semver.org/
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 
 
 # required for OSNAP

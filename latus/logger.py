@@ -96,7 +96,7 @@ def init_from_args(args):
         set_console_log_level(logging.INFO)
         set_file_log_level(logging.DEBUG)
     if args.test:
-        set_console_log_level(logging.WARN)
+        set_console_log_level(logging.INFO)
         set_file_log_level(logging.DEBUG)
 
 

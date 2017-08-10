@@ -51,6 +51,8 @@ def do_sequential(start_first):
         path = os.path.join(folder, latus_file)
         latus_paths.append(path)
 
+    time.sleep(latus.const.FILTER_TIME_OUT * 2)
+
     if start_first:
         syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
         [sync.start() for sync in syncs]
@@ -60,6 +62,8 @@ def do_sequential(start_first):
 
     write_to_file(latus_folders[0], latus_file, nodes[0])
 
+    time.sleep(latus.const.FILTER_TIME_OUT * 2)
+
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     syncs[0].start()  # just start 'a'
 
@@ -67,12 +71,18 @@ def do_sequential(start_first):
     assert(os.path.exists(latus_paths[0]))
     assert(not os.path.exists(latus_paths[1]))
 
+    time.sleep(latus.const.FILTER_TIME_OUT * 2)
+
     syncs[1].start()  # start 'b'
 
     wait_for_file(latus_paths[1])
 
+    time.sleep(latus.const.FILTER_TIME_OUT * 2)
+
     # stop the syncs
     [sync.request_exit() for sync in syncs]
+
+    time.sleep(latus.const.FILTER_TIME_OUT * 2)
 
     # check the results
     assert(os.path.exists(latus_paths[0]))

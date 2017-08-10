@@ -23,7 +23,8 @@ ASYMMETRIC_KEY_LENGTH = 1024  # Asymmetric key size (in bits)
 
 TIME_OUT = 10  # seconds
 
-FILTER_TIME_OUT = 3  # seconds
+# todo: this should probably be longer in a 'production' release
+FILTER_TIME_OUT = 2.0  # seconds
 
 FOLDER_PREFERENCE_DEFAULTS = (True, False, False)  # encrypt, shared, cloud
 

@@ -11,8 +11,10 @@ from latus.aws.table_node import TableNodes
 # default is regular AWS
 dynamo_db_endpoint_url = None
 s3_endpoint_url = None
+sns_endpoint_url = None
+sqs_endpoint_url = None
 
-latus_storage_bucket_name = '%s_%s' % (latus.__application_name__, 'storage')
+latus_storage_bucket_name = '%s%s' % (latus.__application_name__, 'storage')
 
 
 def init():
@@ -22,7 +24,7 @@ def init():
 
 
 def local_testing():
-    global dynamo_db_endpoint_url, s3_endpoint_url
+    global dynamo_db_endpoint_url, s3_endpoint_url, sns_endpoint_url, sqs_endpoint_url
     if logger.log:
         logger.log.info('setting AWS for local testing')
 
@@ -34,9 +36,17 @@ def local_testing():
     s3_localstack_port = "4572"
     s3_endpoint_url = "http://localhost:%s" % s3_localstack_port
 
+    sns_localstack_port = "4575"
+    sns_endpoint_url = "http://localhost:%s" % sns_localstack_port
+
+    sqs_localstack_port = "4576"
+    sqs_enpoint_url = "http://localhost:%s" % sqs_localstack_port
+
     if logger.log:
         logger.log.info('AWS dynamo_db_endpoint_url : "%s"' % dynamo_db_endpoint_url)
         logger.log.info('AWS s3_db_endpoint_url : "%s"' % s3_endpoint_url)
+        logger.log.info('AWS sns_endpoint_url : "%s"' % sns_endpoint_url)
+        logger.log.info('AWS sqs_enpoint_url : "%s"' % sqs_enpoint_url)
 
 
 def get_db_client():
@@ -53,6 +63,22 @@ def get_s3_client():
 
 def get_s3_resource():
     return boto3.resource('s3', endpoint_url=s3_endpoint_url)
+
+
+def get_sns_client():
+    return boto3.client('sns', endpoint_url=sns_endpoint_url)
+
+
+def get_sns_resource():
+    return boto3.resource('sns', endpoint_url=sns_endpoint_url)
+
+
+def get_sqs_client():
+    return boto3.client('sqs', endpoint_url=sqs_endpoint_url)
+
+
+def get_sqs_resource():
+    return boto3.resource('sqs', endpoint_url=sqs_endpoint_url)
 
 
 def get_all_tables():
@@ -72,7 +98,9 @@ class LatusS3:
         self.s3_resource = get_s3_resource()
 
         # create bucket (OK if it already exists - if it already exists S3 does nothing)
-        self.s3_client.create_bucket(Bucket=latus_storage_bucket_name)
+        # http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+        #self.s3_client.create_bucket(Bucket=latus_storage_bucket_name,
+        #                             CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
 
     def upload_file(self, file_path, hash):
         # upload file to S3 if it's not already there

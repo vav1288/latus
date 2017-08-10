@@ -385,7 +385,7 @@ class CloudSync(SyncBase):
                         else:
                             cloud_file = os.path.join(cloud_folders.cache, info['hash'] + UNENCRYPTED_EXTENSION)
                             shutil.copy2(cloud_file, local_file_path)
-                        this_node_db.clear_pending(info)
+                        this_node_db.update_pending(info)
                     else:
                         latus.logger.log.warning('%s : hash is None for %s' % (pref.get_node_id(), local_file_path))
             elif info['event'] == LatusFileSystemEvent.deleted:
@@ -397,7 +397,7 @@ class CloudSync(SyncBase):
                 except OSError:
                     # fallback
                     latus.logger.log.warn('%s : send2trash failed on %s' % (pref.get_node_id(), local_file_path))
-                this_node_db.clear_pending(info)
+                this_node_db.update_pending(info)
             elif info['event'] == LatusFileSystemEvent.moved:
                 # todo: make a specific 'moved' filter event - this one just uses the dest
                 latus_path = pref.get_latus_folder()
@@ -413,7 +413,7 @@ class CloudSync(SyncBase):
                         latus.logger.log.error('%s : attempting move but %s already exists' % (pref.get_node_id(), dest_abs_path))
                     if not os.path.exists(src_abs_path):
                         latus.logger.log.error('%s : attempting move but %s not found' % (pref.get_node_id(), src_abs_path))
-                this_node_db.clear_pending(info)
+                this_node_db.update_pending(info)
             else:
                 latus.logger.log.error('not yet implemented : %s' % str(info['event']))
 

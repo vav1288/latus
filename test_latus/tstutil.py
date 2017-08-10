@@ -6,6 +6,7 @@ import shutil
 import sys
 import subprocess
 import filecmp
+import json
 
 import latus.logger
 import latus.util
@@ -13,7 +14,28 @@ import latus.crypto
 import latus.preferences
 import latus.const
 
-import test_latus
+
+def get_data_root():
+    return os.path.abspath(os.path.join('test_latus', 'data'))
+
+AWS_LOCAL_CONFIG_FILE_PATH = os.path.join(get_data_root(), 'aws_local_config.json')
+
+
+def set_cloud_config(cloud_mode, aws_local=True):
+    os.makedirs(os.path.dirname(AWS_LOCAL_CONFIG_FILE_PATH), exist_ok=True)
+    with open(AWS_LOCAL_CONFIG_FILE_PATH, 'w') as f:
+        json.dump({'cloud_mode': cloud_mode, 'aws_local': bool(aws_local)}, f, indent=4)
+
+
+def get_cloud_config():
+    info = {'cloud_mode': 'aws', 'aws_local': False}  # defaults
+    if os.path.exists(AWS_LOCAL_CONFIG_FILE_PATH):
+        with open(AWS_LOCAL_CONFIG_FILE_PATH) as f:
+            try:
+                info = json.load(f)
+            except json.decoder.JSONDecodeError:
+                pass
+    return info
 
 
 def logger_init(log_folder):
@@ -25,10 +47,6 @@ def logger_init(log_folder):
     latus.logger.set_console_log_level(logging.INFO)
     latus.logger.set_file_log_level(logging.DEBUG)
     latus.logger.log.info('logger_init')
-
-
-def get_data_root():
-    return os.path.abspath(os.path.join('test_latus', 'data'))
 
 
 def get_python_exe():
@@ -47,16 +65,16 @@ def wait_for_file(file_path, to_exist=True, message_prefix=''):
     time_out_count_down = int(round(time_out_sec / sleep_time_sec))
 
     if to_exist:
-        message = ''
+        exist_polarity = ''
     else:
-        message = ' not'
+        exist_polarity = ' not'
 
     while (to_exist ^ os.path.exists(file_path)) and time_out_count_down > 0:
-        latus.logger.log.info('%s waiting for %s to %s exist' % (message_prefix, file_path, message))
+        latus.logger.log.info('%s waiting for %s to%s exist' % (message_prefix, file_path, exist_polarity))
         time.sleep(sleep_time_sec)
         time_out_count_down -= 1
     if time_out_count_down <= 0:
-        latus.logger.log.warn('%s timeout waiting for %s to%s exist' % (message_prefix, file_path, message))
+        latus.logger.log.warn('%s timeout waiting for %s to%s exist' % (message_prefix, file_path, exist_polarity))
         return False
     return True
 
@@ -75,6 +93,9 @@ def write_preferences(node_id, data_root, latus_key):
     pref.set_cloud_root(os.path.join(data_root, 'cloud'))
     pref.set_latus_folder(get_latus_folder(data_root, node_id))
     pref.set_crypto_key(latus_key)
+    cloud_config = get_cloud_config()
+    pref.set_cloud_mode(cloud_config['cloud_mode'])
+    pref.set_aws_local(cloud_config['aws_local'])
     return app_data_folder
 
 
@@ -104,12 +125,8 @@ class SyncProc:
             exec_path = os.path.join('venv', 'bin', 'coverage') + ' run -a'
         else:
             exec_path = sys.executable
-        if test_latus.cloud_storage_mode == 'csp':
-            sync_py_path = os.path.join('latus', 'csp', 'sync_csp.py')
-        elif test_latus.cloud_storage_mode == 'aws':
-            sync_py_path = os.path.join('latus', 'aws', 'sync_aws.py')
-        else:
-            raise ValueError
+
+        sync_py_path = os.path.join('latus', 'sync.py')
         # may want to put in -v
         self.cmd = '%s %s -a %s -t -l %s' % (exec_path, sync_py_path, self.app_data_folder, log_folder)
 

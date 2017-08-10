@@ -7,6 +7,7 @@ import logging
 import pytest
 
 import latus.logger
+import test_latus.tstutil
 
 os.environ["PYTHONPATH"] = '.'
 
@@ -22,6 +23,8 @@ def control_key_handler(signal, frame):
 def run_pytest_until_error():
     global g_keep_running
 
+    test_latus.tstutil.set_cloud_config('aws', True)
+
     g_keep_running = True
 
     latus.logger.init(os.path.join('temp', __file__), 'log')
@@ -32,10 +35,10 @@ def run_pytest_until_error():
     signal.signal(signal.SIGTSTP, control_key_handler)
 
     count = {'fail': 0, 'pass': 0}
-    # target = os.path.join('test_latus', 'test_z_gui_preferences.py::test_gui_preferences')
+    # target = os.path.join('test_latus', 'test_delete.py::test_delete')
     while g_keep_running:
         if len(sys.argv) > 1:
-            r = pytest.main([sys.argv[1]])  # command line '-s' to see output
+            r = pytest.main(sys.argv[1])  # command line '-s' to see output
         else:
             r = pytest.main()
         if r != 0:
@@ -45,6 +48,8 @@ def run_pytest_until_error():
         else:
             count['pass'] += 1
         print('test iteration : %s : return=%s' % (str(count), str(r)))
+
+    test_latus.tstutil.set_cloud_config('aws', False)
 
 
 def main():
