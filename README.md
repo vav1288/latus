@@ -19,15 +19,14 @@ in a language I and others could readily understand.  So I wrote latus in Python
 
 # How does latus work? #
 
-Latus runs in the background as a client on your computers, usually as a desktop 'task bar' application.
-It monitors the 'latus' directory and any file updates are (optionally) encrypted and sent to the cloud.
-Currently AWS is used for the cloud storage itself.  File system changes are stored in AWS DynamoDB, 
-an economical (even free for low usage) database.  AWS S3 is used as a file store of the (optionally) 
-encrypted files.  Locally, each computer (known as a 'node') maintains a SQLite database that is 
-essentially a cache of the cloud database.
+latus runs in the background on your computers, usually as a 'task bar' application.  When file system 
+changes occur in the `latus` directory, files in the `latus` directory are automatically synchronized across 
+all of the your computers.
 
-When file system changes occur, the contents of the 'latus' directory are automatically synchronized across 
-all of the latus nodes.
+latus monitors the 'latus' directory and any file updates are (optionally) encrypted and sent to the cloud.  
+Currently AWS is used for the cloud storage itself.  File system changes are stored in AWS DynamoDB, an economical 
+(even free for low usage) database.  AWS S3 is used as a file store of the (optionally) encrypted files.  Locally, 
+each computer (known as a 'node') maintains a SQLite database that is essentially a cache of the cloud database.
 
 # Target Audience #
 
