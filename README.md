@@ -24,9 +24,10 @@ changes occur in the `latus` directory, files in the `latus` directory are autom
 all of the your computers.
 
 latus monitors the 'latus' directory and any file updates are (optionally) encrypted and sent to the cloud.  
-Currently AWS is used for the cloud storage itself.  File system changes are stored in AWS DynamoDB, an economical 
-(even free for low usage) database.  AWS S3 is used as a file store of the (optionally) encrypted files.  Locally, 
-each computer (known as a 'node') maintains a SQLite database that is essentially a cache of the cloud database.
+Currently AWS is used for the cloud storage itself.  File system events (e.g. create, delete, move, modify) 
+are stored in AWS DynamoDB, an economical (even free for low usage) database.  AWS S3 is used as a file store 
+of the (optionally) encrypted files.  Locally, each computer (known as a 'node') maintains a SQLite database 
+that is essentially a cache of the cloud database.
 
 # Target Audience #
 
