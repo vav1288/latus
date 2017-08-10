@@ -29,6 +29,11 @@ essentially a cache of the cloud database.
 When file system changes occur, the contents of the 'latus' directory are automatically synchronized across 
 all of the latus nodes.
 
+# Target Audience #
+
+Software Developers, specifically Python developers that have at least a basic understanding of cloud providers 
+such as AWS.
+
 # Requirements #
 
 As mentioned, latus uses AWS, so an AWS account is required.  latus uses AWS offerings that, as long 
