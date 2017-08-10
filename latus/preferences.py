@@ -43,6 +43,7 @@ class Preferences:
         self._cloud_root_string = 'cloudroot'
         self._cloud_mode_string = 'cloudmode'  # e.g. 'aws', 'csp'
         self._use_aws_local_string = 'awslocal'
+        self._aws_location_string = 'awslocation'  # e.g. 'us-west-1'
         self._latus_folder_string = 'latusfolder'
         self._check_new_version_string = 'checknewversion'
         self._upload_usage_string = 'uploadusage'
@@ -112,6 +113,12 @@ class Preferences:
     def get_latus_folder(self):
         return self._pref_get(self._latus_folder_string)
 
+    def set_aws_location(self, aws_location):
+        self._pref_set(self._aws_location_string, aws_location)
+
+    def get_aws_location(self):
+        return self._pref_get(self._aws_location_string)
+
     def set_verbose(self, value):
         self._pref_set(self._verbose_string, str(value))
 
@@ -128,7 +135,11 @@ class Preferences:
         self._pref_set(self._use_aws_local_string, value)
 
     def get_aws_local(self):
-        return eval(self._pref_get(self._use_aws_local_string))
+        # True if using AWS localstack
+        value = self._pref_get(self._use_aws_local_string)
+        if value:
+            value = eval(value)
+        return value
 
     def set_check_new_version(self, check_flag):
         self._pref_set(self._check_new_version_string, check_flag)

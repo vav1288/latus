@@ -14,8 +14,9 @@ import latus.gui_wizard
 import latus.key_management
 import latus.logger
 import latus.preferences
-import latus.csp.sync_csp
 import latus.util
+import latus.aws.sync_aws
+import latus.csp.sync_csp
 import latus.gui_advanced
 
 
@@ -53,7 +54,7 @@ class About(QDialog):
 
 class LatusSystemTrayIcon(QSystemTrayIcon):
 
-    def __init__(self, app, latus_appdata_folder, awslocal, parent=None):
+    def __init__(self, app, latus_appdata_folder, parent=None):
         latus.logger.log.info('starting LatusSystemTrayIcon')
         self.app = app
 
@@ -61,8 +62,6 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
         icon = QIcon(QPixmap(':active.png'))
         super().__init__(icon, parent)
         self.latus_appdata_folder = latus_appdata_folder
-
-        self.awslocal = awslocal
 
         menu = QMenu(parent)
         menu.addAction("Open Latus Folder").triggered.connect(self.open_latus_folder)
@@ -90,8 +89,16 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
             self.open_latus_folder()
 
     def start_latus(self):
-        self.sync = latus.csp.sync_csp.Sync(self.latus_appdata_folder, self.awslocal)
-        self.sync.start()
+        pref = latus.preferences.Preferences(self.latus_appdata_folder)
+        self.sync = None
+        if pref.get_cloud_mode() == 'aws':
+            self.sync = latus.aws.sync_aws.Sync(self.latus_appdata_folder)
+        elif pref.get_cloud_mode() == 'csp':
+            self.sync = latus.csp.sync_csp.Sync(self.latus_appdata_folder)
+        if self.sync:
+            self.sync.start()
+        else:
+            raise NotImplementedError
 
     def show(self):
         QSystemTrayIcon.show(self)
@@ -153,13 +160,14 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
 
     def exit(self):
         latus.logger.log.info('exit')
-        self.hide()
+        # self.hide()
         if self.sync:
+            latus.logger.log.info('requesting exit')
             self.sync.request_exit()
         QApplication.exit()  # todo: what should this parameter be?
 
 
-def main(latus_appdata_folder, awslocal):
+def main(latus_appdata_folder):
 
     latus.logger.log.info("latus_app_data: %s" % latus_appdata_folder)
 
@@ -179,7 +187,7 @@ def main(latus_appdata_folder, awslocal):
 
     if pref and pref.folders_are_set():
         app.setQuitOnLastWindowClosed(False)  # so popup dialogs don't close the system tray icon
-        system_tray = LatusSystemTrayIcon(app, latus_appdata_folder, awslocal)
+        system_tray = LatusSystemTrayIcon(app, latus_appdata_folder)
         system_tray.start_latus()
         system_tray.show()
         app.exec_()

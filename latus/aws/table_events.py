@@ -13,11 +13,6 @@ class TableEvents(table_base.TableBase):
         self.attribute_definitions = [{'AttributeName': 'originator', 'AttributeType': 'S'},
                                       {'AttributeName': 'mivui', 'AttributeType': 'N'}]
 
-        #self.key_schema = [{'AttributeName': 'mivui', 'KeyType': 'HASH'},  # Partition key
-        #                   {'AttributeName': 'latus_path', 'KeyType': 'RANGE'}]  # Sort key
-        #self.attribute_definitions = [{'AttributeName': 'mivui', 'AttributeType': 'N'},
-        #                              {'AttributeName': 'latus_path', 'AttributeType': 'S'}]
-
     def add(self, mivui, originator, event_type, detection, file_path, src_path, size, file_hash, mtime):
         if mtime:
             mtime = mtime.isoformat()

@@ -131,7 +131,7 @@ class Sync(watchdog.events.FileSystemEventHandler):
         if pref.get_aws_local():
             latus.aws.local_testing()
         latus.aws.init()
-        self.s3 = latus.aws.LatusS3()
+        self.s3 = latus.aws.LatusS3(pref)
 
         self.table_node = TableNodes()
         self.table_node.register(pref.get_node_id())
@@ -340,7 +340,8 @@ class AWSDBSync(threading.Thread):
         self.event_table = TableEvents()
         self.node_table = TableNodes()
         self.poll_period_sec = poll_period_sec
-        self.s3 = latus.aws.LatusS3()
+        pref = preferences.Preferences(self.app_data_folder)
+        self.s3 = latus.aws.LatusS3(pref)
 
         latus.logger.log.info('poll period : %f sec' % float(self.poll_period_sec))
 

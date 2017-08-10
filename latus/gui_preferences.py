@@ -33,10 +33,24 @@ class LineUI:
             self.select_button.addButton(button_text, QDialogButtonBox.AcceptRole)
             self.select_button.accepted.connect(method)
 
-    def layout(self, grid, column):
-        grid.addWidget(self.label, column, 0)
-        grid.addWidget(self.line, column, 1)
-        grid.addWidget(self.select_button, column, 2)
+    def layout(self, grid, row):
+        grid.addWidget(self.label, row, 0)
+        grid.addWidget(self.line, row, 1)
+        grid.addWidget(self.select_button, row, 2)
+
+    def get(self):
+        return self.line.text()
+
+
+class LineText:
+    def __init__(self, name, value):
+        self.label = QLabel(name + ':')
+        self.line = QLineEdit(value)
+        self.line.setMinimumWidth(600)  # swag
+
+    def layout(self, grid, row):
+        grid.addWidget(self.label, row, 0)
+        grid.addWidget(self.line, row, 1)
 
     def get(self):
         return self.line.text()
@@ -99,6 +113,12 @@ class PreferencesDialog(QDialog):
         cloud_preferences_layout.addWidget(radio_button_csp)
         cloud_preferences_group_box.setLayout(cloud_preferences_layout)
 
+        aws_preferences_group_box = QGroupBox("AWS Preferences")
+        aws_preferences_layout = QGridLayout()
+        self.aws_location = LineText("AWS location (e.g. e.g. 'us-west-1')", self.pref.get_aws_location())
+        self.aws_location.layout(aws_preferences_layout, 0)
+        aws_preferences_group_box.setLayout(aws_preferences_layout)
+
         folder_locations_group_box = QGroupBox("Folder Locations")
         folder_locations_layout = QGridLayout()
         self.latus_folder = LineUI('Latus Folder', self.pref.get_latus_folder(), self.new_folder)
@@ -136,6 +156,7 @@ class PreferencesDialog(QDialog):
 
         overall_layout.addWidget(folder_preferences_group_box)
         overall_layout.addWidget(cloud_preferences_group_box)
+        overall_layout.addWidget(aws_preferences_group_box)
         overall_layout.addWidget(folder_locations_group_box)
         overall_layout.addWidget(support_preferences_group_box)
 
@@ -175,6 +196,9 @@ class PreferencesDialog(QDialog):
         if self.pref.get_cloud_mode() != self.cloud_mode:
             latus.logger.log.info('new cloud mode "%s"' % self.cloud_mode)
             self.pref.set_cloud_mode(self.cloud_mode)
+        if self.pref.get_aws_location() != self.aws_location.get():
+            latus.logger.log.info('new aws location "%s"' % self.aws_location.get())
+            self.pref.set_aws_location(self.aws_location.get())
         self.close()
 
     def cancel(self):

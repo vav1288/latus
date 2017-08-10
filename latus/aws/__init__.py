@@ -2,6 +2,7 @@
 import os
 
 import boto3
+from botocore.client import ClientError
 
 import latus
 from latus import logger
@@ -93,14 +94,21 @@ def drop_all():
 
 
 class LatusS3:
-    def __init__(self):
+    def __init__(self, pref):
         self.s3_client = get_s3_client()
         self.s3_resource = get_s3_resource()
+        self.is_local = pref.get_aws_local()
 
         # create bucket (OK if it already exists - if it already exists S3 does nothing)
         # http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
-        #self.s3_client.create_bucket(Bucket=latus_storage_bucket_name,
-        #                             CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+        if self.is_local:
+            self.s3_client.create_bucket(Bucket=latus_storage_bucket_name)
+        else:
+            try:
+                self.s3_client.create_bucket(Bucket=latus_storage_bucket_name,
+                                            CreateBucketConfiguration={'LocationConstraint': pref.get_aws_location()})
+            except ClientError as e:
+                logger.log.warn(str(e))
 
     def upload_file(self, file_path, hash):
         # upload file to S3 if it's not already there

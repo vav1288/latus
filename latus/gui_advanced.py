@@ -42,9 +42,11 @@ class AdvancedDialog(QDialog):
         self.cloud_folders = None
         if app_data_folder:
             self.preferences = latus.preferences.Preferences(app_data_folder)
-            cloud_root = self.preferences.get_cloud_root()
-            if cloud_root:
-                self.cloud_folders = latus.folders.CloudFolders(cloud_root)
+            if False:
+                # deprecated ...
+                cloud_root = self.preferences.get_cloud_root()
+                if cloud_root:
+                    self.cloud_folders = latus.folders.CloudFolders(cloud_root)
 
     def clear_cache(self):
         self._do_stop()

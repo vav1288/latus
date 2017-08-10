@@ -18,7 +18,7 @@ import latus.const
 def get_data_root():
     return os.path.abspath(os.path.join('test_latus', 'data'))
 
-AWS_LOCAL_CONFIG_FILE_PATH = os.path.join(get_data_root(), 'aws_local_config.json')
+AWS_LOCAL_CONFIG_FILE_PATH = os.path.join('temp', 'aws_local_config.json')
 
 
 def set_cloud_config(cloud_mode, aws_local=True):
@@ -96,6 +96,7 @@ def write_preferences(node_id, data_root, latus_key):
     cloud_config = get_cloud_config()
     pref.set_cloud_mode(cloud_config['cloud_mode'])
     pref.set_aws_local(cloud_config['aws_local'])
+    pref.set_aws_location('us-west-1')
     return app_data_folder
 
 

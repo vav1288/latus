@@ -18,9 +18,6 @@
 """
 
 import sys
-import argparse
-import appdirs
-import logging
 
 import latus
 import latus.gui
@@ -48,7 +45,7 @@ def main():
         sys.exit(old_version_message)
 
     try:
-        latus.gui.main(args.appdatafolder, args.awslocal)
+        latus.gui.main(args.appdatafolder)
     except Exception as e:
         latus.logger.log.exception('catch-all exception handler')
 
