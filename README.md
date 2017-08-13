@@ -1,6 +1,10 @@
 
 ## latus ##
 
+# Latest News #
+
+[latus PyBay Presentation (Aug 2017)](https://s3.amazonaws.com/lat.us/latus_abel_pybay_2017.pdf)
+
 # Introduction #
 
 latus is a personal cloud client written in Python.
