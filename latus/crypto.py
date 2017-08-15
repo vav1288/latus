@@ -24,6 +24,7 @@ class Crypto:
         if os.path.exists(in_path):
             with open(in_path, 'rb') as in_file:
                 try:
+                    # todo: don't use __fernet directly - look into latest cryptography API
                     token = self.__fernet.encrypt(in_file.read())
                 except cryptography.exceptions.UnsupportedAlgorithm as e:
                     latus.logger.log.error('%s : %s %s' % (e, in_path, out_path))
