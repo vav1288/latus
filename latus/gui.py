@@ -162,8 +162,9 @@ class LatusSystemTrayIcon(QSystemTrayIcon):
         latus.logger.log.info('exit')
         # self.hide()
         if self.sync:
-            latus.logger.log.info('requesting exit')
             self.sync.request_exit()
+        else:
+            latus.logger.log.warn('trying to exit a non-existent sync')
         QApplication.exit()  # todo: what should this parameter be?
 
 
