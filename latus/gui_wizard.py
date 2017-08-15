@@ -31,27 +31,31 @@ class GUIWizard(QWizard):
     def __init__(self, app_data_folder, cloud_root_override=None):
         super().__init__()
         self.app_data_folder = app_data_folder
+        pref = latus.preferences.Preferences(self.app_data_folder, True)
         latus.logger.log.info('starting GUIWizard : app_data_folder : %s' % app_data_folder)
 
-        self.folder_wizard = latus.wizard.FolderWizard()
-
         self.addPage(IntroPage())
-        self.addPage(CloudRootPage(self.folder_wizard, cloud_root_override))
-        self.addPage(LatusFolderPage())
+        if pref.get_cloud_mode() == 'csp':
+            self.folder_wizard = latus.wizard.FolderWizard()
+            self.addPage(CloudRootPage(self.folder_wizard, cloud_root_override))
+        self.addPage(LatusFolderPage(app_data_folder))
         self.addPage(LatusKeyPage(app_data_folder))
         self.addPage(ConclusionPage())
         self.setWindowTitle("Latus Setup")
         self.show()
 
     def done(self, result):
-        self.folder_wizard.request_exit()
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        if pref.get_cloud_mode() == 'csp':
+            self.folder_wizard.request_exit()
         super().done(result)
 
     def accept(self):
         latus.logger.log.info('accept')
-        pref = latus.preferences.Preferences(self.app_data_folder, True)
-        pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
+        pref = latus.preferences.Preferences(self.app_data_folder)
         pref.set_latus_folder(self.field(LATUS_FOLDER_FIELD_STRING))
+        if pref.get_cloud_mode() == 'csp':
+            pref.set_cloud_root(self.field(CLOUD_FOLDER_FIELD_STRING))
 
         temp = self.field(LATUS_KEY_FIELD_STRING)
 
@@ -64,11 +68,10 @@ class GUIWizard(QWizard):
         pref.set_upload_logs(False)
         pref.set_upload_usage(False)
 
-        folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
-        node = nodedb.NodeDB(folders.nodes, pref.get_node_id(), write_flag=True)
-        node.set_all(pref.get_node_id())
-
-        # todo: write node info out to 'state' that this node is on Latus, even if it hasn't sync'd yet
+        if pref.get_cloud_mode() == 'csp':
+            folders = latus.csp.cloud_folders.CloudFolders(pref.get_cloud_root())
+            node = nodedb.NodeDB(folders.nodes, pref.get_node_id(), write_flag=True)
+            node.set_all(pref.get_node_id())
 
         super().accept()
 
@@ -79,9 +82,7 @@ class IntroPage(QWizardPage):
         super().__init__()
         self.setTitle("Latus Setup Wizard")
 
-        label = QLabel("This will guide you through the Latus setup process.  Please make sure you are "
-                                 "connected to the internet and your cloud storage application (such as Dropbox, "
-                                 "Microsoft's OneDrive, Google Drive, etc.) is running.")
+        label = QLabel("This will guide you through the Latus setup process.")
         label.setWordWrap(True)
 
         layout = QVBoxLayout()
@@ -209,8 +210,9 @@ class CloudRootPage(QWizardPage):
 
 
 class LatusFolderPage(QWizardPage):
-    def __init__(self):
+    def __init__(self, app_data_folder):
         super().__init__()
+        self.app_data_folder = app_data_folder
         self.latus_folder_box = QLineEdit()
         self.latus_folder_box.setReadOnly(True)
 
@@ -226,8 +228,12 @@ class LatusFolderPage(QWizardPage):
         self.registerField(LATUS_FOLDER_FIELD_STRING, self.latus_folder_box)
 
     def initializePage(self):
-        latus_folder = latus.wizard.latus_folder_from_cloud_folder(self.field(CLOUD_FOLDER_FIELD_STRING))
-        self.latus_folder_box.setText(latus_folder)
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        if pref.get_cloud_mode() == 'csp':
+            latus_folder = latus.wizard.latus_folder_from_cloud_folder(self.field(CLOUD_FOLDER_FIELD_STRING))
+            self.latus_folder_box.setText(latus_folder)
+        else:
+            self.latus_folder_box.setText(os.path.abspath(os.path.expanduser('~/' + latus.__application_name__)))
 
 
 class LatusKeyPage(QWizardPage):
@@ -245,13 +251,18 @@ class LatusKeyPage(QWizardPage):
 
         first_time = True
 
-        cloud_folder_field = self.field(CLOUD_FOLDER_FIELD_STRING)
-        cloud_folders = latus.csp.cloud_folders.CloudFolders(cloud_folder_field)
-        existing_nodes = nodedb.get_existing_nodes(cloud_folders.nodes)
-        latus.logger.log.info('existing nodes: %s' % str(existing_nodes))
-        if len(existing_nodes) > 0:
+        pref = latus.preferences.Preferences(self.app_data_folder)
+        if pref.get_cloud_mode() == 'csp':
+            cloud_folder_field = self.field(CLOUD_FOLDER_FIELD_STRING)
+            cloud_folders = latus.csp.cloud_folders.CloudFolders(cloud_folder_field)
+            existing_nodes = nodedb.get_existing_nodes(cloud_folders.nodes)
+            latus.logger.log.info('existing nodes: %s' % str(existing_nodes))
+            if len(existing_nodes) > 0:
+                first_time = False
+            latus.logger.log.info('first_time: %s' % first_time)
+        elif pref.get_crypto_key() is not None and pref.get_latus_folder() is not None:
+            # could probably do more checks, but these are probably sufficient
             first_time = False
-        latus.logger.log.info('first_time: %s' % first_time)
 
         first_time_intro = QLabel()
         first_time_intro.setWordWrap(True)
@@ -389,4 +400,5 @@ if __name__ == '__main__':
 
     print_pref(my_pref_b)
 
+    # todo: this does not exit gracefully ... figure out why ...
     sys.exit()

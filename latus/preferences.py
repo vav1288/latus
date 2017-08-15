@@ -15,7 +15,7 @@ import latus.logger
 # DB schema version is the latus version where this schema was first introduced.  If your DB schema is earlier
 # than (i.e. "less than") this, you need to do a drop all tables and start over.  This value is MANUALLY copied from
 # latus.__version__ when a new and incompatible schema is introduced.
-__db_version__ = '0.0.2'
+__db_version__ = '0.0.3'
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -67,18 +67,20 @@ class Preferences:
             Base.metadata.create_all(self.__db_engine)
         self.__Session = sqlalchemy.orm.sessionmaker(bind=self.__db_engine)
         if init:
-            latus.logger.log.info('creating preferences DB version %s' % __db_version__)
-            self._pref_set(self._version_key_string, __db_version__)
+            self._pref_set(self._version_key_string, __db_version__, False)
+            # defaults
+            self._pref_set(self._cloud_mode_string, 'aws', False)
 
-    def _pref_set(self, key, value):
-        latus.logger.log.debug('pref_set : %s to %s' % (str(key), str(value)))
+    def _pref_set(self, key, value, overwrite=True):
+        latus.logger.log.debug('pref_set : %s to %s (overwrite=%s)' % (str(key), str(value), str(overwrite)))
         session = self.__Session()
         pref_table = PreferencesTable(key=key, value=value, datetime=datetime.datetime.utcnow())
         q = session.query(PreferencesTable).filter_by(key=key).first()
-        if q:
+        if q and overwrite:
             session.delete(q)
-        session.add(pref_table)
-        session.commit()
+        if q is None or overwrite:
+            session.add(pref_table)
+            session.commit()
         session.close()
 
     def _pref_get(self, key):
