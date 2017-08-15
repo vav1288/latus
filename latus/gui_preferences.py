@@ -63,8 +63,9 @@ class PreferencesDialog(QDialog):
 
         # todo: self.pref and preferences are redundant - get rid of one
         self.pref = latus.preferences.Preferences(latus_appdata_folder)
-        cloud_folders = latus.csp.cloud_folders.CloudFolders(self.pref.get_cloud_root())
-        self.node_db = nodedb.NodeDB(cloud_folders.nodes, self.pref.get_node_id())
+        if self.pref.get_cloud_mode() == 'csp':
+            cloud_folders = latus.csp.cloud_folders.CloudFolders(self.pref.get_cloud_root())
+            self.node_db = nodedb.NodeDB(cloud_folders.nodes, self.pref.get_node_id())
 
         super().__init__()
         self.blank = QLabel('')
@@ -122,7 +123,8 @@ class PreferencesDialog(QDialog):
         folder_locations_group_box = QGroupBox("Folder Locations")
         folder_locations_layout = QGridLayout()
         self.latus_folder = LineUI('Latus Folder', self.pref.get_latus_folder(), self.new_folder)
-        self.cloud_folder = LineUI('Cloud Folder', self.pref.get_cloud_root(), self.new_folder)
+        if self.pref.get_cloud_mode() == 'csp':
+            self.cloud_folder = LineUI('Cloud Folder', self.pref.get_cloud_root(), self.new_folder)
 
         support_preferences_group_box = QGroupBox("Support Preferences")
         support_preferences_layout = QGridLayout()
@@ -151,11 +153,13 @@ class PreferencesDialog(QDialog):
         cancel_buttonBox.rejected.connect(self.cancel)
 
         self.latus_folder.layout(folder_locations_layout, row)
-        self.cloud_folder.layout(folder_locations_layout, row + 1)
+        if self.pref.get_cloud_mode() == 'csp':
+            self.cloud_folder.layout(folder_locations_layout, row + 1)
         folder_locations_group_box.setLayout(folder_locations_layout)
 
         overall_layout.addWidget(folder_preferences_group_box)
-        overall_layout.addWidget(cloud_preferences_group_box)
+        if self.pref.get_cloud_mode() == 'csp':
+            overall_layout.addWidget(cloud_preferences_group_box)
         overall_layout.addWidget(aws_preferences_group_box)
         overall_layout.addWidget(folder_locations_group_box)
         overall_layout.addWidget(support_preferences_group_box)
@@ -180,9 +184,10 @@ class PreferencesDialog(QDialog):
         if self.pref.get_latus_folder() != self.latus_folder.get():
             latus.logger.log.info('new latus folder location "%s"' % self.latus_folder.get())
             self.pref.set_latus_folder(self.latus_folder.get())
-        if self.pref.get_cloud_root() != self.cloud_folder.get():
-            latus.logger.log.info('new cloud folder location "%s"' % self.cloud_folder.get())
-            self.pref.set_cloud_root(self.cloud_folder.get())
+        if self.pref.get_cloud_mode() == 'csp':
+            if self.pref.get_cloud_root() != self.cloud_folder.get():
+                latus.logger.log.info('new cloud folder location "%s"' % self.cloud_folder.get())
+                self.pref.set_cloud_root(self.cloud_folder.get())
         for folder in self.folders:
             cb_states = tuple([cb.isChecked() for cb in self.check_boxes[folder]])
             current_preferences = self.node_db.get_folder_preferences_from_folder(folder)

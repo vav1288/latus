@@ -104,11 +104,15 @@ class LatusS3:
         if self.is_local:
             self.s3_client.create_bucket(Bucket=latus_storage_bucket_name)
         else:
-            try:
-                self.s3_client.create_bucket(Bucket=latus_storage_bucket_name,
-                                            CreateBucketConfiguration={'LocationConstraint': pref.get_aws_location()})
-            except ClientError as e:
-                logger.log.warn(str(e))
+            aws_location = pref.get_aws_location()
+            if aws_location:
+                try:
+                    self.s3_client.create_bucket(Bucket=latus_storage_bucket_name,
+                                                 CreateBucketConfiguration={'LocationConstraint': aws_location})
+                except ClientError as e:
+                    logger.log.warn(str(e))
+            else:
+                logger.log.warn('no AWS location set')
 
     def upload_file(self, file_path, hash):
         # upload file to S3 if it's not already there

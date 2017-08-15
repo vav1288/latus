@@ -183,7 +183,10 @@ class Preferences:
         return self.__db_path
 
     def folders_are_set(self):
-        return self.get_cloud_root() is not None and self.get_latus_folder() is not None
+        if self.get_cloud_mode() == 'csp':
+            return self.get_cloud_root() is not None and self.get_latus_folder() is not None
+        else:
+            return self.get_latus_folder() is not None
 
     def get_app_data_folder(self):
         return self.app_data_folder
