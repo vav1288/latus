@@ -161,6 +161,7 @@ def arg_parse():
     parser.add_argument('-l', '--logfolder', default=appdirs.user_log_dir(latus.__application_name__, latus.__author__),
                         help="log folder")
     parser.add_argument('-v', '--verbose', action='store_true', help="more verbose logging")
+    parser.add_argument('--localstack', action='store_true', help="use AWS localstack (mainly for testing)")
     parser.add_argument('-t', '--test', action='store_true', help="test mode")
     args = parser.parse_args()
     return args
