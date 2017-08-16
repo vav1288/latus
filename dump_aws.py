@@ -1,6 +1,14 @@
 
-from latus.aws.util.dump import dump_all
-from latus.aws.util.urls import get_local_aws_db_url, get_local_aws_s3_url
+from latus import logger
+
+import latus.aws.util.aws_util
+
+
+def main():
+    logger.init('temp')
+    # todo: make local vs. real AWS a parameter, but for now it's localstack
+    print('dumping localstack')
+    latus.aws.util.aws_util.dump_all(True)
 
 if __name__ == '__main__':
-    dump_all(get_local_aws_db_url(), get_local_aws_s3_url())
+    main()
