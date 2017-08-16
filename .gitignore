@@ -41,3 +41,4 @@ install_osnap.*
 installers/
 .coverage
 keys/
+icons/Thumbs.db
