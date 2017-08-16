@@ -14,7 +14,6 @@ import latus.crypto
 import latus.preferences
 import latus.const
 
-
 def get_data_root():
     return os.path.abspath(os.path.join('test_latus', 'data'))
 
@@ -130,6 +129,9 @@ class SyncProc:
         sync_py_path = os.path.join('latus', 'sync.py')
         # may want to put in -v
         self.cmd = '%s %s -a %s -t -l %s' % (exec_path, sync_py_path, self.app_data_folder, log_folder)
+        cc = get_cloud_config()
+        if cc['aws_local']:
+            self.cmd += ' --localstack'
 
     def start(self):
         latus.logger.log.info(self.cmd)
