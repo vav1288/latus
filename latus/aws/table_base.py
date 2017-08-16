@@ -3,26 +3,24 @@ import boto3
 import botocore.vendored.requests.exceptions
 import botocore.exceptions
 
-from latus import aws
 from latus import logger
+import latus.aws.aws_access
 
 
 class TableBase:
-    def __init__(self, table_name):
+    def __init__(self, table_name, aws_local):
         self.table_name = table_name
         self.provisioned_throughput = {'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5}
 
         # derived classes provide these
         self.key_schema = None
         self.attribute_definitions = None
-
-        logger.log.info('dynamo_db_endpoint_url : %s' % aws.dynamo_db_endpoint_url)
-        logger.log.info('s3_endpoint_url : %s' % aws.s3_endpoint_url)
+        self.access_aws = latus.aws.aws_access.AWSAccess(aws_local)
 
     def create_table(self):
         created_ok = False
-        resource = aws.get_db_resource()
-        client = aws.get_db_client()
+        resource = self.access_aws.get_db_resource()
+        client = self.access_aws.get_db_client()
         tables = client.list_tables()
         logger.log.info('tables : %s' % str(tables))
         if self.table_name not in tables['TableNames']:
@@ -58,7 +56,7 @@ class TableBase:
         return delete_ok
 
     def get_table_resource(self):
-        resource = aws.get_db_resource()
+        resource = self.access_aws.get_db_resource()
         return resource.Table(self.table_name)
 
     def put(self, item):
@@ -77,7 +75,7 @@ class TableBase:
         return put_ok
 
     def get_all(self):
-        client = aws.get_db_client()
+        client = self.access_aws.get_db_client()
         paginator = client.get_paginator('scan')
         items = []
         try:

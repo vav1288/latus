@@ -12,9 +12,9 @@ import watchdog.events
 
 import maya
 
-import boto3
 from boto3.dynamodb import conditions
 
+import latus.aws.aws_access
 import latus.const
 import latus.aws
 from latus.aws.table_events import TableEvents
@@ -113,11 +113,12 @@ class Sync(watchdog.events.FileSystemEventHandler):
     """
     Local sync folder
     """
-    def __init__(self, app_data_folder):
+    def __init__(self, app_data_folder, aws_local):
 
         # there is no "super().__init__()"
 
         self.app_data_folder = app_data_folder
+        self.aws_local = aws_local
         pref = preferences.Preferences(app_data_folder)
 
         self.active_timer = activity_timer.ActivityTimer(3, pref.get_node_id() + '_' + self.get_type())
@@ -128,12 +129,9 @@ class Sync(watchdog.events.FileSystemEventHandler):
         else:
             self.usage_uploader = None
 
-        if pref.get_aws_local():
-            latus.aws.local_testing()
-        latus.aws.init()
-        self.s3 = latus.aws.LatusS3(pref)
+        self.s3 = latus.aws.aws_access.LatusS3(pref, aws_local)
 
-        self.table_node = TableNodes()
+        self.table_node = TableNodes(aws_local)
         self.table_node.register(pref.get_node_id())
 
         self.latus_folder = pref.get_latus_folder()
@@ -150,7 +148,7 @@ class Sync(watchdog.events.FileSystemEventHandler):
             poll_period = latus.const.FILTER_TIME_OUT * 2
         else:
             poll_period = 10*60
-        self.aws_db_sync = AWSDBSync(self.app_data_folder, poll_period)
+        self.aws_db_sync = AWSDBSync(self.app_data_folder, poll_period, aws_local)
 
     def get_type(self):
         return 'local_aws_sync'
@@ -244,7 +242,7 @@ class Sync(watchdog.events.FileSystemEventHandler):
         most_recent_hash = node_db.get_most_recent_hash(latus_path)
         if most_recent_hash != file_hash:
             partial_path = os.path.relpath(full_path, pref.get_latus_folder())
-            event_table = TableEvents()
+            event_table = TableEvents(self.aws_local)
             # update locally first (pending True)
             node_db.update(mivui, this_node_id, int(filesystem_event_type), int(detection_source), partial_path, src_path, size, file_hash, mtime, True)
             # then AWS
@@ -333,15 +331,17 @@ class AWSDBSync(threading.Thread):
     Fill in any local event DB entries from AWS that we don't have in our local DB.  This can happen either by polling
     or as the result of an AWS SQS message that another node has published.
     """
-    def __init__(self, app_data_folder, poll_period_sec):
+    def __init__(self, app_data_folder, poll_period_sec, aws_local):
         super().__init__()
         self.app_data_folder = app_data_folder
+        self.aws_local = aws_local
+
         self.exit_event = threading.Event()
-        self.event_table = TableEvents()
-        self.node_table = TableNodes()
+        self.event_table = TableEvents(self.aws_local)
+        self.node_table = TableNodes(self.aws_local)
         self.poll_period_sec = poll_period_sec
         pref = preferences.Preferences(self.app_data_folder)
-        self.s3 = latus.aws.LatusS3(pref)
+        self.s3 = latus.aws.aws_access.LatusS3(pref, aws_local)
 
         latus.logger.log.info('poll period : %f sec' % float(self.poll_period_sec))
 
@@ -478,7 +478,7 @@ if __name__ == '__main__':
     # This is particularly useful for testing.
     args = latus.util.arg_parse()
     latus.logger.init_from_args(args)
-    sync = Sync(args.appdatafolder)
+    sync = Sync(args.appdatafolder, args.localstack)
     sync.start()
     input('hit enter to exit')
     if sync.request_exit():

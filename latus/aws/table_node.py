@@ -10,8 +10,8 @@ from latus import logger
 
 
 class TableNodes(table_base.TableBase):
-    def __init__(self):
-        super().__init__('nodes')
+    def __init__(self, aws_local):
+        super().__init__('nodes', aws_local)
         self.key_schema = [{'AttributeName': 'nodeid', 'KeyType': 'HASH'}]
         self.attribute_definitions = [{'AttributeName': 'nodeid', 'AttributeType': 'S'}]
 

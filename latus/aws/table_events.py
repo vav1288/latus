@@ -5,8 +5,8 @@ from latus import logger
 
 
 class TableEvents(table_base.TableBase):
-    def __init__(self):
-        super().__init__('fsevents')
+    def __init__(self, aws_local):
+        super().__init__('fsevents', aws_local)
 
         self.key_schema = [{'AttributeName': 'originator', 'KeyType': 'HASH'},  # Partition key
                            {'AttributeName': 'mivui', 'KeyType': 'RANGE'}]  # Sort key
