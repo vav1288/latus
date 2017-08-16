@@ -13,7 +13,7 @@ def main():
     latus.logger.init_from_args(args)
     pref = latus.preferences.Preferences(args.appdatafolder)
     if pref.get_cloud_mode() == 'aws':
-        sync = latus.aws.sync_aws.Sync(args.appdatafolder)
+        sync = latus.aws.sync_aws.Sync(args.appdatafolder, args.localstack)
     elif pref.get_cloud_mode() == 'csp':
         sync = latus.csp.sync_csp.Sync(args.appdatafolder)
     else:
