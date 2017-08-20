@@ -17,7 +17,7 @@ import latus.const
 def get_data_root():
     return os.path.abspath(os.path.join('test_latus', 'data'))
 
-AWS_LOCAL_CONFIG_FILE_PATH = os.path.join('temp', 'aws_local_config.json')
+AWS_LOCAL_CONFIG_FILE_PATH = os.path.join('tst_config', 'aws_local_config.json')
 
 
 def set_cloud_config(cloud_mode, aws_local=True):
@@ -27,7 +27,7 @@ def set_cloud_config(cloud_mode, aws_local=True):
 
 
 def get_cloud_config():
-    info = {'cloud_mode': 'aws', 'aws_local': False}  # defaults
+    info = {'cloud_mode': 'aws', 'aws_local': True}  # defaults
     if os.path.exists(AWS_LOCAL_CONFIG_FILE_PATH):
         with open(AWS_LOCAL_CONFIG_FILE_PATH) as f:
             try:
@@ -59,22 +59,23 @@ def get_python_exe():
 # waits for a file to exist
 # set "to_exist" parameter to False if you want to wait until the file does NOT exist
 def wait_for_file(file_path, to_exist=True, message_prefix=''):
-    time_out_sec = 30
-    sleep_time_sec = 3
-    time_out_count_down = int(round(time_out_sec / sleep_time_sec))
+    time_out_sec = 30.0  # if we time out it's basically an error
+    sleep_time_sec = 1.0
+    time_out_count = 0.0
 
     if to_exist:
         exist_polarity = ''
     else:
         exist_polarity = ' not'
 
-    while (to_exist ^ os.path.exists(file_path)) and time_out_count_down > 0:
-        latus.logger.log.info('%s waiting for %s to%s exist' % (message_prefix, file_path, exist_polarity))
+    while (to_exist ^ os.path.exists(file_path)) and time_out_count <= time_out_sec:
+        latus.logger.log.info('wait_for_file : %.3f : %s waiting for %s to%s exist' % (time_out_count, message_prefix, file_path, exist_polarity))
         time.sleep(sleep_time_sec)
-        time_out_count_down -= 1
-    if time_out_count_down <= 0:
-        latus.logger.log.warn('%s timeout waiting for %s to%s exist' % (message_prefix, file_path, exist_polarity))
+        time_out_count += sleep_time_sec
+    if time_out_count >= time_out_sec:
+        latus.logger.log.warn('wait_for_file : %s timeout waiting for %s to%s exist' % (message_prefix, file_path, exist_polarity))
         return False
+    latus.logger.log.info('wait_for_file : %.3f : %s does%s exist' % (time_out_count, file_path, message_prefix))
     return True
 
 
@@ -94,7 +95,6 @@ def write_preferences(node_id, data_root, latus_key):
     pref.set_crypto_key(latus_key)
     cloud_config = get_cloud_config()
     pref.set_cloud_mode(cloud_config['cloud_mode'])
-    pref.set_aws_local(cloud_config['aws_local'])
     pref.set_aws_location('us-west-1')
     return app_data_folder
 
@@ -120,6 +120,7 @@ class SyncProc:
     def __init__(self, app_data_folder, log_folder):
         self.app_data_folder = app_data_folder
         self.sync_process = None
+        self.node_id = latus.preferences.Preferences(app_data_folder).get_node_id()
 
         if latus.util.is_mac():
             exec_path = os.path.join('venv', 'bin', 'coverage') + ' run -a'
@@ -135,15 +136,18 @@ class SyncProc:
 
     def start(self):
         latus.logger.log.info(self.cmd)
-        self.sync_process = subprocess.Popen(self.cmd, shell=True, stdin=subprocess.PIPE)
+        self.sync_process = subprocess.Popen(self.cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-    def request_exit(self, time_out=latus.const.TIME_OUT):
-        self.sync_process.communicate(b'\n\r')  # emulate 'enter' key to shutdown (one of these should do it)
-        self.sync_process.wait(time_out)  # if there are no issues shutdown should take just a few seconds
-        rc = self.sync_process.poll()
-        if rc != 0:
-            latus.logger.log.error('%s returned %s' % (self.cmd, str(rc)))
-        return rc
+    def request_exit(self):
+        latus.logger.log.info('SyncProc : sending node "%s" shutdown key sequence' % self.node_id)
+        # communicate only returns when the process is finished
+        # emulate 'enter' key (preface with some random characters) to shutdown (one of these \r or \r should do it)
+        return_string = self.sync_process.communicate(b'jca_exit\n\r')
+        latus.logger.log.info('SyncProc : process returned - got back "%s"' % str(return_string))
+        return return_string
+
+    def get_node_id(self):
+        return self.node_id
 
 
 def clean(path=get_data_root(), delete_coverage=True):

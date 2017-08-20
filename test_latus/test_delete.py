@@ -21,11 +21,9 @@ def test_delete(session_setup, module_setup):
     """
 
     nodes = ['a', 'b']
-    sleep_time = latus.const.FILTER_TIME_OUT * 2
+    sleep_time = latus.const.FILTER_TIME_OUT * 2.5
 
     log_folder = os.path.join(get_delete_root(), 'log')
-    logger_init(log_folder)
-    latus.logger.set_console_log_level(logging.DEBUG)
 
     key = latus.crypto.new_key()
     app_data_folders = [write_preferences(node, get_delete_root(), key) for node in nodes]
@@ -44,7 +42,9 @@ def test_delete(session_setup, module_setup):
 
     # start the sync
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
-    [sync.start() for sync in syncs]
+    for sync in syncs:
+        sync.start()
+        time.sleep(0.5)
 
     time.sleep(sleep_time)
 

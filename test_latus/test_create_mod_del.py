@@ -23,6 +23,8 @@ def test_create_modify_delete(session_setup, module_setup):
 
     nodes = ['a', 'b']
 
+    sleep_time = latus.const.FILTER_TIME_OUT * 2.0
+
     log_folder = os.path.join(get_create_modify_delete_root(), 'log')
     logger_init(log_folder)
     latus.logger.set_console_log_level(logging.INFO)
@@ -42,14 +44,14 @@ def test_create_modify_delete(session_setup, module_setup):
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
-    time.sleep(latus.const.FILTER_TIME_OUT * 2)
+    time.sleep(sleep_time)
 
     write_to_file(latus_folders[0], latus_file, 'abc')
 
     [wait_for_file(p) for p in latus_paths]
 
     # check we have the proper files
-    time.sleep(latus.const.FILTER_TIME_OUT * 2)
+    time.sleep(sleep_time)
     assert(os.path.exists(latus_paths[0]))
     assert(os.path.exists(latus_paths[1]))
 
@@ -58,17 +60,22 @@ def test_create_modify_delete(session_setup, module_setup):
 
     # wait for append to propagate
     while os.path.getsize(os.path.join(latus_folders[1], latus_file)) != 6:
-        time.sleep(1)
+        time.sleep(sleep_time)
 
     assert(os.path.getsize(os.path.join(latus_folders[1], latus_file)) == 6)
 
+    wait_for_file(latus_paths[0])
     os.remove(latus_paths[0])
 
     # wait for delete to propagate
     [wait_for_file(p, False) for p in latus_paths]
 
+    time.sleep(sleep_time)
+
     # stop the syncs
     [sync.request_exit() for sync in syncs]
+
+    time.sleep(sleep_time)
 
     # check the results
     assert(not os.path.exists(latus_paths[0]))

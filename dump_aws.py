@@ -6,6 +6,7 @@ import latus.aws.util.aws_util
 
 def main():
     logger.init('temp')
+    logger.set_verbose()
     # todo: make local vs. real AWS a parameter, but for now it's localstack
     print('dumping localstack')
     latus.aws.util.aws_util.dump_all(True)

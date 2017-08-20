@@ -1,6 +1,5 @@
 
 import os
-import logging
 import appdirs
 
 from PyQt5.QtWidgets import QLabel, QDialogButtonBox, QVBoxLayout, QLineEdit, QGridLayout, QFileDialog, QDialog, \
@@ -10,13 +9,14 @@ from PyQt5.Qt import QApplication
 
 import latus
 import latus.logger
-import latus.csp.sync_csp
 import latus.preferences
 import latus.util
 import latus.crypto
-import latus.gui_wizard
 from latus import nodedb
 import latus.csp.cloud_folders
+
+# todo: this is weird - if this is allowed to import, we can not exit this app
+# import latus.csp.sync_csp
 
 
 class LineUI:
@@ -181,6 +181,7 @@ class PreferencesDialog(QDialog):
             self.cloud_mode = 'csp'
 
     def ok(self):
+        latus.logger.log.info('ok')
         if self.pref.get_latus_folder() != self.latus_folder.get():
             latus.logger.log.info('new latus folder location "%s"' % self.latus_folder.get())
             self.pref.set_latus_folder(self.latus_folder.get())
@@ -207,6 +208,7 @@ class PreferencesDialog(QDialog):
         self.close()
 
     def cancel(self):
+        latus.logger.log.info('cancel')
         self.close()
 
     def new_folder(self):
@@ -214,13 +216,11 @@ class PreferencesDialog(QDialog):
         return f
 
 
-def main():
+def main(app_data_folder=appdirs.user_config_dir(latus.__application_name__, latus.__author__)):
     import sys
 
     app = QApplication(sys.argv)
-
-    app_data_folder = appdirs.user_config_dir(latus.__application_name__, latus.__author__)
-    preferences = latus.preferences.Preferences(app_data_folder)
+    preferences = latus.preferences.Preferences(app_data_folder, init=True)
     if not preferences.get_node_id():
         preferences.set_node_id(latus.util.new_node_id())
     preferences_dialog = PreferencesDialog(app_data_folder)
@@ -228,6 +228,7 @@ def main():
     preferences_dialog.exec_()
 
 if __name__ == '__main__':
-    latus.logger.init(None)
-    latus.logger.set_console_log_level(logging.INFO)
-    main()
+    temp_dir = os.path.join('temp', 'gui_preferences')
+    latus.logger.init(os.path.join(temp_dir, 'log'), delete_existing_log_files=True, use_latus_server=False, use_sentry=False)
+    latus.logger.set_verbose()
+    main(os.path.join(temp_dir, 'preferences'))

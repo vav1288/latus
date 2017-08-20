@@ -133,16 +133,6 @@ class Preferences:
     def get_cloud_mode(self):
         return self._pref_get(self._cloud_mode_string)
 
-    def set_aws_local(self, value):
-        self._pref_set(self._use_aws_local_string, value)
-
-    def get_aws_local(self):
-        # True if using AWS localstack
-        value = self._pref_get(self._use_aws_local_string)
-        if value:
-            value = eval(value)
-        return value
-
     def set_check_new_version(self, check_flag):
         self._pref_set(self._check_new_version_string, check_flag)
 

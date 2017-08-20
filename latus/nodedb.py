@@ -143,7 +143,7 @@ class NodeDB:
         self.set_heartbeat()
         self.set_folder_preferences('', latus.const.FOLDER_PREFERENCE_DEFAULTS[0], latus.const.FOLDER_PREFERENCE_DEFAULTS[1], latus.const.FOLDER_PREFERENCE_DEFAULTS[2])  # latus root defaults
 
-    def update(self, mivui, originator, event_type, detection, file_path, src_path, size, file_hash, mtime, pending):
+    def insert(self, mivui, originator, event_type, detection, file_path, src_path, size, file_hash, mtime, pending):
         file_path = norm_latus_path(file_path)
         src_path = norm_latus_path(src_path)
         conn = self.db_engine.connect()
@@ -167,8 +167,8 @@ class NodeDB:
             latus.logger.log.warn('mivui %d already found - not updating' % mivui)
         conn.close()
 
-    def update_info(self, info, pending):
-        self.update(info['mivui'], info['originator'], info['event_type'], info['detection'], info['file_path'], info['src_path'],
+    def insert_info(self, info, pending):
+        self.insert(info['mivui'], info['originator'], info['event_type'], info['detection'], info['file_path'], info['src_path'],
                     info['size'], info['file_hash'], info['mtime'], pending)
 
     def db_row_to_info(self, row):
@@ -557,7 +557,7 @@ def sync_dbs(cloud_node_folder, source_node_id, destination_node_id):
     for source_info in source_infos:
         dest_info = destination_node_db.get_info_from_path_and_mivui(source_info['path'], source_info['mivui'])
         if dest_info is None:
-            destination_node_db.update_info(source_info, True)  # mark as pending
+            destination_node_db.insert_info(source_info, True)  # mark as pending
 
 
 def norm_latus_path(path):

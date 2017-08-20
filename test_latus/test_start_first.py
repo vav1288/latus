@@ -19,6 +19,8 @@ def test_start_first(session_setup, module_setup):
 
     nodes = ['a', 'b']
 
+    sleep_time = latus.const.FILTER_TIME_OUT * 2.0
+
     log_folder = os.path.join(get_start_first_root(), 'log')
     logger_init(log_folder)
     latus.logger.set_console_log_level(logging.INFO)
@@ -31,7 +33,7 @@ def test_start_first(session_setup, module_setup):
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
     [sync.start() for sync in syncs]
 
-    time.sleep(2)
+    time.sleep(sleep_time)
 
     # get list of folders and files, and write to them
     local_folders = []
@@ -43,14 +45,20 @@ def test_start_first(session_setup, module_setup):
         file_names.append(file_name)
         write_to_file(latus_folder, file_name, node)
 
+    time.sleep(sleep_time)
+
     # wait for files to sync
     b_to_a = os.path.join(local_folders[0], file_names[1])
     wait_for_file(b_to_a)
     a_to_b = os.path.join(local_folders[1], file_names[0])
     wait_for_file(a_to_b)
 
+    time.sleep(sleep_time)
+
     # stop the syncs
     [sync.request_exit() for sync in syncs]
+
+    time.sleep(sleep_time)
 
     # check the results
     assert(os.path.exists(b_to_a))

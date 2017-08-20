@@ -150,8 +150,11 @@ def get_latus_folders(pref):
     :return: a sorted list of preferences folders
     """
     latus_folder = pref.get_latus_folder()
-    files_and_dirs = [os.path.join(latus_folder, p) for p in sorted(os.listdir(latus_folder))]
-    return list(filter(None, [p if os.path.isdir(p) else None for p in files_and_dirs]))
+    if latus_folder:
+        files_and_dirs = [os.path.join(latus_folder, p) for p in sorted(os.listdir(latus_folder))]
+        return list(filter(None, [p if os.path.isdir(p) else None for p in files_and_dirs]))
+    else:
+        return []
 
 
 def arg_parse():

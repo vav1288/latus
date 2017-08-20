@@ -42,3 +42,4 @@ installers/
 .coverage
 keys/
 icons/Thumbs.db
+tst_config/

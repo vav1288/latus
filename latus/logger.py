@@ -7,6 +7,7 @@ import logging.handlers
 import subprocess
 import shutil
 import copy
+import time
 
 import requests
 
@@ -16,7 +17,6 @@ from raven.handlers.logging import SentryHandler
 import keys.sentry
 import latus
 import latus.util
-import latus.gui
 import latus.messagedialog
 import latus.preferences
 
@@ -33,6 +33,7 @@ g_sh = None  # Sentry handler
 g_appdata_folder = None
 g_base_log_file_path = None  # 'base' since the file rotator can create files based on this file name
 g_sentry_client = None
+g_start_time = None
 
 
 class LatusFormatter(logging.Formatter):
@@ -40,13 +41,18 @@ class LatusFormatter(logging.Formatter):
         """
         adds in the node_id, if available
         """
-        global g_appdata_folder
+        global g_appdata_folder, g_start_time
+        s = '{:12.6f}'.format(time.time() - g_start_time) + ' : ' + super().format(record)
         if latus.preferences.preferences_db_exists(g_appdata_folder):
             pref = latus.preferences.Preferences(g_appdata_folder)
             node_id = pref.get_node_id()
             if node_id:
-                return node_id + ' : ' + super().format(record)
-        return super().format(record)
+                s = node_id + ' : ' + s
+            else:
+                s = '    ' + s  # lines up if node_id is 1 char
+        else:
+            s = '.   ' + s  # lines up if node_id is 1 char
+        return s
 
 g_formatter = LatusFormatter('%(asctime)s - %(name)s - %(filename)s - %(lineno)s - %(funcName)s - %(levelname)s - %(message)s')
 
@@ -100,7 +106,8 @@ def init_from_args(args):
         set_file_log_level(logging.DEBUG)
 
 
-def init(log_folder=None, delete_existing_log_files=False, backup_count=3, node_id=None):
+def init(log_folder=None, delete_existing_log_files=False, backup_count=3, node_id=None, use_latus_server=True,
+         use_sentry=True):
     """
 
     :param log_folder: folder where the log file will be written (None to take the default)
@@ -111,7 +118,9 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3, node_
     :param node_id: node_id
     :return: the log folder to be used
     """
-    global g_fh, g_ch, g_dh, log, g_base_log_file_path, g_appdata_folder
+    global g_fh, g_ch, g_dh, log, g_base_log_file_path, g_appdata_folder, g_start_time
+
+    g_start_time = time.time()
 
     if not log_folder:
         log_folder = appdirs.user_log_dir(latus.__application_name__, latus.__author__)
@@ -119,7 +128,8 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3, node_
     logger_name = LOGGER_NAME_BASE
     log = logging.getLogger(logger_name)
 
-    add_sentry_handler(node_id)
+    if use_sentry:
+        add_sentry_handler(node_id)
     
     log.setLevel(logging.DEBUG)
 
@@ -145,12 +155,14 @@ def init(log_folder=None, delete_existing_log_files=False, backup_count=3, node_
     g_ch.setLevel(logging.INFO)
     log.addHandler(g_ch)
 
-    # create dialog box handler
-    g_dh = DialogBoxHandlerAndExit()
-    g_dh.setLevel(logging.FATAL)  # only pop this up as we're on the way out
-    log.addHandler(g_dh)
+    if False:
+        # create dialog box handler
+        g_dh = DialogBoxHandlerAndExit()
+        g_dh.setLevel(logging.FATAL)  # only pop this up as we're on the way out
+        log.addHandler(g_dh)
 
-    add_http_handler()
+    if use_latus_server:
+        add_http_handler()
 
     log.info('log_folder : %s' % os.path.abspath(log_folder))
     if g_appdata_folder:
@@ -187,6 +199,11 @@ def add_sentry_handler(node_id):
         g_sentry_client.context.merge({'user': {'username': node_id}})
 
 
+def set_verbose():
+    set_file_log_level(logging.DEBUG)
+    set_console_log_level(logging.INFO)
+
+
 def set_file_log_level(new_level):
     if g_fh:
         # log the new level twice so we will likely see one of them, regardless if it's going up or down
@@ -212,6 +229,3 @@ def get_base_log_file_path():
     global g_base_log_file_path
     return g_base_log_file_path
 
-if __name__ == '__main__':
-    init()
-    log.fatal('fatal test')

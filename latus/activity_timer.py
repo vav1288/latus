@@ -4,18 +4,17 @@ import threading
 import logging
 
 import latus.logger
+import latus.const
 
 
 class ActivityTimer:
 
-    def __init__(self, timeout_seconds, timer_name=''):
+    def __init__(self, timer_name='ActivityTimer'):
         """
-
-        :param timeout_seconds: amount of time in seconds
-        :param timer_name:
+        Monitors how long a function runs when it's called.  Can also be used as a 'activity' monitor
+        to see if the program is doing anything.
         """
-        super().__init__()
-        self.timeout_seconds = timeout_seconds
+        self.timeout_seconds = latus.const.ACTIVITY_PERIOD
         self.timer_name = timer_name
         self.timer = None
 
@@ -32,15 +31,15 @@ class ActivityTimer:
     # every call to enter_trigger() must be followed by a call to exit_trigger()
     def enter_trigger(self, trigger_name=''):
         self.active_count += 1
-        latus.logger.log.debug('%s : active : enter : %d : %s' % (self.timer_name, self.active_count, trigger_name))
-        return self.__trigger()
+        latus.logger.log.info('%s : active : enter : %d : %s' % (self.timer_name, self.active_count, trigger_name))
+        return self._trigger()
 
     def exit_trigger(self, trigger_name=''):
         self.active_count -= 1
-        latus.logger.log.debug('%s : active : exit : %d : %s' % (self.timer_name, self.active_count, trigger_name))
-        return self.__trigger()
+        latus.logger.log.info('%s : active : exit : %d : %s' % (self.timer_name, self.active_count, trigger_name))
+        return self._trigger()
 
-    def __trigger(self):
+    def _trigger(self):
         """
         trigger (or retrigger) the timer
         :return: timer state
@@ -48,13 +47,17 @@ class ActivityTimer:
         self.timer_state = True
         if self.timer:
             self.timer.cancel()
+        # timers can only be started once
         self.timer = threading.Timer(self.timeout_seconds, self.reset)
+        latus.logger.log.info('setting timer %s for %f seconds' % (self.timer_name, self.timeout_seconds))
         self.timer.start()
         return self.timer_state
 
     def reset(self):
-        # 'ready' is essentially 'inactive', but I want a string I can search for (active is a substring of inactive)
-        latus.logger.log.debug('%s : ready : %d' % (self.timer_name, self.active_count))
+        # 'reset' is essentially 'inactive'
+        latus.logger.log.info('%s : reset : %d' % (self.timer_name, self.active_count))
+        if self.timer:
+            self.timer.cancel()
         self.timer_state = False
 
 

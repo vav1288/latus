@@ -21,7 +21,8 @@ def test_simple(session_setup, module_setup):
     """
 
     nodes = ['a', 'b']
-    sleep_time = latus.const.FILTER_TIME_OUT * 2
+    sleep_time = latus.const.FILTER_TIME_OUT * 2.0
+    latus.logger.log.info('sleep time : %f' % sleep_time)
 
     log_folder = os.path.join(get_simple_root(), 'log')
     logger_init(log_folder)
@@ -45,7 +46,11 @@ def test_simple(session_setup, module_setup):
 
     # start the sync
     syncs = [SyncProc(app_data_folder, log_folder=log_folder) for app_data_folder in app_data_folders]
-    [sync.start() for sync in syncs]
+    for sync in syncs:
+        sync.start()
+        time.sleep(0.1)  # skew start time between nodes slightly
+
+    time.sleep(sleep_time)
 
     # wait for files to sync
     b_to_a = os.path.join(local_folders[0], file_names[1])
@@ -57,7 +62,7 @@ def test_simple(session_setup, module_setup):
 
     # stop the syncs
     for sync in syncs:
-        assert(not sync.request_exit(1))  # make sure we exited cleanly
+        request_exit_return = sync.request_exit()
 
     time.sleep(sleep_time)
 

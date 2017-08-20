@@ -21,10 +21,11 @@ BIG_FILE_SIZE = 1024 * 1024
 MAX_HASH_PERF_VALUES = 10  # determine how many longest hash times to store in the db
 ASYMMETRIC_KEY_LENGTH = 1024  # Asymmetric key size (in bits)
 
+ACTIVITY_PERIOD = 1  # seconds
 TIME_OUT = 10  # seconds
-
-# todo: this should probably be longer in a 'production' release
-FILTER_TIME_OUT = 2.0  # seconds
+LONG_TIME_OUT = 60  # seconds
+FILTER_TIME_OUT = 3.0  # seconds  # todo: this should probably be longer in a 'production' release
+POLL_PERIOD = 4.0  # seconds - this is a short poll since this is how we get events from other nodes until we have SNS/SQS
 
 FOLDER_PREFERENCE_DEFAULTS = (True, False, False)  # encrypt, shared, cloud
 

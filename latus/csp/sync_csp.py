@@ -256,7 +256,7 @@ class LocalSync(SyncBase):
         node_db = nodedb.NodeDB(cloud_folders.nodes, node_id)
         most_recent_hash = node_db.get_most_recent_hash(latus_path)
         if most_recent_hash != file_hash:
-            node_db.update(mivui, node_id, int(filesystem_event_type), int(detection_source),
+            node_db.insert(mivui, node_id, int(filesystem_event_type), int(detection_source),
                            latus_path, src_path, size, file_hash, mtime, False)
 
     @activity_trigger
@@ -285,7 +285,7 @@ class LocalSync(SyncBase):
                         self.sync_log(this_node_id, file_system_event, mivui, partial_path, detection_source, size, local_hash, mtime)
                         self.__fill_cache(local_full_path)
                         self.add_filter_event(node_db.get_database_file_abs_path(), LatusFileSystemEvent.modified)
-                        node_db.update(mivui, this_node_id, int(file_system_event),
+                        node_db.insert(mivui, this_node_id, int(file_system_event),
                                        int(detection_source), partial_path, src_path, size, local_hash, mtime, False)
                 else:
                     latus.logger.log.warn('%s : could not calculate hash for %s' % (this_node_id, local_full_path))
@@ -481,4 +481,4 @@ if __name__ == '__main__':
     sync.start()
     input('hit enter to exit')
     if sync.request_exit():
-        print('note: exit timed out')
+        print('note: exit timed out in sync_csp.py')

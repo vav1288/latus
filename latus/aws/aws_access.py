@@ -24,13 +24,17 @@ class AWSAccess:
             self.sns_endpoint_url = "http://localhost:%s" % sns_localstack_port
 
             sqs_localstack_port = "4576"
-            self.sqs_enpoint_url = "http://localhost:%s" % sqs_localstack_port
+            self.sqs_endpoint_url = "http://localhost:%s" % sqs_localstack_port
         else:
             # regular AWS
             self.dynamo_db_endpoint_url = None
             self.s3_endpoint_url = None
             self.sns_endpoint_url = None
             self.sqs_endpoint_url = None
+        logger.log.info('dynamo_db_endpoint_url : %s' % self.dynamo_db_endpoint_url)
+        logger.log.info('s3_endpoint_url : %s' % self.s3_endpoint_url)
+        logger.log.info('sns_endpoint_url : %s' % self.sns_endpoint_url)
+        logger.log.info('sqs_endpoint_url : %s' % self.sqs_endpoint_url)
 
     def get_db_client(self):
         return boto3.client('dynamodb', endpoint_url=self.dynamo_db_endpoint_url)
