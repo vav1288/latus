@@ -48,7 +48,7 @@ def activity_and_lock(func):
     decorator that adds activity triggers
     """
     @wraps(func)
-    def do_triggers(self, *args, **kwargs):
+    def do_activity_and_lock(self, *args, **kwargs):
         self.active_timer.enter_trigger(func.__name__)
         time_before_acquire = time.time()
         acquired = latus_lock.acquire(timeout=latus.const.LONG_TIME_OUT)
@@ -68,7 +68,7 @@ def activity_and_lock(func):
                 logger.log.warn('tried to release an unlocked lock for %s' % func.__name__)
         self.active_timer.exit_trigger(func.__name__)
         return r
-    return do_triggers
+    return do_activity_and_lock
 
 
 class EventFilter(threading.Thread):
@@ -261,25 +261,22 @@ class AWSSync(watchdog.events.FileSystemEventHandler):
             size = None
         mivui = latus.miv.get_mivui(this_node_id)
 
-        # check that file actually changed
         logger.log.info("_write_db : %s" % str([this_node_id, mivui, filesystem_event_type, full_path, detection_source, size, file_hash, mtime]))
 
-        # if there is an entry for this path, get its hash
-        most_recent_hash = None
-        most_recent = node_db.get_most_recent_entry_for_path(latus_path)
-        if most_recent:
-            most_recent_hash = most_recent[int(latus.const.ChangeAttributes.file_hash)]
-        if most_recent is None or most_recent_hash != file_hash:
-            # write this entry if there is no entry for this path or if the file has changed
-            partial_path = os.path.relpath(full_path, pref.get_latus_folder())
-            event_table = TableEvents(self.use_aws_local)
-            # update locally first (pending True)
-            node_db.insert(mivui, this_node_id, int(filesystem_event_type), int(detection_source), partial_path, src_path, size, file_hash, mtime, True)
-            # then AWS
-            aws_success = event_table.add(mivui, this_node_id, int(filesystem_event_type), int(detection_source), latus_path, src_path, size, file_hash, mtime)
-            # now set the pending flag based on aws_success
-            if aws_success:
-                node_db.update_pending({'miviu': mivui, 'file_path': partial_path})
+        # write this entry if there is no entry for this path or if the file has changed
+        partial_path = os.path.relpath(full_path, pref.get_latus_folder())
+        event_table = TableEvents(self.use_aws_local)
+        # update locally first (pending True)
+        node_db.insert(mivui, this_node_id, int(filesystem_event_type), int(detection_source), partial_path, src_path, size, file_hash, mtime, True)
+        # then AWS
+        aws_success = event_table.add(mivui, this_node_id, int(filesystem_event_type), int(detection_source), latus_path, src_path, size, file_hash, mtime)
+        # now set the pending flag based on aws_success
+        if aws_success:
+            node_db.update_pending({'miviu': mivui, 'file_path': partial_path})
+        else:
+            latus.logger.log.warn('event_table.add() failed for %s' % latus_path)
+
+        latus.logger.log.info('exiting _write_db')
 
     def _fill_file_cache(self, full_path):
         pref = latus.preferences.Preferences(self.app_data_folder)

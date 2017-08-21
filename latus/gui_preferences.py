@@ -60,12 +60,21 @@ class PreferencesDialog(QDialog):
     def __init__(self, latus_appdata_folder):
         latus.logger.log.info('starting PreferencesDialog')
         latus.logger.log.info('preferences folder : %s' % latus_appdata_folder)
+        self.folder_attributes = {}
 
         # todo: self.pref and preferences are redundant - get rid of one
         self.pref = latus.preferences.Preferences(latus_appdata_folder)
+        self.folders = latus.util.get_latus_folders(self.pref)
         if self.pref.get_cloud_mode() == 'csp':
             cloud_folders = latus.csp.cloud_folders.CloudFolders(self.pref.get_cloud_root())
             self.node_db = nodedb.NodeDB(cloud_folders.nodes, self.pref.get_node_id())
+            for folder in self.folders:
+                partial_folder = os.path.relpath(folder, self.pref.get_latus_folder())
+                self.folder_attributes[partial_folder] = self.node_db.get_folder_preferences_from_folder(partial_folder)
+        elif self.pref.get_cloud_mode() == 'aws':
+            pass
+        else:
+            raise NotImplementedError
 
         super().__init__()
         self.blank = QLabel('')
@@ -79,7 +88,6 @@ class PreferencesDialog(QDialog):
         for header in headers:
             folder_preferences_layout.addWidget(QLabel(header), 0, col)
             col += 1
-        self.folders = latus.util.get_latus_folders(self.pref)
         if len(self.folders) > 0:
             self.check_boxes = {}
             for folder in self.folders:
@@ -87,7 +95,7 @@ class PreferencesDialog(QDialog):
                 col = 1
                 self.check_boxes[folder] = []
                 partial_folder = os.path.relpath(folder, self.pref.get_latus_folder())
-                for attribute in self.node_db.get_folder_preferences_from_folder(partial_folder):
+                for attribute in self.folder_attributes:
                     ss = Qt.Unchecked
                     if attribute:
                         ss = Qt.Checked
@@ -191,10 +199,14 @@ class PreferencesDialog(QDialog):
                 self.pref.set_cloud_root(self.cloud_folder.get())
         for folder in self.folders:
             cb_states = tuple([cb.isChecked() for cb in self.check_boxes[folder]])
-            current_preferences = self.node_db.get_folder_preferences_from_folder(folder)
+            if folder not in self.folder_attributes:
+                current_preferences = (False,False,False)
+            else:
+                current_preferences = self.folder_attributes[folder]
             if current_preferences != cb_states:
                 latus.logger.log.info('new folder preferences for %s : %s --> %s' % (folder, str(current_preferences), str(cb_states)))
-                self.node_db.set_folder_preferences(folder, cb_states[0], cb_states[1], cb_states[2])
+                if self.pref.get_cloud_mode() == 'csp':
+                    self.node_db.set_folder_preferences(folder, cb_states[0], cb_states[1], cb_states[2])
         for ss in self.support_selections:
             if ss['cb'].isChecked() != ss['get']():
                 latus.logger.log.info('new support preferences for %s : %s --> %s' % (ss['str'], str(ss['get']()), str(ss['cb'].isChecked())))
@@ -213,6 +225,7 @@ class PreferencesDialog(QDialog):
 
     def new_folder(self):
         f = QFileDialog.getExistingDirectory()
+        self.latus_folder.line.setText(f)
         return f
 
 

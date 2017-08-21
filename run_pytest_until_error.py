@@ -49,8 +49,6 @@ def run_pytest_until_error():
             count['pass'] += 1
         print('test iteration : %s : return=%s' % (str(count), str(r)))
 
-    test_latus.tstutil.set_cloud_config('aws', False)
-
 
 def main():
     run_pytest_until_error()

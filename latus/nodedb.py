@@ -147,8 +147,8 @@ class NodeDB:
         file_path = norm_latus_path(file_path)
         src_path = norm_latus_path(src_path)
         conn = self.db_engine.connect()
-        latus.logger.log.info('%s updating %d %s %s %s %s %s %s %s %s %s' % (self.node_id, mivui, originator, event_type, detection,
-                                                                             file_path, src_path, size, file_hash, mtime, pending))
+        latus.logger.log.info('%s inserting %d %s %s %s %s %s %s %s %s %s' % (self.node_id, mivui, originator, event_type, detection,
+                                                                              file_path, src_path, size, file_hash, mtime, pending))
         command = self.change_table.select().where(self.change_table.c.mivui == mivui)
         result = self._execute_with_retry(conn, command, 'update_select')
         if not result.fetchone():
@@ -483,11 +483,12 @@ class NodeDB:
 
     def update_pending(self, info, pending_flag=False):
         with self.db_engine.connect() as conn:
-            result = None
             stmt = self.change_table.update().values(pending=pending_flag).where(self.change_table.c.file_path == info['file_path'] and self.change_table.c.mivui == info['mivui'])
             result = self._execute_with_retry(conn, stmt, 'clear_pending')
-            if not result:
-                latus.logger.log.error('clear_pending of %s %s failed' % (info['path'], info['mivui']))
+            if result:
+                latus.logger.log.info('pending for %s has been updated to %s' % (info['file_path'], pending_flag))
+            else:
+                latus.logger.log.error('update pending of path=%s and mivui=%d failed' % (info['path'], info['mivui']))
             conn.close()
 
     def get_folder_preferences_from_path(self, partial_path):
